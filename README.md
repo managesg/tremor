@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/tremor-hero.svg" alt="TREMOR: measure how a team of agents responds, then use the measurement to run the team" width="100%"></p>
+<p align="center"><img src="assets/tremor-hero-v2.svg" alt="TREMOR: measure how a team of agents responds, then use the measurement to run the team" width="100%"></p>
 
 <p align="center">
 <b>Measure how a team of agents responds, then use the measurement to run the team.</b><br>
