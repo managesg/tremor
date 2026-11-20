@@ -1,119 +1,98 @@
 # TREMOR work plan
 
-This is the public, clean work plan. Internal gates, spend codes, hashes and machine names are in the
-private repository.
+The public version of the plan. Every item says where it stands today, using four status words:
+**NOT STARTED**, **INSTRUMENTED** (code exists and passed scripted checks), **PILOTED** (run on a real
+model as an instrument check, no estimate) and **EVIDENCED** (a pre-registered result exists).
+**Nothing in this project is EVIDENCED yet.**
 
----
+## Where we are (2026-11-20)
 
-## Gate sequence
+| Item | Status |
+|---|---|
+| Shared task board, router, practice cards, planted-note and perturbation tools | INSTRUMENTED |
+| Three independent scorers, one proved in Lean 4 (0 disagreements on 10,000 seeded logs) | INSTRUMENTED |
+| Spend ledger with hard caps in code | INSTRUMENTED, checked by independent reviews |
+| First calibrated measurement: an instruction card against the same rule enforced in code | Pre-registration drafted, **not frozen** |
+| Instrument pilots on a small Claude model | Two run; both stopped on rules written in advance; fixes in progress |
+| Research lines 1 to 8 | NOT STARTED |
 
-The project moves through explicit gates. Nothing proceeds until its gate is signed.
+What the two pilots taught us, so far only about the instrument:
 
-| Gate | What must be true | Who checks |
-|---|---|---|
-| G0 | Instrument: board, router, scorers, ledger all pass scripted tests | Independent verifier |
-| G1 | First calibrated measurement pre-registered and frozen | Independent verifier |
-| G2 | First measurement run to completion; result published | Independent verifier |
-| L1 | Sensitivity pilot: local 4B model speed, memory capacity, probe signal | Internal |
-| L2 | Lines 1 to 3 pre-registrations frozen | Independent verifier |
-| L3 | Lines 1 to 3 results against their baselines | Independent verifier |
-| L4 | Dreaming phase map; evaporating claims pilot | Independent verifier |
-| L5 | Lines 6 to 8 pilots | Independent verifier |
-| L6 | Full write-up; open release of bench, logs, techniques, negatives | Owner |
+1. The model's hidden reasoning used up the reply budget. Fix: reasoning turned off for these runs.
+2. With reasoning off, the model writes its reasoning as prose before a correct JSON answer. Fix: the
+   parser accepts the final JSON array of a reply and treats anything after it as malformed, the same
+   way in every condition.
 
----
+## Rules that hold for every step
 
-## Week-by-week
+- **Pre-register, then run.** Each line's statistic, baseline, sample size, kill criterion and
+  dual-use boundary are written down and frozen before its first real run.
+- **Three outcomes.** Every prediction ends as supported, killed or inconclusive. A result that is only
+  not significant is inconclusive, never killed.
+- **Every number comes from a frozen, verified run.** Numbers in plans are labelled as priors.
+- **Fresh eyes on every change.** Each code change is checked by a reviewer that did not write it.
+- **Reviews police claims, not scope.** They check sources, numbers and status words. They do not
+  shrink the questions.
+- **Spend is capped in code.** Every run has a hard stop, and the ledger is checked before and after
+  each call. Runs stop themselves on rules written in advance.
+- **Benign stand-ins only.** Contagion and poisoning experiments use harmless planted notes, under a
+  written dual-use boundary. No offensive security work.
 
-### Week 0 (now)
-- **Close the instrument gates.** The first calibration (an instruction card against the same rule
-  enforced in code) is pre-registered and frozen. It runs as soon as G1 signs.
-- **Public repo** set up with this work plan and the proposal summary.
+## Phases
 
-### Week 1
-- **Overnight consolidation loop added** to the task board: agents replay their shared memory and
-  write a consolidated version. Scripted controls prove it must fail when nothing is there and pass
-  with an ideal agent.
-- **Instrument report** published: every verification that passed, every mutant killed, every
-  stopping rule and the exact spend ledger.
+### Phase 0. Close the instrument (now)
 
-### Week 2
-- **Variance pilot** on the local 4B model: rerun variance and speed. This tells us how many
-  episodes we can afford and what n is needed to make each kill criterion decisive.
-- **One pre-registration per line** is written, frozen and published *before any run*. The
-  pre-registrations state the statistic, the baseline, the sample size, the kill criterion and the
-  dual-use ruling.
+- [x] Board, router, scorers, ledger built and checked
+- [x] Two instrument pilots run and diagnosed
+- [ ] Parser fix verified by an independent reviewer
+- [ ] Third pilot, both task orders, to choose the task order for the first measurement
+- [ ] Freeze the first measurement's pre-registration, run it, publish the result whatever it is
 
-### Weeks 3 to 4
-- **Lines 1 to 3 run** on the local 4B model and on a small hosted model.
-- Each run uses its pre-registered sample size and stops itself on its written rules.
-- Results published with full logs; negatives included.
+### Phase 1. Extend the bench (week 1, no model cost)
 
-### Week 5
-- **Dreaming phase map (line 4):** consolidation strength is ramped from placebo to strong; the
-  false-note share and recovery time are measured. The early-warning statistic (critical slowing
-  down) is checked.
-- **Evaporating claims pilot (line 5):** norms enforced in code versus in memory versus in
-  environment versus evaporating claims.
-- **Pilots for lines 6 to 8:** trust leases, team-size blocks, activation readouts. Each produces
-  a table of what worked and what didn't.
+- [ ] Overnight consolidation loop: daily notes replayed into long-term memory, with provenance
+- [ ] Per-line readouts: rerun variance, dose response, reproduction number of a wrong note, joint
+      monitor misses, recovery time
+- [ ] Scripted controls for every line: each must fail with no signal present and pass with an ideal
+      agent
+- [ ] Instrument report published
 
-### Week 6
-- **Open release:** the bench (board, router, scorers, ledger), all logs, the Lean-checked scorer,
-  the analysis code, reference implementations of the surviving techniques, and every negative
-  result. A single markdown document links all of it.
+### Phase 2. Measure the machine and freeze the plans (week 2)
 
----
+- [ ] Speed and memory of the local open model measured
+- [ ] Variance pilot: sets the sample size each kill criterion needs
+- [ ] One pre-registration per line, frozen and published before any run
 
-## Months 2 to 6
+### Phase 3. Core lines (weeks 3 and 4)
 
-- **Replication on a second open model family** (different architecture, same tasks).
-- **External benchmarks** (existing agent benchmarks) run with the surviving techniques.
-- **One combined controller** that allocates verification, monitors, memory, trust and team
-  structure from a single shared measurement loop.
-- **Paper and benchmark v1** submitted.
+- [ ] Line 1: susceptibility-guided verification against its baselines
+- [ ] Line 2: memory immune system: reproduction number, threshold, targeted verification
+- [ ] Line 3: decorrelated monitor ensembles, including the rotating hidden view
+- [ ] Results published with logs, negatives included
 
----
+### Phase 4. Dreaming, coordination and pilots (week 5)
 
-## Gates and rules
+- [ ] Line 4: phase map of consolidation strength; early-warning test before errors start to grow
+- [ ] Line 5: evaporating claims; where a team rule works best (context, memory, environment, code)
+- [ ] Lines 6 to 8: pilots of evidence leases, team-size scaling and activation readouts
 
-- **Every number comes from a frozen, verified run.** No number in any document is a prediction
-  unless it is explicitly labelled "prior" with the author's probability.
-- **Nothing is called EVIDENCED until its pre-registration and result exist.** The status words
-  are: NOT STARTED, INSTRUMENTED, PILOTED, EVIDENCED.
-- **Reviews check claims, sources and status words.** Scope is set by the owner. Reviews do not
-  shrink ideas or budget; they state risks, missing assumptions and how to make each line testable.
-- **Dual-use boundary:** poisoning and contagion experiments use benign stand-ins. Selecting
-  monitors against an optimizer is a controlled experiment. No training of private capabilities.
-- **Hard spend limits are in code.** The ledger stops the run before any ceiling is passed. The
-  owner authorises the total budget; no per-batch ask.
-- **Compute provided by the residency** goes first to the sample sizes that make each kill
-  criterion decisive.
-- **Local team sizes:** the current instrument runs teams of four agents. Lines 6 and 7 plan to
-  test sizes 8, 16 and 32, which need the owner's re-approval when reached.
+### Phase 5. Release (week 6)
 
----
+- [ ] One open release: bench, logs, Lean-checked scorer, analysis code, reference implementations of
+      the surviving techniques, every negative result
 
-## What has been spent
+### Months 2 to 6
 
-| Item | GPU-hours | API, USD |
-|---|---|---|
-| Two instrument pilots (small hosted model) | 0 | 0.023 |
-| **Total so far** | **0** | **0.023** |
+- [ ] Replication on a second open model family
+- [ ] External benchmarks with deterministic scoring
+- [ ] The surviving techniques combined in one controller, tested against a plain team at equal budget
+- [ ] Paper and benchmark v1
 
-All ledger files are open source in the private repo and are published in the week 6 release.
+## What would falsify the programme
 
----
+1. A statistic measured on one set of seeds does not predict itself on another.
+2. Allocating by the statistic never beats allocating without it, at equal budget.
+3. No dose response and no thresholds anywhere.
+4. Scripted agents reproduce every effect, so the effects are about loops, not language models.
 
-## What this is not
-
-- Not a claim that any technique works. They are hypotheses with kill criteria.
-- Not evidence about frontier systems. The first tasks are deliberately simple integer tasks.
-- Not offensive work. Contagion and poisoning use benign stand-ins.
-- Not a finished product. The week 6 release is the first complete, testable version.
-
----
-
-## Contact
-
-[owner to add]
+If all four hold, we publish the negatives and keep the bench for others.
