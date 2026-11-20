@@ -1,0 +1,240 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#F2F0EA;overflow:hidden}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas><script>
+// TREMOR explainer, paper data-viz style. Deterministic draw(t). ?t=seconds&s=scale[&hero=1]. Logical canvas 1280x720.
+const W=1280,H=720,TOTAL=49;
+const C={paper:'#F2F0EA',panel:'#F7F6F2',bd:'#CFCBC2',ink:'#1A1A1A',ink2:'#6B6860',red:'#C8573E',teal:'#4E9F8A',o1:'#E8A65A',o2:'#B4482B'};
+const cv=document.getElementById('c');
+const q=new URLSearchParams(location.search+'&'+location.hash.slice(1));
+const SC=parseFloat(q.get('s')||'1'),HERO=q.get('hero')==='1';
+cv.width=Math.round(W*SC);cv.height=Math.round(H*SC);
+const g=cv.getContext('2d');
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const ease=x=>x*x*(3-2*x);
+const lerp=(a,b,x)=>a+(b-a)*x;
+const F='Helvetica,Arial,"Liberation Sans","DejaVu Sans",sans-serif';
+const rnd=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s)};
+function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`}
+function mix(h1,h2,x){const a=parseInt(h1.slice(1),16),b=parseInt(h2.slice(1),16);const c=k=>Math.round(lerp((a>>k)&255,(b>>k)&255,x));return `rgb(${c(16)},${c(8)},${c(0)})`}
+const ORA=x=>mix(C.o1,C.o2,x);
+function text(s,x,y,size,col=C.ink,a=1,align='left',weight='400'){g.globalAlpha=a;g.fillStyle=col;g.font=`${weight} ${size}px ${F}`;g.textAlign=align;g.textBaseline='middle';g.fillText(s,x,y);g.globalAlpha=1}
+function circle(x,y,r,fill,a=1,stroke,lw=1.5){g.globalAlpha=a;g.beginPath();g.arc(x,y,r,0,7);if(fill){g.fillStyle=fill;g.fill()}if(stroke){g.strokeStyle=stroke;g.lineWidth=lw;g.stroke()}g.globalAlpha=1}
+function rr(x,y,w,h,r,fill,stroke,a=1,lw=1,dash){g.globalAlpha=a;g.beginPath();g.roundRect(x,y,w,h,r);if(fill){g.fillStyle=fill;g.fill()}if(stroke){g.strokeStyle=stroke;g.lineWidth=lw;g.setLineDash(dash||[]);g.stroke();g.setLineDash([])}g.globalAlpha=1}
+function panel(x,y,w,h,a=1){rr(x,y,w,h,10,C.panel,C.bd,a,1)}
+function line(x1,y1,x2,y2,col,a=1,lw=1.5,dash){g.globalAlpha=a;g.strokeStyle=col;g.lineWidth=lw;g.setLineDash(dash||[]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);g.globalAlpha=1}
+// vertical bezier, drawn up to fraction f
+function curve(x1,y1,x2,y2,f,col,a,lw){if(f<=0)return;g.globalAlpha=a;g.strokeStyle=col;g.lineWidth=lw;g.beginPath();const n=16,my=(y1+y2)/2;
+ for(let i=0;i<=n*f;i++){const u=Math.min(i/n,f),v=1-u;const x=v*v*v*x1+3*v*v*u*x1+3*v*u*u*x2+u*u*u*x2,y=v*v*v*y1+3*v*v*u*my+3*v*u*u*my+u*u*u*y2;i?g.lineTo(x,y):g.moveTo(x,y)}
+ g.stroke();g.globalAlpha=1}
+function counter(y,big,small,a=1){text(big,40,y,46,C.ink,a,'left','700');text(small,42,y+34,15,C.ink2,a)}
+function legend(items,a=1){panel(40,505,250,150,a);text('How to read it',56,527,14,C.ink,a,'left','700');
+ items.forEach((it,i)=>{const y=553+i*24;it[0](56,y,a);text(it[1],98,y,13,C.ink2,a)})}
+const LG={w:(x,y,a)=>line(x,y+6,x+30,y-6,C.red,.8*a,2),r:(x,y,a)=>line(x,y-6,x+30,y+6,C.teal,.8*a,2),land:(x,y,a)=>circle(x+15,y,5,C.ink,a),open:(x,y,a)=>circle(x+15,y,5,null,a,C.ink,1.5),
+ amb:(x,y,a)=>line(x,y+6,x+30,y-6,C.o2,a,2.5),col:(x,y,a)=>{for(let i=0;i<6;i++)rr(x+i*5,y-5,5,10,0,ORA(i/5),null,a)},quar:(x,y,a)=>rr(x,y-7,30,14,3,null,C.ink,a,1.3,[4,3])};
+function caption(s,a=1){if(HERO)return;line(300,682,300,702,C.red,a,3);text(s,314,692,20,C.ink,a)}
+function tag(a=1){text('illustration',W-30,28,14,C.ink2,a*.9,'right','400')}
+function bg(){g.fillStyle=C.paper;g.fillRect(0,0,W,H)}
+const S=[[0,4.5],[4.5,12.5],[12.5,20.5],[20.5,26.5],[26.5,32],[32,38],[38,41.5],[41.5,49]];
+
+// ---------- shared board (scenes 2,3) ----------
+const WX=j=>330+j*(910/31);const TB=[['Board','who works on what'],['Notes','an open board'],['Memory','consolidated notes'],['Monitor log','checks and alerts'],['Landed','finished work']];
+const TX=k=>330+k*188,TW=170,TY=290,TH=100;
+const NWL=170,NRL=260;
+const WL=[],RL=[];
+(function(){const cw=[.25,.55,.65,.8,1];const pick=r=>cw.findIndex(c=>r<=c);
+ for(let n=0;n<NWL;n++){const r=rnd(n+1);WL.push({u:n/NWL,w:rnd(n+7)<.14?0:Math.floor(rnd(n+9)*32),k:pick(rnd(n+3)),o:rnd(n+5)*TW})}
+ const cr=[.1,.3,.55,.7,1];for(let n=0;n<NRL;n++){RL.push({u:n/NRL*.98+.02,r:Math.floor(rnd(n+17)*32),k:cr.findIndex(c=>rnd(n+13)<=c),o:rnd(n+19)*TW})}})();
+function board(p,a,o={}){
+ const hr=p*6.8;
+ // lines first
+ const mute=o.mute||1;
+ WL.forEach(l=>{const age=p-l.u;if(age<=0)return;const f=clamp(age/.03);curve(WX(l.w),150,TX(l.k)+l.o,TY,f,C.red,a*mute*(.2+.45*clamp(1-age*14)),1)});
+ RL.forEach(l=>{const age=p-l.u;if(age<=0)return;const f=clamp(age/.03);curve(TX(l.k)+l.o,TY+TH,WX(l.r),532,f,C.teal,a*mute*(.16+.3*clamp(1-age*14)),1)});
+ // rows of ticks
+ for(let j=0;j<32;j++){const x=WX(j);line(x,j?108:96,x,146,j?C.ink2:C.ink,a,j?1.6:3.2);line(x,534,x,j?570:582,j?C.ink2:C.ink,a,j?1.6:3.2)}
+ text('WRITERS  ·  a lead + 31 helpers',330,82,13,C.ink2,a,'left','700');text('READERS  ·  the same agents, reading',330,606,13,C.ink2,a,'left','700');
+ let wc=[0,0,0,0,0],rc=[0,0,0,0,0];WL.forEach(l=>{if(l.u<p)wc[l.k]++});RL.forEach(l=>{if(l.u<p)rc[l.k]++});
+ const sw=1284/NWL,sr=9512/NRL;let tw=0,tr=0;
+ TB.forEach((t,k)=>{panel(TX(k),TY,TW,TH,a);text(t[0],TX(k)+14,TY+24,17,C.ink,a,'left','700');text(t[1],TX(k)+14,TY+45,12.5,C.ink2,a);
+  const w=Math.round(wc[k]*sw),r=Math.round(rc[k]*sr);tw+=w;tr+=r;
+  text('writes '+w.toLocaleString('en-US'),TX(k)+14,TY+70,13,C.red,a,'left','700');text('reads '+r.toLocaleString('en-US'),TX(k)+14,TY+88,13,C.teal,a,'left','700');
+  if(k==4)for(let i=0;i<Math.min(10,Math.floor(w/9));i++)circle(TX(k)+TW-20-(i%5)*0+(-(i%5)*0),TY+14,0,C.ink)});
+ // landed dots
+ for(let i=0;i<Math.min(10,Math.floor(wc[4]*sw/10));i++)circle(TX(4)+TW-18-(i%5)*12,TY+16+Math.floor(i/5)*12,4,C.ink,a);
+ return {hr,tw,tr};
+}
+
+// ---------- scenes ----------
+function s1(t,a){
+ const k=ease(seg(t,0,.8));
+ text('TREMOR',80,240,140,C.ink,a*k,'left','700');
+ text('Measure how a team of agents responds,',84,350,30,C.ink2,a*ease(seg(t,.6,1.4)));
+ text('then use the measurement to run the team',84,392,30,C.ink2,a*ease(seg(t,.9,1.7)));
+ for(let j=0;j<32;j++){const x=80+j*(1120/31);line(x,470,x,500,j?C.ink2:C.ink,a*k,j?1.6:3.2);line(x,670,x,700,j?C.ink2:C.ink,a*k,j?1.6:3.2)}
+ for(let n=0;n<90;n++){const u=1.2+n*.025;const f=clamp((t-u)/.7);const w=Math.floor(rnd(n+2)*32),r=Math.floor(rnd(n+4)*32);
+  const xa=80+w*(1120/31),xb=80+r*(1120/31);curve(xa,500,xb,670,f,n%3?C.red:C.teal,a*.22,1)}
+}
+function s2(t,a){
+ const p=lerp(.03,1,ease(seg(t,.4,7.4)));
+ const b=board(p,a);
+ counter(40,'Hour '+b.hr.toFixed(1),'of the run',a);counter(170,b.tw.toLocaleString('en-US'),'writes counted so far',a);counter(300,b.tr.toLocaleString('en-US'),'reads counted so far',a);
+ legend([[LG.w,'a write (agent to table)'],[LG.r,'a read (table to agent)'],[LG.land,'landed item'],[LG.open,'open item']],a);
+ tag(a);caption('A team is a medium: work, errors and norms move through shared tables.',a*seg(t,.8,1.6));
+}
+function s3(t,a){
+ const p=.62+.12*seg(t,0,8);const b=board(p,a,{mute:.7});
+ const nx=TX(1)+TW-34,ny=TY+22;
+ const W0=1.0,Q=5.4;
+ // wrong write
+ const wf=ease(seg(t,.5,1.5));
+ curve(WX(9),150,nx,TY+2,wf,C.o2,a,3);
+ if(t>1.5){circle(nx,ny,6,C.o2,a);}
+ // reads spread
+ const readers=[3,5,8,11,13,15,18,20,22,24,26,28,30,31];
+ let n=0;readers.forEach((r,i)=>{const t0=1.8+i*.25;const f=clamp((t-t0)/.5);if(f<=0)return;
+  if(t0<Q){n++;curve(nx,TY+TH,WX(r),532,f,C.o2,a*.8,2.4);if(f>=1){line(WX(r),534,WX(r),572,C.o2,a,3.4)}}});
+ // after quarantine: blocked stubs
+ if(t>Q){const k=ease(seg(t,Q,Q+.6));
+  rr(TX(1)+TW-54,TY+6,46,34,4,null,C.ink,a*k,1.6,[5,4]);text('quarantined',TX(1)+TW-31,TY+56,11.5,C.ink,a*k,'center','700');
+  [0,1,2].forEach(i=>{const x=nx-18+i*18;line(x,TY+TH+30,x,TY+TH+6,C.o2,a*k*.8,2,[3,3]);text('×',x,TY+TH+38,16,C.o2,a*k,'center','700')});}
+ const R=t<Q?lerp(.9,2.4,seg(t,1.6,Q)):lerp(2.4,.7,seg(t,Q,Q+1.6));
+ counter(40,'Hour '+(p*6.8).toFixed(1),'of the run',a);
+ counter(170,'R = '+R.toFixed(1),'copies per wrong note (illustration)',a);
+ counter(300,String(n),'readers reached by the wrong note',a);
+ legend([[LG.amb,'a wrong note being read'],[LG.quar,'quarantine'],[LG.r,'an ordinary read'],[LG.w,'an ordinary write']],a);
+ tag(a);caption('Memory immune system: measure how far a wrong note copies itself, then quarantine',a*seg(t,.4,1.2));
+}
+function s4(t,a){
+ const cx=760,cy=360,r0=130,N=24;
+ [130,190,250].forEach((r,i)=>circle(cx,cy,r,null,a*.9,C.bd,1));
+ text('level 1',cx+4,cy-r0-6,11,C.ink2,a,'left');text('level 2',cx+4,cy-190-6,11,C.ink2,a,'left');text('level 3',cx+4,cy-250-6,11,C.ink2,a,'left');
+ const order=[...Array(N).keys()].sort((i,j)=>rnd(i+40)-rnd(j+40));const rank=[];order.forEach((i,k)=>rank[i]=k);
+ let done=0;const dis=[5,6,17];
+ for(let i=0;i<N;i++){const th=-Math.PI/2+i*2*Math.PI/N;const ux=Math.cos(th),uy=Math.sin(th);
+  const k=ease(seg(t,.2+i*.03,.9+i*.03));
+  line(cx+ux*50*k,cy+uy*30*k,cx+ux*r0*k,cy+uy*r0*k,C.ink2,a*.7,1,[4,4]);
+  const td=1.2+rank[i]*.12;const f=ease(seg(t,td,td+.5));const isDone=t>=td;if(isDone)done++;
+  const len=36+rnd(i+60)*100;const col=ORA(rank[i]/(N-1));
+  if(f>0){const x1=cx+ux*(r0+8),y1=cy+uy*(r0+8),x2=cx+ux*(r0+8+len*f),y2=cy+uy*(r0+8+len*f);g.globalAlpha=a;g.strokeStyle=col;g.lineWidth=8;g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.globalAlpha=1}
+  if(isDone)circle(cx+ux*r0,cy+uy*r0,5.5,C.ink,a*k);else circle(cx+ux*r0,cy+uy*r0,5.5,C.panel,a*k,C.ink,1.5);
+  if(dis.includes(i)&&t>3.6){const m=ease(seg(t,3.6,4.2));circle(cx+ux*r0,cy+uy*r0,13+Math.sin(t*5)*1.5,null,a*m,C.red,2)}}
+ rr(cx-90,cy-30,180,60,10,C.panel,C.ink,a*ease(seg(t,0,.6)),1.5);text('one claim to verify',cx,cy-6,15,C.ink,a,'center','700');text('(a statement per sub-area)',cx,cy+14,12,C.ink2,a,'center');
+ if(t>3.6){const m=ease(seg(t,3.6,4.4));line(1040,205,1005,290,C.red,a*m,1.5);text('reruns of the same task',1030,185,14,C.red,a*m,'left','700');text('disagree most here',1030,203,14,C.red,a*m,'left','700')}
+ counter(40,'Hour '+(1+seg(t,1,5.6)*5.8).toFixed(1),'of the run',a);counter(170,done+' / '+N,'tasks marked done (illustration)',a);
+ legend([[LG.land,'task marked done'],[LG.open,'task still open'],[LG.col,'bar colour: hour it was done'],[(x,y,a)=>circle(x+15,y,6,null,a,C.red,2),'reruns disagree']],a);
+ tag(a);caption('Susceptibility: re-check where reruns of the same task disagree most',a*seg(t,.4,1.2));
+}
+function s5(t,a){
+ const names=['Landed first','Judged doable','Set aside','Working','Idle'];const PW=230,GAP=15,PX=i=>40+i*(PW+GAP),PY=175,PH=330;
+ const hr=7+seg(t,.8,4.8)*4;
+ text('Hour '+hr.toFixed(1),40,50,46,C.ink,a,'left','700');text('of the run',42,84,15,C.ink2,a);
+ // state timeline
+ const state=(k,t)=>{ // returns [fromPanel,toPanel,moveStart]
+  if(k<13)return [0,0,0];
+  if(k<20)return [3,0,1.0+(k-13)*.55];
+  if(k<36)return [1,1,0];
+  if(k<39)return [1,2,2.0+(k-36)*.9];
+  if(k<45)return [2,2,0];
+  if(k<53)return [3,3,0];
+  if(k<57)return [4,3,1.5+(k-53)*.8];
+  return [4,4,0]};
+ let landed=0;
+ names.forEach((n,i)=>{panel(PX(i),PY,PW,PH,a);text(n,PX(i)+14,PY+22,15,C.ink,a,'left','700')});
+ for(let k=0;k<60;k++){const [f0,f1,ms]=state(k);const u=ease(seg(t,ms,ms+.9));
+  const pos=pn=>[PX(pn)+22+(k%9)*23,PY+56+Math.floor(k/9)*23];
+  const A=pos(f0),B=pos(f1);const x=lerp(A[0],B[0],u),y=lerp(A[1],B[1],u);
+  const cur=u>=.5?f1:f0;if(f1==0&&u>=1||f0==0)landed++;
+  if(cur==0)circle(x,y,6,C.ink,a);
+  else if(cur==1)circle(x,y,6,C.panel,a,C.teal,2);
+  else if(cur==2)circle(x,y,5,C.panel,a,C.ink2,1.2);
+  else if(cur==3)circle(x,y,6,C.panel,a,ORA(.3+rnd(k)*.5),2.2);
+  else circle(x,y,3,C.bd,a)}
+ text(landed+' of 60 tasks verified',PX(0)+PW-14,PY+22,0,C.ink,0);
+ text('13 → 20 of 60 tasks verified  ·  now '+landed,40,125,18,C.ink,a,'left','700');
+ // legend inline
+ text('● landed    ○ judged doable    ○ set aside    ○ working (colour = hour)    · idle',40,545,14,C.ink2,a);
+ text('Dots move between panels as the hours advance.',40,580,14,C.ink2,a);
+ tag(a);caption('Monitors and verification go where the statistic says they matter',a*seg(t,.4,1.2));
+}
+function arrow(x1,y1,x2,y2,a,col=C.ink){line(x1,y1,x2-7,y2,col,a,1.8);g.globalAlpha=a;g.fillStyle=col;g.beginPath();g.moveTo(x2,y2);g.lineTo(x2-9,y2-5);g.lineTo(x2-9,y2+5);g.fill();g.globalAlpha=1}
+function s6(t,a){
+ const y=300;
+ const k0=ease(seg(t,0,.6));
+ panel(40,y-45,140,90,a*k0);text('Session',110,y,18,C.ink,a*k0,'center','700');
+ const kd=ease(seg(t,.4,1.2));
+ rr(215,170,805,350,12,C.panel,C.ink,a*kd,1.5,[6,5]);text('DREAMING (overnight)',235,196,14,C.ink2,a*kd,'left','700');
+ const sub=[['Transcripts','searchable log'],['Memory notes','what to keep'],['Memory','representations'],['Injected','context']];
+ const sx=i=>240+i*195;
+ sub.forEach((s,i)=>{const k=ease(seg(t,.9+i*.35,1.5+i*.35));panel(sx(i),y-45,160,90,a*k);text(s[0],sx(i)+80,y-8,16,C.ink,a*k,'center','700');text(s[1],sx(i)+80,y+16,13,C.ink2,a*k,'center')});
+ arrow(180,y,215,y,a*kd);
+ [0,1,2].forEach(i=>arrow(sx(i)+160,y,sx(i+1),y,a*ease(seg(t,1.8+i*.35,2.3+i*.35))));
+ arrow(1020,y,1065,y,a*kd);
+ const kn=ease(seg(t,.4,1.2));panel(1065,y-45,175,90,a*kn);text('Next session',1152,y,18,C.ink,a*kn,'center','700');
+ // verifier on replay arrow (transcripts -> notes)
+ const vx=sx(0)+160+17.5,vy=y-80;
+ const kv=ease(seg(t,2.2,2.8));
+ if(kv>0){circle(vx,vy,16,C.panel,a*kv,C.teal,2);text('✓',vx,vy+1,18,C.teal,a*kv,'center','700');text('verifier',vx,vy-28,12,C.teal,a*kv,'center','700');text('replay',vx,y+22,12,C.ink2,a*kv,'center')}
+ // notes flowing along arrows
+ for(let i=0;i<6;i++){const u=((t*.28+i/6)%1);const bad=i==3;
+  const x0=sx(0)+160,x1=sx(1);
+  if(t>3){ if(!bad||u<.55)circle(lerp(x0,x1-8,u),y,5,bad?C.o2:C.ink,a)} }
+ // wrong note dropped
+ if(t>3){const u=((t*.28+3/6)%1);if(u>=.55){const f=seg(u,.55,.9);circle(vx,y+f*70,5,C.o2,a*(1-f));if(f>.2)text('×',vx,y+f*70+12,16,C.o2,a*(1-f),'center','700');text('wrong note dropped',vx,y+88,12,C.o2,a*clamp(f*2),'center','700')}}
+ // later arrows dots
+ for(let i=1;i<3;i++){const u=((t*.28+i/3+.1)%1);if(t>3.4)circle(lerp(sx(i)+160,sx(i+1),u),y,5,C.ink,a)}
+ // gauge
+ const gx=300,gw=640,gy=440,th=.6;
+ text('consolidation strength',gx,gy-24,13,C.ink,a*kv,'left','700');
+ rr(gx,gy,gw,12,6,C.paper,C.bd,a*kv,1);
+ g.globalAlpha=a*kv*.55;g.fillStyle=C.teal;g.fillRect(gx+1,gy+1,gw*th-1,10);g.fillStyle=C.o2;g.fillRect(gx+gw*th,gy+1,gw*(1-th)-1,10);g.globalAlpha=1;
+ line(gx+gw*th,gy-10,gx+gw*th,gy+24,C.ink,a*kv,2,[4,3]);text('threshold',gx+gw*th,gy+38,12,C.ink,a*kv,'center','700');
+ text('errors shrink',gx+gw*th/2,gy+30,12,C.teal,a*kv,'center','700');text('errors grow',gx+gw*(th+(1-th)/2),gy+30,12,C.o2,a*kv,'center','700');
+ const nd=.25+.5*ease(seg(t,3.2,4.4))-.3*ease(seg(t,4.6,5.5));const nx=gx+gw*nd;
+ if(kv>0){g.globalAlpha=a;g.fillStyle=nd>th?C.o2:C.ink;g.beginPath();g.moveTo(nx,gy-2);g.lineTo(nx-7,gy-16);g.lineTo(nx+7,gy-16);g.fill();g.globalAlpha=1}
+ tag(a);caption('Dreaming that corrects: replay with verification; watch for the threshold where errors start to grow',a*seg(t,.4,1.2));
+}
+function s7(t,a){
+ const y=290;const B=[['measure',140],['statistic',365],['allocate',590]];
+ B.forEach((b,i)=>{const k=ease(seg(t,.1+i*.4,.5+i*.4));panel(b[1]-5,y-38,165,76,a*k);text(b[0],b[1]+77,y,20,C.ink,a*k,'center','700');
+  if(i<2)arrow(b[1]+165,y,B[i+1][1]-5,y,a*ease(seg(t,.4+i*.4,.8+i*.4)))});
+ arrow(755,y,815,y,a*ease(seg(t,1.3,1.6)));
+ const dx=930,dk=ease(seg(t,1.3,1.8));
+ g.globalAlpha=a*dk;g.strokeStyle=C.ink;g.lineWidth=1.5;g.fillStyle=C.panel;g.beginPath();g.moveTo(dx,y-70);g.lineTo(dx+120,y);g.lineTo(dx,y+70);g.lineTo(dx-120,y);g.closePath();g.fill();g.stroke();g.globalAlpha=1;
+ text('beats the',dx,y-10,17,C.ink,a*dk,'center','700');text('baseline?',dx,y+12,17,C.ink,a*dk,'center','700');
+ const kk=ease(seg(t,1.9,2.5));
+ rr(560,470,260,58,10,C.panel,C.teal,a*kk,1.6);text('keep the technique',690,499,18,C.teal,a*kk,'center','700');
+ rr(930,470,290,58,10,C.panel,C.o2,a*kk,1.6);text('publish the negative',1075,499,18,C.o2,a*kk,'center','700');
+ line(dx-50,y+58,690,470,C.teal,a*kk,1.6);line(dx+50,y+58,1075,470,C.o2,a*kk,1.6);
+ text('yes',dx-92,y+104,13,C.teal,a*kk,'center','700');text('no',dx+112,y+104,13,C.o2,a*kk,'center','700');
+ if(kk>0){g.globalAlpha=a*kk*.7;g.strokeStyle=C.ink2;g.lineWidth=1.5;g.setLineDash([5,5]);g.beginPath();g.moveTo(560,499);g.lineTo(222,499);g.lineTo(222,y+40);g.stroke();g.setLineDash([]);g.globalAlpha=1;text('next round',390,520,13,C.ink2,a*kk,'center')}
+ if(t>2){const u=(t*.4)%1*3,i=Math.min(2,Math.floor(u)),f=u-i;const xs=[222,447,672,930];circle(lerp(xs[i],xs[i+1],f),y,6,C.red,a)}
+ caption('Measure, turn it into a statistic, allocate checks, and publish the negative result too',a*seg(t,.3,1));
+}
+const LINES=['Susceptibility-guided orchestration','Memory immune system','Correlation-aware monitor ensembles','Dreaming as error-correcting consolidation','Stigmergic coordination and norm carriers','Trust and permission calibration','Renormalization across team size','Activation readouts'];
+function s8(t,a){
+ const L=1-ease(seg(t,3.6,4.2)),E=ease(seg(t,4.0,4.8));
+ if(L>0){text('Eight research lines, one bench',60,60,28,C.ink,a*L,'left','700');
+  LINES.forEach((s,i)=>{const col=i%2,row=Math.floor(i/2);const x=60+col*600,y=120+row*125;
+   const k=ease(seg(t,.2+i*.38,.6+i*.38));panel(x,y+(1-k)*14,570,95,a*L*k);
+   circle(x+44,y+47+(1-k)*14,20,i%2?C.panel:C.panel,a*L*k,C.ink,1.5);text(String(i+1),x+44,y+47+(1-k)*14,19,C.ink,a*L*k,'center','700');
+   text(s,x+80,y+47+(1-k)*14,20,C.ink,a*L*k)});
+  if(!HERO)text('Each line: one idea, one statistic, one technique, one baseline it must beat.',60,660,16,C.ink2,a*L*seg(t,3,3.4),'left')}
+ if(E>0){text('TREMOR',640,240,120,C.ink,a*E,'center','700');
+  text('Research proposal  ·  no result here is a finding yet',640,370,30,C.ink2,a*E,'center');
+  text('github.com/managesg/tremor',640,440,34,C.red,a*E,'center','700');
+  for(let j=0;j<32;j++){const x=160+j*(960/31);line(x,540,x,570,j?C.ink2:C.ink,a*E,j?1.6:3.2)}}
+}
+const FN=[s1,s2,s3,s4,s5,s6,s7,s8];
+function draw(t){
+ g.setTransform(SC,0,0,SC,0,0);bg();
+ for(let i=0;i<8;i++){const [a,b]=S[i];if(t>=a&&t<b){const al=Math.min(seg(t,a,a+.4),i==7?1:1-seg(t,b-.4,b));FN[i](t-a,al)}}
+}
+if(HERO){ // writers/readers view at a full moment, title overlaid top-left
+ g.setTransform(SC,0,0,SC,0,0);bg();const b=board(.9,1);
+ g.fillStyle=C.paper;g.fillRect(0,0,322,300);
+ text('TREMOR',40,112,60,C.ink,1,'left','700');
+ ['Measure how a team of','agents responds, then use','the measurement to run','the team.'].forEach((l,k)=>text(l,42,160+k*24,17,C.ink2,1,'left'));
+ text(b.tw.toLocaleString('en-US')+' writes · '+b.tr.toLocaleString('en-US')+' reads',42,268,15,C.ink,1,'left','700');text('illustration',42,290,13,C.ink2,1,'left');
+} else draw(parseFloat(q.get('t')||'0'));
+window.draw=draw;
+</script></body></html>

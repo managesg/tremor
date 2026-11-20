@@ -1,11 +1,21 @@
-<p align="center"><img src="assets/tremor-hero.svg" alt="TREMOR: measure how a team of agents responds, then use the measurement to run the team" width="100%"></p>
+<p align="center"><img src="video/hero-paper.png" alt="A team of 32 agents writing to and reading from five shared tables: board, notes, memory, monitor log and landed work" width="100%"></p>
 
 <p align="center">
 <b>Measure how a team of agents responds, then use the measurement to run the team.</b><br>
-Research proposal · complex systems and first principles for AI agent teams · <a href="WORKPLAN.md">Work plan</a>
+Research proposal · complex systems and first principles for AI agent teams · <a href="WORKPLAN.md">Work plan</a> · <a href="#see-it-in-50-seconds">Video</a>
 </p>
 
 ---
+
+## See it in 50 seconds
+
+<p align="center"><img src="video/tremor-explainer.gif" alt="Explainer: a team writing to and reading from shared tables; a wrong note spreading and being quarantined; tasks verified where reruns disagree; monitors and verification placed by the statistic; overnight dreaming with a verifier and a threshold where errors start to grow; the eight research lines" width="100%"></p>
+
+How to read it: **red lines are writes** from an agent (top row) to a shared table, **green lines are
+reads** from a table back to an agent (bottom row). Each scene shows one idea: a wrong note spreading
+and being quarantined, verification placed where reruns disagree, monitors placed by the statistic,
+and overnight "dreaming" that replays memory through a verifier. **All numbers in the video are
+illustrations, not results.**
 
 ## In one paragraph
 
@@ -96,6 +106,8 @@ significant is inconclusive, never killed.
 </details>
 
 ## The shared instrument
+
+<p align="center"><img src="assets/tremor-hero.svg" alt="Concept map: a team around a shared board inside ripple rings; a wrong note stopped by quarantine; three monitors with overlapping views; overnight replay from daily notes to long-term memory through a verifier" width="100%"></p>
 
 All eight lines run on one bench, so their results can be compared and combined.
 
