@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="t d">
+  <title id="t">TREMOR</title>
+  <desc id="d">A team of agents drawn as a network inside ripple rings, with the eight research lines around it.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="55%" r="75%">
+      <stop offset="0" stop-color="#0F2757"/>
+      <stop offset="0.55" stop-color="#081739"/>
+      <stop offset="1" stop-color="#04050a"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#5ef2ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#5ef2ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <!-- faint grid -->
+  <g stroke="#8caaff" stroke-opacity="0.06" stroke-width="1">
+    <path d="M0 80H1280M0 160H1280M0 240H1280M0 320H1280M0 400H1280M0 480H1280M0 560H1280"/>
+    <path d="M160 0V640M320 0V640M480 0V640M640 0V640M800 0V640M960 0V640M1120 0V640"/>
+  </g>
+
+  <!-- ripple rings around the team (the "tremor") -->
+  <g transform="translate(900 345)" fill="none">
+    <circle r="250" stroke="#71CACD" stroke-opacity="0.10" stroke-width="1.5"/>
+    <circle r="205" stroke="#71CACD" stroke-opacity="0.16" stroke-width="1.5" stroke-dasharray="3 7"/>
+    <circle r="160" stroke="#71CACD" stroke-opacity="0.24" stroke-width="1.5"/>
+    <circle r="115" stroke="#5ef2ff" stroke-opacity="0.32" stroke-width="2" stroke-dasharray="2 5"/>
+    <circle r="150" fill="url(#glow)" stroke="none"/>
+    <!-- edges of the agent network -->
+    <g stroke="#94D9DB" stroke-opacity="0.55" stroke-width="1.6">
+      <line x1="-70" y1="-60" x2="40" y2="-85"/><line x1="40" y1="-85" x2="95" y2="0"/>
+      <line x1="95" y1="0" x2="45" y2="80"/><line x1="45" y1="80" x2="-60" y2="70"/>
+      <line x1="-60" y1="70" x2="-100" y2="5"/><line x1="-100" y1="5" x2="-70" y2="-60"/>
+      <line x1="0" y1="0" x2="-70" y2="-60"/><line x1="0" y1="0" x2="40" y2="-85"/>
+      <line x1="0" y1="0" x2="95" y2="0"/><line x1="0" y1="0" x2="45" y2="80"/>
+      <line x1="0" y1="0" x2="-60" y2="70"/><line x1="0" y1="0" x2="-100" y2="5"/>
+    </g>
+    <!-- a wrong note spreading (contagion path) -->
+    <g stroke="#ffb547" stroke-width="2.4" stroke-opacity="0.9">
+      <line x1="95" y1="0" x2="45" y2="80"/><line x1="45" y1="80" x2="-60" y2="70"/>
+    </g>
+    <!-- agents -->
+    <g stroke="#04050a" stroke-width="3">
+      <circle cx="0" cy="0" r="17" fill="#5ef2ff"/>
+      <circle cx="-70" cy="-60" r="12" fill="#71CACD"/>
+      <circle cx="40" cy="-85" r="12" fill="#71CACD"/>
+      <circle cx="95" cy="0" r="13" fill="#ffb547"/>
+      <circle cx="45" cy="80" r="12" fill="#ffb547"/>
+      <circle cx="-60" cy="70" r="12" fill="#ffcf87"/>
+      <circle cx="-100" cy="5" r="12" fill="#a58bff"/>
+    </g>
+    <!-- the shared board at the centre -->
+    <rect x="-9" y="-9" width="18" height="18" rx="2" fill="#04050a"/>
+    <rect x="-5" y="-5" width="10" height="10" rx="1" fill="#5ef2ff"/>
+  </g>
+
+  <!-- title block -->
+  <g font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+    <text x="72" y="150" fill="#5ef2ff" font-size="15" letter-spacing="4" font-weight="600">RESEARCH PROPOSAL · AGENT COLLECTIVES</text>
+    <text x="68" y="238" fill="#e8ecff" font-size="96" font-weight="700" letter-spacing="6">TREMOR</text>
+    <text x="72" y="292" fill="#c8d6ef" font-size="26">Measure how a team of agents responds,</text>
+    <text x="72" y="328" fill="#c8d6ef" font-size="26">then use the measurement to run the team.</text>
+    <text x="72" y="392" fill="#7a84a8" font-size="17">Complex systems and first principles, turned into algorithms</text>
+    <text x="72" y="416" fill="#7a84a8" font-size="17">for oversight, memory, monitoring and coordination.</text>
+
+    <!-- eight lines as chips -->
+    <g font-size="14" fill="#e8ecff">
+      <g transform="translate(72 470)">
+        <rect width="232" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="12" y="20">1 · Susceptibility-guided verification</text>
+        <rect x="244" width="196" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="256" y="20">2 · Memory immune system</text>
+      </g>
+      <g transform="translate(72 510)">
+        <rect width="232" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="12" y="20">3 · Decorrelated monitors</text>
+        <rect x="244" width="196" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="256" y="20">4 · Dreaming that corrects</text>
+      </g>
+      <g transform="translate(72 550)">
+        <rect width="232" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="12" y="20">5 · Stigmergy and norm carriers</text>
+        <rect x="244" width="196" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="256" y="20">6 · Evidence-based trust</text>
+      </g>
+      <g transform="translate(72 590)">
+        <rect width="232" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="12" y="20">7 · Renormalizing team size</text>
+        <rect x="244" width="196" height="30" rx="2" fill="#0F2757" stroke="#71CACD" stroke-opacity="0.5"/><text x="256" y="20">8 · Activation readouts</text>
+      </g>
+    </g>
+
+    <!-- legend for the figure -->
+    <g font-size="13" fill="#a9b3d6" transform="translate(760 615)">
+      <circle cx="0" cy="-4" r="6" fill="#71CACD"/><text x="12" y="0">agent</text>
+      <circle cx="80" cy="-4" r="6" fill="#ffb547"/><text x="92" y="0">wrong note spreading</text>
+      <rect x="250" y="-10" width="12" height="12" rx="1" fill="#5ef2ff"/><text x="270" y="0">shared board</text>
+      <circle cx="385" cy="-4" r="6" fill="none" stroke="#71CACD"/><text x="397" y="0">response to a shock</text>
+    </g>
+  </g>
+</svg>
