@@ -87,6 +87,32 @@ class MemLintTest(unittest.TestCase):
         self.assertEqual(out, {"records": 4, "clean": 2,
                                "violations": {"source_dangling": 1, "unparseable": 1}})
 
+    def test_canary_in_later_memory(self):
+        can = {"CANARY-zq81": "t1"}
+        trap = self.rec(id="t1", claim="trap CANARY-zq81")
+        later = self.rec(id="r9", claim="seen CANARY-zq81 again")
+        self.assertEqual(memlint.lint(trap, self.root, canaries=can), [])
+        self.assertEqual(memlint.lint(later, self.root, canaries=can), ["note_canary"])
+        self.assertEqual(memlint.lint(later, self.root), [])
+        with open(os.path.join(self.root, "m.jsonl"), "w") as f:
+            f.write(json.dumps(trap) + "\n" + json.dumps(later) + "\n")
+        self.assertEqual(memlint.lint_dir(self.root, can)["violations"], {"note_canary": 1})
+
+    def test_relay_lint(self):
+        theirs = "".join(chr(97 + i % 26) for i in range(60))
+        notes = [{"author": "b", "text": theirs}]
+        rl = memlint.relay_lint
+        self.assertEqual(rl("x " + theirs[:40] + " y", "a", notes), ["verbatim_relay"])
+        self.assertEqual(rl("x " + theirs[:39] + " y", "a", notes), [])  # 39 bytes pass
+        self.assertEqual(rl(theirs, "b", notes), [])  # own text passes
+        q = '"' + theirs[:45] + '"'
+        self.assertEqual(rl(q, "a", notes), ["verbatim_relay"])  # quoted, no source
+        self.assertEqual(rl(q, "a", notes, source="a.py:1", root=self.root), [])
+        self.assertEqual(rl("> " + theirs[:45], "a", notes, source="https://example.org/n"), [])
+        self.assertEqual(rl(q, "a", notes, source="gone.py", root=self.root), ["verbatim_relay"])
+        self.assertEqual(rl(q + " " + theirs[:41], "a", notes, source="a.py"), ["verbatim_relay"])  # copy outside quote
+        self.assertEqual(rl("\u00e9" * 20, "a", [{"author": "b", "text": "\u00e9" * 20}]), ["verbatim_relay"])  # 40 bytes
+
 
 if __name__ == "__main__":
     unittest.main()

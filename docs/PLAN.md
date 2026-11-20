@@ -1,9 +1,12 @@
 # murmuration: the plan
 
-Date: 2026-11-19. Status: plan only. Nothing below has been run except Track 1's nine unit tests.
-Companions: `docs/SCIENCE.md` (concept-to-experiment map, formulas, pre-registration template)
-and `docs/ARCHITECTURE.md` (hub-and-cells design; design only, not built).
-Code claims verified against the uncommitted working tree on 2026-11-19 (the repo has no commit yet).
+Date: 2026-11-19. Status: plan. Committed at `972dee3`: the Wave 1 tools (14 Python files under
+`src/`); 89 passing tests is the figure in `docs/reports/E1-E8.1-local-results.md`, not re-run
+for this edit. Run so far: E1 and E8.1 on the local corpus, pre-freeze and exploratory (same
+report), and two T7 smoke arms killed by the 10 GiB memory watchdog, cause unknown
+(`docs/reports/staged-t7-decision.md`). No hypothesis has been tested; no pre-registration is
+frozen. Companions: `docs/SCIENCE.md` (concept-to-experiment map, formulas, pre-registration
+template) and `docs/ARCHITECTURE.md` (hub-and-cells design; not built).
 
 Governing rules: `docs/PRINCIPLES.md` (five-step filter: question, delete, simplify, accelerate,
 automate; units on every quantity; matched budgets; value-of-computation run gate). Every
@@ -32,6 +35,14 @@ re-summarise control; the model role table in 4.2 is extended; Claude batch C6 i
 conditional. What was cut to pay for this is listed in T8. Plain-language summary:
 `docs/VISION.md`. All talk figures are talk claims (`SCIENCE.md` 1.5).
 
+Amendment 3 (2026-11-19, adversarial review 2, `docs/reports/adversarial-review-2.md`, and the
+owner's decisions relayed that day): the hub is split into owner key, router code and models,
+and every model is a cell (`ARCHITECTURE.md` 1-2); confidentiality wording is narrowed
+(`ARCHITECTURE.md` 6a); the three idea families become task controls under one robustness
+measure (T10, `SCIENCE.md` 4a); a cross-model protocol is added (4.6) and 4.2 is amended. Owner
+decisions and the review's recommended cuts are in 6.4. No cut is applied until the owner rules.
+Change list: `docs/reports/doc-reconciliation.md`.
+
 Reading rule for this file: every number that is not a design choice of ours is a **lead**, not a
 fact. The first four research files rest mostly on search snippets. Talk figures are cited as "per the
 talk, owner-validated": the owner confirmed they match Anthropic's material, but they are talk
@@ -54,18 +65,23 @@ What this project is not: a simulator. The earlier NK-landscape simulator with i
 constants is retired. Its conclusions were true by construction. Theory is used here only where
 it gives a number we can check on real or independently grounded data.
 
-Organisation (added 2026-11-19): the three loops run in one shape, a hub and cells
-(`ARCHITECTURE.md`). A strong central model plans, verifies and proposes policy that the owner
-signs; small cells with narrow authority, local memory and optionally a local model do the
-work. Central and decentral differ only in the routing table. Whether any work can move to a
-cell is itself a hypothesis (H6), not an assumption.
+Organisation (added 2026-11-19, amended by Amendment 3): the three loops run in one shape, a
+hub and cells (`ARCHITECTURE.md`). The hub is router code plus the owner's key. Every model is a
+cell: a strong-model planner cell writes task specs and proposes policy that the owner signs, a
+verifier cell judges where no deterministic check exists, and worker cells with narrow
+authority, local memory and optionally a local model do the work. Central and decentral differ
+in who executes, set by the routing table; a Claude planner still reads what it plans. Whether
+any work can move to a cell is itself a hypothesis (H6), not an assumption.
 
 ### 1.2 Hypotheses
 
-Five are confirmatory (H1-H4 and H6, Holm-corrected as one family). H5 is exploratory. H7 is a
-single decisive pre-test of a published result, reported with intervals, outside the family.
-H8 and H9 (added with T8) form a second, separate family of two, Holm-corrected, tested first on
-a local model.
+Five are confirmatory (H1-H4 and H6, Holm-corrected as one family). H1 is pending: its
+precondition is not met on the local corpus (below). H5 is exploratory. H7 is a single
+pre-test of a published result, reported with intervals, outside the family (staged; T7). H8 is
+**exploratory** (owner 2026-11-19; `prereg/H8.md`), outside every Holm family. **H9's status
+awaits the owner's ruling**: with H8 out, the former family of two would be a family of one (a
+single test at 0.05); there is no `prereg/H9.md`; the adversarial review recommends deferring
+H9 (it needs E2.2's tasks, which need G1). The robustness matrix (T10) is exploratory.
 
 **H1. Authority decay has a knee (permissions).**
 - Concept: usage-based decay (Anderson and Schooler / ACT-R base-level activation) applied to
@@ -74,8 +90,12 @@ a local model.
   memoryless process would predict. If so, some decay window tau exists where `grow_decay` cuts
   idle exposure by at least 30% against `promote_repeated` while adding at most 10% more prompts,
   on sessions held out from the tau choice.
-- Kill: fewer than 200 real permission events or fewer than 30 sessions; denials not reliably
-  detectable; no tau in {1, 3, 7, 14, 30} days meets the 30%/10% bar on held-out sessions; or the
+- Precondition (not a kill of the hypothesis): at least 200 real permission events and at
+  least 30 sessions. Below it, H1 is untestable on that corpus, not refuted (owner 2026-11-19:
+  H1 stays pending). The local corpus holds 1,079 events in 1 session (11 denials): the session
+  count fails (`docs/reports/E1-E8.1-local-results.md`). Next: a salted session count on the
+  owner's other machine.
+- Kill: denials not reliably detectable; no tau in {1, 3, 7, 14, 30} days meets the 30%/10% bar on held-out sessions; or the
   reuse hazard is flat, in which case decay only trades exposure for prompts one for one.
 - Prior art: decay on idle exists (Android auto-reset, AWS unused-access analysis); grow on need
   exists (NVIDIA OpenShell Policy Advisor, JIT access). Per CJ Avilla's talk, owner-validated, the
@@ -144,8 +164,11 @@ a local model.
   clears an **absolute floor of 80% pass rate** on held-out tasks (95% CI lower bound at or
   above 0.80, 400 generated tasks per class), and the cell-first cascade (cell, check, escalate
   on failure) costs at most **30%** of the Claude-only USD per passing task. Local energy is
-  priced at the 240 W power-supply rating x wall time (an upper bound from the spec page), not
-  at the GPU-only reading. Hardware cost is excluded and that is stated in the result.
+  priced at the 240 W power-supply rating x wall time x the owner's tariff (an upper bound from
+  the spec page), not at the GPU-only reading. Hardware cost is excluded and that is stated in
+  the result. **Not computable yet:** no tariff exists, and the owner ruled local USD "n/a" for
+  H7 and E9. Until the owner supplies a tariff, or rules that local USD stays "n/a" (then this
+  cost criterion is rewritten before any freeze), H6's 30% bar cannot be evaluated.
 - Why an absolute floor and not "as good as Claude": a 5-point non-inferiority claim against
   Claude would need several hundred Claude episodes per class, which the budget in 4.3 does not
   buy. Local tasks are cheap, so the floor is tested locally; the small Claude batches supply
@@ -169,7 +192,8 @@ a local model.
   adapter) beats the best decoding-only fix (thinking off, or a repetition penalty) by at least
   5 points on MATH-500 under the same per-problem token cap (the matched budget), with no
   off-target loss above 2 points on an IFEval and MMLU-Pro subset. Tokens and joules per correct
-  answer are reported for every arm.
+  answer are reported for every arm. Operational design (cap 8,192, n = 100, two stages, the
+  12-point stage-1 gate): `prereg/H7.md`, summarised in T7.
 - Kill: any decoding-only arm is within 5 points of the edit (paired CI) under the same cap;
   or the edit loses more than 2 points off-target against the same decoding-only arm. Then
   "the hub edits cell weights" is dropped from the architecture and cells get decoding configs
@@ -183,7 +207,11 @@ a local model.
   near the edit; they are leads, not facts, and they are why this test is cheap and first.
   My expectation is that H7 is killed. That is a useful result.
 
-**H8. A weaker model needs imposed memory structure to benefit from memory (memory).**
+**H8 (exploratory, owner 2026-11-19). A weaker model needs imposed memory structure to benefit
+from memory (memory).** Matched budget amended 2026-11-19: across a local model and Sonnet the
+cap is turns plus input and output bytes per question, with native tokens reported beside it
+(4.6); "same token cap" below means that cap. Review 2 suggests running H8 as the T10 matrix
+with the memory switch on two tiers (a recommendation, not applied).
 - Concept: none borrowed from complexity science. It is a reading of one talk chart
   (`SCIENCE.md` 1.5, note 6): on CL-Bench's database task the gain from a memory store was near
   zero for the weakest model shown and closed about half the headroom for the other five. That
@@ -196,7 +224,7 @@ a local model.
   stateless and S2 adds less over S0 than it does for the local model (interaction above 0).
 - Kill: the local S2-minus-S0 interval includes 0 (structure does not rescue a weak model:
   small cells then get no memory of their own, and memory arrives in the task spec from the
-  hub); or local S0 already gains 10 points or more (no threshold at this size: the lint and
+  planner cell); or local S0 already gains 10 points or more (no threshold at this size: the lint and
   cap are dropped for cells, which is simpler); or the interaction interval includes 0 (then
   "inversely related to model strength" is not shown and structure is kept or dropped on its
   main effect alone).
@@ -208,8 +236,8 @@ a local model.
   claim is only the model-strength interaction at equal tokens. 5 and 10 points are our design
   choices.
 
-**H9. Small local models coordinate through a shared board only when handed its structure
-(orchestration).**
+**H9 (status awaiting the owner's ruling; review recommends defer). Small local models
+coordinate through a shared board only when handed its structure (orchestration).**
 - Concept: stigmergy (coordination through a shared environment). Speculative for
   language-model agents; the observation is Lance Martin's 1,000-agent run, where agents
   created their own tables (talk claim, unreproduced, frontier model).
@@ -255,7 +283,7 @@ the plan, so these go:
   shows an effect on the local model. Not requested now.
 - **E1.4 many contributors: deferred** to after G8; it cannot run before publication anyway.
 - **T4 consolidator training: conditional.** Runs only if H3 survives on a base model and the
-  base local model misses the H6 floor on class (a).
+  base local model misses the H6 floor on class (a). RECOMMENDED CUT, awaiting owner ruling (6.4).
 - **T7 Arm E (a frontier agent re-discovering the edit): not planned.** File 08 estimates 8 to
   20 hours of wall-clock per run plus unpriced frontier tokens, and no decision here needs it.
 - `synth.py` (illustration only) is a deletion candidate at the next code change.
@@ -281,7 +309,11 @@ the plan, so these go:
 - E1.3 allowlist mining hold-out: build an allowlist from the early window, measure false-deny
   and excess-grant on the late window (the AWS-style baseline).
 - E1.4 many contributors: others run `murmuration report --salt` and share the JSON.
-- Data: local Claude Code transcripts (private, never leave the box; salted aggregates only).
+- Data: local Claude Code transcripts (salted aggregates only; our analysis exports nothing).
+  The sessions they record already sent their content to the model API when they ran.
+- Corpus so far: 1,079 events, 1 session, 11 denials; E8.1 counts 42 sessions with usage
+  fields (5 main, 37 subagent) in the same corpus. Why E1 finds 1 session and E8.1 finds 5
+  main sessions is unexplained; resolve before any H1 or E8.1 claim.
   Public agent trajectories do not record permission prompts as far as I know, so no public
   dataset substitutes. That is a real limit.
 - Baselines that ship: static allowlist, promote-repeated, always-ask. The auto-mode classifier
@@ -361,7 +393,7 @@ is deferred.
 ### T6. Integration (deleted)
 
 Replaced by the minimum viable hub-and-cells in `ARCHITECTURE.md` section 10: a stub cell, a
-scripted hub and contract tests with no model and no GPU. It is a demonstration, not a
+scripted router and contract tests with no model and no GPU. It is a demonstration, not a
 hypothesis test.
 
 ### T7. Weight surgery vs LoRA vs decoding fix
@@ -369,32 +401,44 @@ hypothesis test.
 - Question: does a small weight edit shipped by the hub do anything a decoding setting does not?
   The decision it changes: whether "weights" stays in the owner's edit controls as more than
   adapters and decoding configs.
-- Subject: Qwen3.5-0.8B, the model of the original post. The released edited checkpoint is on
-  Hugging Face per the post; that link was not opened, so its ID is unverified (gate G3).
-- **Pre-test, inference only (gate G9).** Same problems, same seeds, same per-problem token cap
-  (32,768, the published setting), sampling as in the post's evaluation, the authors' MIT
-  `math-verify` grading scripts:
-
-  | Arm | What | Cost |
-  |---|---|---|
-  | 0 | Base, thinking on (reference) | Expensive: most answers run to the cap. 100-problem subset only; the published figure is 7.9%. |
-  | A | Released edited checkpoint | Full MATH-500 |
-  | B | Base, thinking off | Full MATH-500 |
-  | C | Base, thinking on, repetition penalty or loop-break decoding (one setting, chosen on practice problems, never on the benchmark) | Full MATH-500 |
-  | D | Difference-of-means "loop direction" removed from the MLPs of layers 15 and 19 by a script, no LLM; with a random direction of the same size as its null | Full MATH-500 |
-
-  Off-target: an IFEval and an MMLU-Pro subset for arms A, B, C. Accuracy at lower caps (2k, 8k)
-  is read from the same generations by truncation, at no extra cost.
-- Kill criteria: those of H7. Also: if arm D does not beat its random-direction null, the
-  script is dropped (this does not kill arm A).
+- Subject: Qwen3.5-0.8B at the revision named in `prereg/H7.md`. Arm A is rebuilt locally from
+  the authors' diff and checked against the model card's tensor hashes (G3i, G9 reviews).
+- **Staged pre-test, inference only (gate G9; owner 2026-11-19).** The operational design is in
+  `prereg/H7.md` (sections 6, 7, 10, 12) and `docs/reports/staged-t7-decision.md`; this summary
+  defers to them and does not restate caps or sampling. It replaces the earlier one-stage design
+  here (32,768 cap, arms A-D on the full MATH-500, five arms at once).
+  - Same 100 seeded MATH-500 problems in every arm; primary metric `acc8k` (8,192-token cap).
+  - **Stage 1:** arms B (thinking off), then A (edit), then 0 (reference, thinking on). The gate
+    uses B and A only.
+  - **Stage-1 gate (owner decision 2026-11-19):** stage 2 runs only if `acc8k(A) - acc8k(B)` is
+    more than 12 points and its 95% interval lies above 0. Kill at stage 1 if the interval's
+    upper bound is below +5. Otherwise inconclusive, stop.
+  - **Stage 2:** arms C (repetition penalty, chosen on `math_train.jsonl` practice problems
+    only), D and D-null, and the off-target checks.
+  - **Stated limit (review 2, row 4):** at n = 100 the minimum detectable effect is about 12 to
+    18 points, while H7's survive margin is 5. The test cannot confirm H7 as worded: a result
+    of +5 to +12 with an interval above 0 stops as inconclusive, and a kill needs an observed
+    deficit. Per the staged record, the gate passes in about 0.3-2.4% of runs if the true
+    difference is 0 and 28-34% if it is +10. An inconclusive result has the same architecture
+    consequence as a kill.
+  - **Open alternative (review 2 action 9, not applied):** drop T7, or run B and A only as a
+    labelled smoke with the difference and interval reported as descriptive. The owner's
+    12-point gate decision stands unless the owner rules otherwise.
+  - **Blocker:** both smoke arms were killed by the 10 GiB MemAvailable watchdog (arm 0 after
+    about 22 minutes at 9.97 GiB, arm B after about 13 minutes at 9.44 GiB), cause unknown.
+    No further T7 GPU time is planned until the cause is found (review 2 action 1).
+- Kill criteria: those of H7, as operationalised in `prereg/H7.md` 12. Also: if arm D does not
+  beat D-null, the script is dropped (this does not kill arm A).
+- **RECOMMENDED CUT, awaiting owner ruling (6.4):** stage 2, arm 0, arm D (with D-null) and the
+  LoRA step below. Until the owner rules, they keep their current status: stage 2 and arm D
+  conditional on the gate; arm 0 scheduled last in stage 1; LoRA conditional on survival.
 - **Optional second step, only if H7 survives the pre-test:** a LoRA adapter trained with
   Unsloth on the public GSM8K-train and MATH-train problems the post used, compared with the
   edit and the best decoding arm under the same cap, with training energy charged to the LoRA
-  arm. Needs G2b and G6. One configuration, three seeds.
-- Fermi (estimate, not measured): arms A-D generate far less than the cap per problem once the
-  loop is gone; file 08 estimates a few GPU-hours for A-D plus under a day of setup. Effects of
-  interest are large (tens of points) for edit-vs-base and small (about 5 points) for
-  edit-vs-decoding, which is why A-D use all 500 problems and arm 0 does not.
+  arm. Needs G2b, G6 and its own pre-registration. One configuration, three seeds.
+- Fermi (estimate, not measured): file 08 estimates a few GPU-hours for the arms plus under a
+  day of setup; the 12 GPU-hour cap of G9 binds. Stage 2 is projected only after a smoke arm
+  completes.
 - Rollback and safety: edits are written to a copy; base weights are read-only and hashed
   before and after; no shared endpoint is touched; public benchmark data only.
 - GPU: inference only for the pre-test. Models: one 0.8B model and its edited copy.
@@ -420,7 +464,7 @@ hypothesis test.
 | 3 | E8.3 memory structure against model strength, local arm (H8) | (c) | G2a, G3 (ii), G5 | electricity; cap 8 GPU-hours |
 | 4 | E8.2 shared board with local cells (H9) | (b) | E2.2's tasks; G5 | electricity; cap 16 GPU-hours |
 | 5 | E8.3 Claude arm, batch C6, only if the local arm shows the H8 pattern | (c) | G7 | up to USD 40 |
-| 6 | E8.4 dream dose, only if E3.3 leaves an effect possible | (d) | G5 | electricity; cap 16 GPU-hours |
+| 6 | E8.4 dream dose, only if E3.3 leaves an effect possible. RECOMMENDED CUT, awaiting owner ruling (6.4) | (d) | G5 | electricity; cap 16 GPU-hours |
 
 GPU-hour caps are ours and bind as stop rules; throughput on this box is unmeasured, so they are
 not estimates.
@@ -454,8 +498,9 @@ not estimates.
   can discover (join keys, a misleadingly named column, a unit convention). Scoring is the
   query result against the generator's answer. Test families are held out (3.4).
 - Arms: stateless; S0 bare directory, no instruction (the condition on Lance Martin's slide);
-  S2 structured (instruction, record schema of 5.2, lint on write, size cap). Same token cap
-  per question; tokens spent reading memory count against it.
+  S2 structured (instruction, record schema of 5.2, lint on write, size cap). Same cap per
+  question in turns plus input and output bytes (4.6); memory reads count against it; native
+  tokens are reported beside it.
 - Subjects: the local cell-worker model (3.2) first. Sonnet 5.5 (batch C6) only if the local
   arm shows S0 below 5 points and S2 at least 10 above S0.
 - Kill and decision: as in H8. Also: a stateless local pass rate under 30% or over 85% makes
@@ -494,13 +539,15 @@ not estimates.
 - Cost: unknown until E2.2's smoke run; the 16 GPU-hour cap binds.
 - Gate: G5 (scope amended). Runs only after E2.2's arms exist.
 
-**E8.4 Dream dose (conditional extension of E3.3).**
+**E8.4 Dream dose (conditional extension of E3.3). RECOMMENDED CUT, awaiting owner ruling
+(6.4): a third-order question before the first-order one (does a dream pass beat search at all)
+has an answer.**
 - Question: where on the token axis does a dream pass pay, if anywhere? Lance Martin's chart
   (talk claim, slide-only) shows 64 times the tokens buying 7 points when search is available.
 - Design: arm A and the better of B1 and B3 at budgets B, 4B and 16B, every control given the
   same tokens. Anytime: run 4B only if E3.3 at B leaves a 10-point gain inside its interval;
   run 16B only if 4B improved on B.
-- Prediction (exploratory, outside both families): the gain over the best control per
+- Prediction (exploratory, outside every Holm family): the gain over the best control per
   doubling is smaller from 4B to 16B than from B to 4B.
 - Decision: use the dose with the best gain per token. If no dose beats the control, H3 is
   dead at every tested dose and dreaming is not scheduled in cells.
@@ -535,6 +582,69 @@ talk claims, and by his own account design questions, not solutions):
 - A prompted-only memory arm (S1) between S0 and S2: cut. Two levels answer the decision.
 - A Claude arm of E8.2: not requested. It would cost about what the deferred batch C3 costs.
 - E3.3 arm B2: replaced by B3 (above).
+
+### T9. E9: the autoresearch loop as a testbed (added 2026-11-19)
+
+**Status (2026-11-19):** approved by the owner **in principle**, with a 13 GPU-hour cap (2 for
+E9-1 calibration, 11 for the E9-2 pilot) and USD 0. A 20 GB download cap is the parent's
+design choice, not the owner's words. Not yet run; the prereg is not frozen. **E9-0** (scripted
+route catalogue, no GPU) is kept. **E9-1 and E9-2: RECOMMENDED CUT, awaiting owner ruling**
+(6.4). Reasons from review 2 (claim 9; rows 12 and 16): the design itself calls "inconclusive"
+the likely pilot outcome with six chains; the proposer is a 0.8B model, which WORKPLAN calls
+likely uninformative for E8.3 and for which H8 predicts a memory effect near zero; the metric
+is a 300-second wall-clock budget on a host whose free memory swings by tens of GiB; the
+dataset licence is unverified. The owner's in-principle approval stands until the owner rules
+on the cut. Text below is the design as approved in principle.
+
+- Question: can one small real loop (an agent edits `train.py`, trains 300 seconds, keeps or
+  reverts by `val_bpb`, logs to `results.tsv`, under prose rules) test authority, memory and
+  green accounting with a hard metric and no model grader? Substrate: `karpathy/autoresearch`,
+  cloned at `228791f` (README says MIT; no licence text in the repo).
+- Design: `docs/reports/E9-autoresearch-design.md`. Pre-registration draft: `prereg/E9.md`.
+  Exploratory, outside every Holm family.
+- Five-step filter:
+  - **Replaces:** T7 stage 2 and the optional T7 LoRA step, if T7 stage 1 ends in a kill or
+    inconclusive (`docs/reports/staged-t7-decision.md`). The weight-surgery track then closes.
+    If the T7 gate passes, stage 2 runs first and E9 waits. No GPU-hours carry over; E9 needs
+    its own gate.
+  - **Next GPU item (reconciled with 6.1 P5):** open until the owner rules on 6.4. If E9-1 and
+    E9-2 are kept, E9 follows T7 stage 1. If they are cut, the next GPU item is the T10 matrix
+    on one 4B-9B local model (review rank 7), then the E8.3 local arm per P5. Either way no GPU
+    item starts before the T7 watchdog kills are explained.
+  - **Does not replace:** H3 and E3.3. E9's memory arm is a second, exploratory look on a
+    different task.
+  - **Cut from E9 itself:** arm N (no memory), arm S (enforced ceiling with a model agent),
+    the cascade and every Claude arm. Each is a separate ask. The pilot is the scripted
+    authority catalogue (no GPU), a calibration stage, and two memory arms.
+- Cost and gate: gate G11 (6.2), cap 13 GPU-hours (2 calibration, 11 pilot), USD 0, downloads
+  at most 20 GB. The approval list is section 10 of the design report. The GB10 box is
+  unmeasured for this workload; the calibration stage can end E9 before the pilot starts.
+
+### T10. The three idea families as task controls (added 2026-11-19; build only, zero cost)
+
+- Question: under one fixed set of perturbations, which family's control (provenance-governed
+  memory; a signed ceiling with a deny list; cascade escalation) shrinks the pass-rate drop its
+  matched perturbation causes, and does the answer change between a local model of at most 9B
+  and the Claude tiers? The families are the `PRINCIPLES.md` scope guard's (the owner's
+  "KDS", as relayed). Exploratory.
+- Measure: the control effect `CE` and its companions, defined once in `SCIENCE.md` 4a. A
+  control counts only if the interval of `CE` excludes 0, its clean pass rate is within 2
+  points of the baseline arm's, and its tokens sit inside the same per-task cap.
+- Perturbation matrix P1-P5 (`SCIENCE.md` 4a): P1 requirement change mid-task (memory,
+  policy); P2 noisy requirement (pure model baseline); P3 injected wrong or stale memory
+  (memory); P4 a cell fails or is slow (efficiency); P5 permission denial with a safe allowed
+  route (policy). One perturbation per episode, seeded, injected at a fixed step.
+- Arms: all controls off against all controls on; a one-family ablation only where those two
+  differ on a perturbation. Deterministic scoring only; cross-model runs follow 4.6.
+- Fermi (estimate): 10 tasks x 2 seeds x 5 conditions x 2 arms = 200 episodes per model; only
+  effects of about 15 points are visible. P4 needs at least two cells (the router).
+- Order: (1) build on the scripted backends, zero cost (review rank 3; an uncommitted
+  `perturb.py` exists, not verified here); (2) one 4B-9B local model and one Claude tier under
+  G3 (ii), G5 and a G7 batch (review rank 7), each its own approval.
+- **Recommended merges, not applied (awaiting owner ruling, 6.4):** the review proposes that
+  this matrix replace E3.3 and E3.4 (P3 with memory arms), E5.3 (P5), E8.2's hub-assign arm
+  (P4), E9's authority test (P5 plus the E9-0 catalogue) and H8 (the matrix on two tiers).
+  Until the owner rules, those experiments keep their current status.
 
 ---
 
@@ -577,7 +687,7 @@ by us; the picks are judgement. Download sizes are parameter count x bytes, not 
 | Narrow cell worker (H6), many cheap seeds | `Qwen/Qwen3.5-4B` | `Qwen/Qwen3.5-2B`, `google/gemma-4-E4B-it`, `mistralai/Ministral-3-3B-Instruct-2512-BF16`, `ibm-granite/granite-4.2-3b`, `HuggingFaceTB/SmolLM3-3B` | apache-2.0 | ~8 GB |
 | Consolidator and tool-using subject (E2.2, E3.3, E3.4) | `Qwen/Qwen3.5-9B` | `ibm-granite/granite-4.2-8b`, `openai/gpt-oss-20b`, `google/gemma-4-12B-it`, `microsoft/phi-4` (MIT) | apache-2.0 | ~18 GB |
 | Larger subject, only if the 9B class fails the 20-task tool-use smoke test | `Qwen/Qwen3.6-35B-A3B` (mixture-of-experts, about 3B active) | `Qwen/Qwen3.5-27B`, `google/gemma-4-26B-A4B-it`, `mistralai/Devstral-Small-2-24B-Instruct-2512` | apache-2.0 | 27B dense ~54 GB at BF16; quantise |
-| Fine-tune base (T4, T7 step two) | `Qwen/Qwen3.5-4B-Base` or `-9B-Base` | the instruct model of the chosen worker | apache-2.0 | as above |
+| Fine-tune base (T4, T7 step two; both RECOMMENDED CUT, 6.4) | `Qwen/Qwen3.5-4B-Base` or `-9B-Base` | the instruct model of the chosen worker | apache-2.0 | as above |
 
 Avoid without a licence read: Gemma 3 (custom Gemma terms), Llama (community licence),
 NVIDIA Nemotron and older Ministral (tagged "other"). `Qwen3Guard-Gen-*` and
@@ -657,8 +767,15 @@ contains the claim's anchor span), record-schema lint pass rate, and E3.3 downst
 - 4B to 9B LoRA at 8k context, 16-bit: guess 25 to 40 GiB peak. Throughput on the GB10: unknown.
 - First job is a 50-step dry run that records peak memory and steps per second. All later
   estimates come from it.
-- Abort rules: peak above 60 GiB, or free system memory below 10 GiB at any time (other sessions
-  share this machine).
+- Abort rules: peak above 60 GiB, or MemAvailable below 10 GiB at any time (T7, G5; other
+  sessions share this machine). Start floors where a source sets one: at least 20 GiB
+  MemAvailable for the G2a pull preflight (WORKPLAN wave 2 step 3) and before E9 starts
+  (E9 design report, approval item 8). The 10 GiB abort and the 20 GiB start floors do not conflict: one kills a
+  running job, the other gates a start; no start floor is set here for other jobs. Caveat
+  (review 2, row 16): both T7 smoke arms were
+  killed near 10 GiB while another snapshot showed 68 GiB available with a smoke running; the
+  pool swings by tens of GiB with other tenants, cause unknown. Wall-clock budgets on this host
+  (E9's 300 seconds) are noisy for the same reason.
 
 ### 3.9 Rollback
 
@@ -678,7 +795,7 @@ adapter directory and the cache directory named in the gate. No shared service i
 | E5.3 | Behaviour under denial: retry, workaround, report, safe completion, across policy types | Self-block and workaround are model behaviours; replay cannot see them |
 | E5.4 | Teacher ceiling for the consolidator on about 50 logs | Ceiling for section 3.5; Claude-route cost for H6 class (a) |
 | E5.5 | Claude-route cost and ceiling for H6 classes (b) and (c), only for a class that passed the local screen | H6 cost comparison |
-| E5.6 | Hub-and-cells smoke: Claude Code session as hub, one subagent cell, one fresh-context verifier, three trapbench tasks | `ARCHITECTURE.md` section 10 step 4; runs inside batch C0 |
+| E5.6 | Hub-and-cells smoke: Claude Code session as planner cell, one subagent worker cell, one fresh-context verifier, three trapbench tasks (the labelled "Claude Code as shipped" arm, 4.6) | `ARCHITECTURE.md` section 10 step 4; runs inside batch C0 |
 
 E5.3 detail: 20 toy tasks where the direct route is denied and a safe allowed route exists. Arms:
 name-based deny rule; hook exiting 2 with a reason; sandbox bound. Outcome classes scored from
@@ -691,9 +808,16 @@ route is a file tool belongs to the deny-rule or hook arm.
 ### 4.2 Models and effort
 
 Per the owner's role table (2026-11-17): Fable 5.2 writes the plan, Opus 5.5 orchestrates and
-verifies (the hub role, medium effort), Sonnet 5.5 does the work (worker, subject and Claude
+verifies (the planner and verifier cell roles, medium effort), Sonnet 5.5 does the work (worker, subject and Claude
 cell, high effort). One fixed model snapshot per experiment, recorded in the manifest. No search
 over model and effort in this plan.
+
+Amended 2026-11-19 (owner requirements 1 and 4, via review 2): the roles above are defaults for
+building and running this project, not a restriction on the system or the experiments. Any
+model may fill any cell role (planner, verifier, worker), and a cross-model experiment may put
+any tier in either role. "One fixed snapshot" now means one fixed snapshot **per model per
+experiment**, pinned and checked per response (4.6). Effort and decoding are fixed per model
+before the run and never searched on the test split.
 
 Extended 2026-11-19 with the owner's words: "Fable 5.2 is doing the science research and
 discovery, and the paper should be handled by Sonnet and Haiku. Then we can have a +5 from 5
@@ -705,14 +829,15 @@ and send it to the coding and OPUS and SONNET for work." Reconciled with the 202
 | Paper: drafting sections from frozen results | Sonnet 5.5 | high | Drafts only from results files; no number typed from memory |
 | Paper: bulk chores (reference formatting, moving tables from results files, cross-checks of figures against results) | Haiku 5.5 | high | Prefer a script where the check is computable; Haiku only for what a script cannot do |
 | Paper: claims check before anything leaves the box | Opus 5.5 with fresh context, after the script check | medium | One pass per draft. Publication itself is gate G8 |
-| Hub in the running system: split, route, verify, judge | Opus 5.5 | medium | Deterministic check first; the model verifier only where no check exists |
+| Planner and verifier cells in the running system: split, verify, judge (routing is router code, `ARCHITECTURE.md` 2) | Opus 5.5 by default | medium | Deterministic check first; the model verifier only where no check exists |
 | Coding work | Sonnet 5.5; Opus 5.5 after two failed attempts or for security or refactor work | high / medium | The owner's standing escalation rule |
 | Bulk and cheap tasks | no model, else Haiku 5.5 | high | A lookup beats a model call |
 | Local cells | small open-weight models (Qwen, Gemma and the 3.2 menu), adapters trained with Unsloth | n/a | Electricity only. Only for a task class where the cell clears the floor (H6). Nothing downloaded yet |
 
 Routing rule, from first principles (`ARCHITECTURE.md` 8): **the cheapest tier whose held-out
 pass rate clears the floor does the job.** Order tried: computed answer, stub code, local model,
-Haiku, Sonnet, Opus, Fable. Escalate one tier on a failed check; never retry unchanged. Price
+Haiku, Sonnet, Opus, then the owner. Fable is not an execution tier (the table above: "never
+running experiments"); it plans. Escalate one tier on a failed check; never retry unchanged. Price
 ratios are read from the price sheet at run time and recorded; this file quotes none.
 
 Where this departs from the owner's pstack model file: that file sends "judgment and prose" to
@@ -741,10 +866,15 @@ smoke batch C0 can run. The table is what I propose instead; the owner may lower
 | C3 | E5.2 fan-out: 15 tasks x 3 arms x 2 seeds. **Deferred, not requested** | 90 | 400k (whole team) | 150 |
 | C4 | E5.4 teacher ceiling | 50 | 40k | 20 |
 | C5 | E5.5 H6 classes (b), (c): 25 tasks each. Conditional on the local screen | 50 | 40k | 20 |
-| C6 | E8.3 Claude arm (H8): 40 questions x 5 sequences. Conditional on the local arm | 200 | 20k | 40 |
+| C6 | E8.3 Claude arm (H8): 40 questions x 5 sequences. Conditional on the local arm. The 20k token cap is a spend guard only; the matched budget against the local arm is turns plus bytes (4.6) | 200 | 20k | 40 |
 | | **Total proposed now (C0, C1, C2, C4, C5)** | | | **145** |
 | | Total if conditional C6 is also approved | | | 185 |
 | | Total if C3 is later requested | | | 295 |
+
+**Approved today: C0 only** (USD 5, 9 requests). 145, 185 and 295 are proposal totals, not
+ceilings anyone approved; USD 185 includes the conditional C6. WORKPLAN 1 quotes "total ceiling
+USD 185 as in PLAN" in the parent's approval text; read against this table and the rule below
+("No second batch without a new approval"), every batch after C0 needs its own approval.
 
 Rules: the USD ceiling binds first. I do not quote token prices here; the runner reads the
 current price sheet at run time, records it in the manifest, estimates cost per episode from C0,
@@ -768,6 +898,13 @@ Claude runs confirm or contradict the local-model results; they do not stand alo
   limit must come from the container or a firewall: Claude Code's own network allowlist filters
   by client-supplied hostname and its docs name domain fronting as possible (file 07).
 - The API key is read from the environment and never logged.
+- Direct key only. The owner's interactive sessions on this box go through a local proxy whose
+  fallback chain can answer a "Claude" request with another provider's model, whose retention
+  terms were not reviewed (backend `AGENTS_SYSTEM.md`). Every response's returned model ID is
+  recorded; a mismatch with the pinned ID voids the episode (4.6). The same care applies to
+  build sessions that read this repository: what they read reaches whichever model answers.
+- Confidentiality limit: anything a Claude cell reads is sent to the model provider; no Claude
+  shape in file 07 prevents that (`ARCHITECTURE.md` 6a).
 
 ### 4.5 Deployment shape (corrected against file 07)
 
@@ -776,11 +913,17 @@ and does not use:
 
 | Shape | Who runs what | Status per the docs | Used here |
 |---|---|---|---|
-| Claude Code on this box (CLI, headless, subagents) | Harness and tools local; model at Anthropic | Not a subject of file 07; in daily use here | **Yes. The only shape used.** |
+| Claude Code on this box (CLI, headless, subagents) | Harness and tools local; model at Anthropic | Not a subject of file 07; in daily use here | **Yes**, for building and for the labelled "Claude Code as shipped" product arm (E5.6). Cross-model arms use our own loop over the Messages API (4.6) |
 | Managed Agents, cloud sandboxes (default) | Anthropic runs sandbox, agent loop and model | Status not recorded in file 07 | No |
 | Managed Agents, self-hosted sandboxes | You run the sandbox; agent loop, memory stores and session log stay at Anthropic | Public beta per the May 2026 article | No |
 | Self-hosted Managed Agents | You run sandbox and service; model at Anthropic or a provider you choose | **Private beta, by request.** No dreams, scheduled deployments, webhooks or Files API; multi-agent limited to a coordinator with 1 to 20 listed subagents | No |
 | Claude Code self-hosted environments | Runner on your host; control plane and transcript at Anthropic | Public beta, Team and Enterprise; no Zero Data Retention | No |
+| MCP tunnels | A gateway you deploy makes one outbound connection to reach a private MCP server | Research preview, no continuity commitment; depends on Cloudflare | No |
+
+Neither self-hosted environments nor MCP tunnels hide session content from the model provider:
+the transcript and every tool result still reach it (`ARCHITECTURE.md` 6a). If the owner wants
+either shape, this table and `ARCHITECTURE.md` 6 change and their limits become project
+constraints (owner decision; not assumed here).
 
 Consequences for the experiments:
 - Anthropic's Dreams job is a research preview and is not available on a self-hosted server. H3
@@ -795,6 +938,55 @@ Consequences for the experiments:
   That is an assumption. Nothing here depends on it.
 - Status labels differ between the pages file 07 read and were not reconciled. Re-check before
   any public statement.
+
+### 4.6 Cross-model protocol (added 2026-11-19, review 2 section 4)
+
+Applies to every comparison across models (H6, H8, T10, and any later provider).
+
+1. **One loop for every model.** Our own agent loop, one task spec, one tool schema (the
+   contract's capability keys), one adapter per backend returning a tool call or a final answer
+   plus usage. Claude runs through the Messages API with a direct key, not through Claude Code,
+   which adds its own system prompt, tools and loop. "Claude Code as shipped" is a separate,
+   labelled product arm.
+2. **Byte-identical inputs.** Same tasks, seeds, prompts (hash recorded) and tools. The only
+   per-model difference is the chat template. No per-model prompt tuning; if any is allowed,
+   every model gets the same number of variants, chosen on a practice family.
+3. **Instrument checks in every batch.** A scripted stateless stub (floor) and a scripted oracle
+   (ceiling). If the floor passes or the oracle fails, the batch is void.
+4. **Calibration band.** A task enters only if the weakest model in the comparison scores above
+   30% and the strongest below 85% clean, judged on a practice family (E8.3's band).
+5. **Order.** Models interleaved round-robin over tasks, so drift during a batch hits all alike.
+6. **Outcome classes.** pass, fail, refusal, budget exhausted, infrastructure abort. Refusals
+   are reported separately. An infrastructure abort (rate limit, timeout, watchdog) is re-run
+   once and counted.
+7. **Scoring.** Deterministic only. No model grader anywhere in a cross-model comparison.
+
+**Matched budget.** Tokenizers differ, so tokens are not a shared unit. The per-task cap is
+**turns plus input and output bytes**, the same for all models; native tokens are reported
+beside it. Reasoning effort and decoding are fixed per model before the run and reported next
+to every number. Context window: truncate all models to the smallest window in the comparison,
+or report both, and say which. Contamination: tasks come from our seeded generator with held-out
+families (3.4).
+
+**Drift.**
+- API models: pin the dated snapshot ID and record the model ID **returned in each response**.
+  A mismatch voids the episode (4.4: a proxied "Claude" call can be answered by another model).
+- Local models: revision SHA, weights sha256, decoding config, container digest.
+- **Sentinel set:** 20 fixed tasks run at the start and end of every batch, and again whenever a
+  batch spans more than a day. If the sentinel pass rate moves outside its binomial interval,
+  the batch is flagged and never pooled with others.
+- Price sheet: read at run time, stored with its date in the manifest.
+
+**Cost normalisation.** Per passing task, never summed across kinds: native tokens by class;
+bytes in and out; wall-clock seconds; USD for API routes at the dated price sheet; GPU-only
+joules for local routes; USD for local routes only once the owner supplies a tariff, hardware
+excluded and said so. The cross-model headline is pass rate and control effect at a fixed
+turn-and-byte budget; cost per pass is secondary and carries its price date. Unknown stays
+unknown: no API-side joules, no local USD without a tariff.
+
+**Another provider later.** The adapter is the only new code. Trapbench is synthetic, so no
+tenant data is involved. Record the provider's own usage fields; a provider that returns none
+gets no cost row.
 
 ---
 
@@ -880,13 +1072,13 @@ murmuration policy verify cells/<id>       (signing is the owner's own ssh-keyge
 |---|---|---|---|
 | P0 | E1.0 fix; E1.1-E1.3 on local traces; hazard fit; E8.1 token-class and read:write ledger | S | nothing (E8.1: owner's yes to read usage fields) |
 | P1 | coupling.py; memlint; trapbench generator and scorer; stats; manifest; pre-registrations (H1-H4, H6, H7) | M | nothing |
-| P1b | Minimum viable hub-and-cells: `cell.py`, two stub cells, scripted hub, contract tests (ARCHITECTURE 10, steps 1-3) | S | nothing (a throwaway test key; the owner creates the real signing key) |
+| P1b | Minimum viable hub-and-cells: `cell.py`, two stub cells, scripted router, contract tests incl. the two hub-as-cell tests (ARCHITECTURE 10, steps 1-3); then the T10 matrix on scripted backends. Status open: WORKPLAN 9 cut it; review 2 recommends reinstating (6.4) | S | nothing (a throwaway test key; the owner creates the real signing key) |
 | P2 | E2.1 on public repos | M | G1 |
-| P3 | Container runtime; **T7 pre-test, arms 0 and A-D** (the cheapest GPU job, and the runtime's smoke test) | S | G2a, G3 (0.8B pair only), G9 |
+| P3 | Container runtime; **T7 stage 1 (B, A, then 0)**, stage 2 only past the 12-point gate (T7; `prereg/H7.md`). Blocked until the smoke watchdog kills are explained | S | G2a, G3 (0.8B pair only), G9 |
 | P4 | Worker and subject model in; tokens/s and power measured; trapbench smoke test; H6 local screen (stub vs local model) | M | G3 (role models), G4 or in-process |
-| P5 | E8.3 local arm first (single agent, the cheapest GPU main run); then E3.3, E3.4, E2.2 and E4.1 on the local model (main runs, frozen hash); then E8.2 (reuses E2.2's tasks); E8.4 only if its condition holds | L | G0, G5 |
+| P5 | E8.3 local arm first (single agent, the cheapest GPU main run); then E3.3, E3.4, E2.2 and E4.1 on the local model (main runs, frozen hash); then E8.2 (reuses E2.2's tasks); E8.4 only if its condition holds (RECOMMENDED CUT, 6.4). Whether E8.3 or E9 or the T10 matrix is the next GPU item is open until the owner rules on 6.4 (T9) | L | G0, G5 |
 | P6 | Claude batches C0, C1, C2, C4, conditional C5, conditional C6 | M | G7 |
-| P7 | Conditional training: consolidator LoRA (only if the cut-list condition holds); T7 LoRA arm (only if H7 survived P3) | L | G2b, G6 |
+| P7 | Conditional training: consolidator LoRA (only if the cut-list condition holds); T7 LoRA arm (only if H7 survived P3). Both RECOMMENDED CUT (6.4) | L | G2b, G6 |
 | P8 | Write-up; pitch | S | G8 |
 
 Order matters: real traces first (P0), instruments second, model runs last, training last of
@@ -906,15 +1098,16 @@ Nothing below happens without the owner's explicit yes. One reply can approve se
 | G2b | Unsloth packages (training only) | Inside the same container, per the NVIDIA playbook: `pip install peft hf_transfer "datasets==4.3.0" "trl==0.26.1"`, then `pip install --no-deps unsloth unsloth_zoo bitsandbytes`. Unsloth core is Apache-2.0; the AGPL-3.0 Studio and desktop parts are not installed. Version compatibility on this host is unverified; the playbook's smoke test runs first. Not requested until a training job is. | est. a few GB | 0 | remove the derived image |
 | G3 | Weights, a menu approved per ID | Each ID and licence opened and confirmed by the owner first (3.2), into a cache directory the owner names. (i) T7 pair: `Qwen/Qwen3.5-0.8B` and the released edited checkpoint. (ii) Cell worker, 2B-4B class. (iii) Consolidator and subject, 8B-9B class. (iv) Optional larger subject, quantised. Any family on the 3.2 menu; not Qwen-only. | est. (i) ~3 GB, (ii) ~8 GB, (iii) ~18 GB, (iv) up to ~54 GB | 0 | remove the cache directory |
 | G4 | Local serving | A dedicated process bound to loopback on a port the owner assigns, with purpose, owner and retirement date. The shared `spark-vllm` endpoint and the listeners on 8010/8080 are **not** touched or probed. Alternative with no port: in-process batch inference. Training and serving are never run at the same time (shared memory). | ~15-30 GiB memory | electricity | stop the process |
-| G5 | GPU main runs | E2.2, E3.3, E3.4 and E4.1 on the local model; memory cap 60 GiB; abort if free memory drops below 10 GiB. Scope amended 2026-11-19, each line its own yes: E8.3 local arm (stop at 8 GPU-hours), E8.2 (stop at 16), conditional E8.4 (stop at 16) | est. 20-60 GPU-hours, to be measured, plus the T8 stop caps | electricity | kill the job; outputs in `runs/` |
-| G6 | LoRA training with Unsloth | Needs G2b. 50-step dry run, then: (a) consolidator, at most 6 configurations x up to 3 epochs on a 4B-9B base, 3 seeds of the winner; (b) T7 LoRA arm, one configuration, 3 seeds, on the 0.8B model. Each is conditional (6.1, P7) and approved separately. | est. 10-40 GPU-hours, to be measured | electricity | remove adapter directories |
-| G7 | Claude spend | Batches C0, C1, C2, C4 and conditional C5 as in 4.3; each named batch approved with its ceiling; default USD 5 and 9 calls if no number is given. C3 is deferred and not requested. C6 (USD 40) is conditional on the E8.3 local result and is requested only then. | — | up to USD 145 proposed; 185 with C6 | stop; no refund |
+| G5 | GPU main runs | E2.2, E3.3, E3.4 and E4.1 on the local model; memory cap 60 GiB; abort if free memory drops below 10 GiB. Scope amended 2026-11-19, each line its own yes: E8.3 local arm (stop at 8 GPU-hours), E8.2 (stop at 16), conditional E8.4 (stop at 16; RECOMMENDED CUT, 6.4). Memory start and abort floors: 3.8 | est. 20-60 GPU-hours, to be measured, plus the T8 stop caps | electricity | kill the job; outputs in `runs/` |
+| G6 | LoRA training with Unsloth | Needs G2b. 50-step dry run, then: (a) consolidator, at most 6 configurations x up to 3 epochs on a 4B-9B base, 3 seeds of the winner; (b) T7 LoRA arm, one configuration, 3 seeds, on the 0.8B model. Each is conditional (6.1, P7) and approved separately. Both RECOMMENDED CUT (6.4). | est. 10-40 GPU-hours, to be measured | electricity | remove adapter directories |
+| G7 | Claude spend | Batches C0, C1, C2, C4 and conditional C5 as in 4.3; each named batch approved with its ceiling; default USD 5 and 9 calls if no number is given. C3 is deferred and not requested. C6 (USD 40) is conditional on the E8.3 local result and is requested only then. | — | approved: C0 only, USD 5. Proposed: up to USD 145; 185 with C6 | stop; no refund |
 | G8 | Publication | Licence choice; pushing anywhere; sharing any aggregate outside the box; contacting the Claude Code team | — | 0 | cannot unpublish |
-| G9 | Weight-surgery pre-test (T7 arms 0, A-D) | Clone `github.com/RikiyaT/lm_understand-logs` (scripts MIT, logs CC BY 4.0) into `murmuration/data/` (gitignored); download MATH-500, the IFEval and MMLU-Pro subsets and the practice problems after each licence is checked; run the five arms, inference only, in-process (no port). Arm D writes one edited copy of the 0.8B weights under `runs/`; the base is hashed and read-only. Hard cap 12 GPU-hours (our cap; file 08's "a few hours" is an estimate), stop and report if reached. | est. a few GB of data; ~1.6 GB edited copy | electricity | remove `data/` clone, the datasets and `runs/t7/` |
+| G9 | Weight-surgery pre-test (T7, staged: stage 1 B, A, 0; stage 2 C, D, D-null only past the gate) | Clone `github.com/RikiyaT/lm_understand-logs` (scripts MIT, logs CC BY 4.0) into `murmuration/data/` (gitignored); download MATH-500, the IFEval and MMLU-Pro subsets and the practice problems after each licence is checked; run the arms of `prereg/H7.md`, inference only, in-process (no port). Arm D writes one edited copy of the 0.8B weights under `runs/`; the base is hashed and read-only. Hard cap 12 GPU-hours (our cap; file 08's "a few hours" is an estimate), stop and report if reached. | est. a few GB of data; ~1.6 GB edited copy | electricity | remove `data/` clone, the datasets and `runs/t7/` |
+| G11 | E9 autoresearch testbed (T9) | Approved by the owner in principle (2026-11-19). E9-0 scripted route catalogue (no GPU); E9-1 calibration (2 GPU-hours); E9-2 pilot (11 GPU-hours); the approval list in section 10 of `docs/reports/E9-autoresearch-design.md`. E9-1 and E9-2: RECOMMENDED CUT (6.4) | downloads at most 20 GB (parent's design choice) | USD 0; cap 13 GPU-hours | owner removes `data/autoresearch`, `data/autoresearch-cache/` and `runs/e9/` (design report paths) |
 | G10 | CL-Bench as an external check (deferred, not requested) | Only if H8 survives E8.3. Clone `github.com/pgasawa/continual-learning-bench` (Apache-2.0 per file 10) into `murmuration/data/`; installs it needs per its README (Python 3.13, uv, Docker), inside a container, nothing on the host; the owner reads the task-data licences first | not measured | 0 | remove the clone and the image |
 
 Gate notes:
-- **T7 arms 0 and A-D need G2a, part (i) of G3, and G9. They do not need G2b, G4, G5 or G6**:
+- **T7 (both stages) needs G2a, part (i) of G3, and G9. It does not need G2b, G4, G5 or G6**:
   no training, no served port, no main-run budget. Only the optional LoRA step needs G2b and G6.
 - A `uv` virtual environment is not offered: aarch64 cu130 torch wheels are unconfirmed
   (file 09). It becomes an option only if the owner confirms the wheel index.
@@ -937,7 +1130,9 @@ Gate notes:
 7. `stats.py`, `manifest.py`, and the pre-registration files (H1-H4, H6, H7).
 8. Open the ten must-read sources in full (list in SCIENCE.md) and correct this plan.
 9. Minimum viable hub-and-cells, steps 1-3 of `ARCHITECTURE.md` section 10: `cell.py`, two stub
-   cells, a scripted hub and the contract tests. No model, no GPU, no network.
+   cells, a scripted router and the contract tests, including the two hub-as-cell tests. No
+   model, no GPU, no network. Status open: cut by `WORKPLAN.md` 9, reinstatement recommended
+   by review 2 (6.4); uncommitted `cell.py` and `router.py` exist, not verified here.
 10. Write the T7 arm scripts and the power sampler against a tiny random-weight model, so G9 is
     spent on the measurement and not on debugging.
 11. E8.1: check whether the local transcripts carry the four usage fields; if so, the
@@ -946,6 +1141,43 @@ Gate notes:
     questions, held-out families), tested with scripted fake agents.
 13. The board harness for E8.2 (SQLite behind one logging function, a worktree per agent, the
     merge-and-test step), tested with scripted fake agents; pre-registrations for H8 and H9.
+    Status: `board.py` cut by `WORKPLAN.md` 9; H9 awaits the owner's ruling (review 2
+    recommends defer). Not started.
+14. The T10 perturbation matrix on scripted backends (`SCIENCE.md` 4a). Zero cost.
+
+### 6.4 Owner decisions and recommended cuts (2026-11-19)
+
+**Owner decisions recorded** (relayed by the parent, 2026-11-19):
+
+| Decision | Where it lands |
+|---|---|
+| H8 is exploratory, outside every Holm family | 1.2; `prereg/H8.md`; `SCIENCE.md` 5 |
+| T7 keeps the staged design with the 12-point stage-1 gate | T7; `prereg/H7.md` 12 |
+| E9 approved in principle, cap 13 GPU-hours, USD 0 (the 20 GB download cap is the parent's design choice) | T9; G11 |
+
+**Recommended cuts, NOT applied.** Source: `docs/reports/adversarial-review-2.md` sections 5,
+6 and 8 (action 8). Every item below keeps its current status until the owner rules; nothing is
+deleted from this plan.
+
+| Item | Status today | Recommendation | Reason (review 2) |
+|---|---|---|---|
+| E9-0 scripted route catalogue | Approved in principle (G11) | **Keep** | The only E9 part whose result is not predicted in advance; zero GPU (claim 9) |
+| E9-1 calibration | Approved in principle (G11), 2 GPU-hours | RECOMMENDED CUT, awaiting owner ruling | Feeds only E9-2 |
+| E9-2 pilot | Approved in principle (G11), 11 GPU-hours | RECOMMENDED CUT, awaiting owner ruling | Its own design calls "inconclusive" the likely outcome with six chains; 0.8B proposer for which H8 predicts a near-zero memory effect; 300-second wall-clock metric on a host whose free memory swings by tens of GiB; dataset licence unverified (claim 9; rows 12, 16) |
+| E8.4 dream dose | Conditional, G5 line (16 GPU-hours) | RECOMMENDED CUT, awaiting owner ruling | A third-order question before the first-order one has an answer (3.1) |
+| T7 stage 2 (arms C, D, D-null, off-target) | Conditional on the 12-point gate | RECOMMENDED CUT, awaiting owner ruling | The gate passes in under 3% of runs if the expected null holds, and an inconclusive result has the same consequence as a kill (claim 8, row 4) |
+| T7 arm 0 | Stage 1, run last | RECOMMENDED CUT, awaiting owner ruling | The most expensive arm, a reference only, and the one the watchdog killed first |
+| T7 arm D (with D-null) | Stage 2 | RECOMMENDED CUT, awaiting owner ruling | Listed with stage 2 in the review's cut list; the review gives no separate reason |
+| T7 LoRA step | Conditional on H7 survival (G2b, G6) | RECOMMENDED CUT, awaiting owner ruling | Listed in the review's cut list; it depends on an H7 survival the staged test is unlikely to show (inference from row 4) |
+| T4 consolidator training | Conditional (section 2 cut list; G6) | RECOMMENDED CUT, awaiting owner ruling | Scope guard: not "training a local model to imitate" a frontier one (3.1) |
+
+**Other review recommendations awaiting an owner ruling** (not part of action 8, listed so they
+are not lost): reinstate P1b, the scripted router and hub-as-cell tests (rank 2; conflicts with
+WORKPLAN 9); the T10 merges (T10); decide T7 stage 1 as test or labelled smoke (action 9); H9
+defer; park H1 unless the other machine's session count reaches 30 (action 10); drop E8.1's
+67% prediction (action 11); cut H5 as a named hypothesis, VISION's "Connecting a very strong
+model" and ARCHITECTURE 12 (section 5 cut list); a tariff or a ruling that local USD stays
+"n/a" (H6); a name (`VISION.md`, Naming).
 
 ---
 
@@ -972,7 +1204,7 @@ Gate notes:
 - **T7 is a replication of one model and one published edit.** A kill says the edit adds
   nothing over decoding on Qwen3.5-0.8B's loop problem. It says nothing about weight edits in
   general, and a survival does not show that a hub can find such edits itself (arm E is not run).
-- **Hub and Claude cells share a model family**, so a verifier's errors correlate with the
+- **Planner, verifier and Claude worker cells share a model family**, so a verifier's errors correlate with the
   worker's. Deterministic checks come first for that reason.
 - **T8 rests on talk claims.** H8 and H9 are motivated by slides from one vendor's runs, read
   from screenshots. Our tests use our own generator, a team of eight and small models; they can
@@ -998,7 +1230,8 @@ neither is weight editing.)
 ### 7.3 Safety and privacy
 
 - No secrets, no tenant data, no SeaBridge code in any dataset, prompt or output.
-- Transcripts never leave the machine. Only salted counts may be shared, and only after G8.
+- Our analysis of transcripts exports nothing. Only salted counts may be shared, and only after
+  G8. (The sessions the transcripts record sent their content to the model API when they ran.)
 - Shared infrastructure is never probed, restarted or reconfigured.
 - Nothing is pushed or published without G8.
 - A planted "wrong memory" benchmark is also a poisoning test set. It contains no working attack
@@ -1042,7 +1275,7 @@ neither is weight editing.)
 
 | Ask | Framed as | Evidence status today |
 |---|---|---|
-| **Shrink audit.** A command that lists allow rules by idle days and proposes removals, the mirror of the existing prompt audit. | H1: a decay window exists that cuts idle exposure by 30% for 10% more prompts. | Tool built. No real-data result: the only corpus seen so far was 155 events in one session, below our own threshold. |
+| **Shrink audit.** A command that lists allow rules by idle days and proposes removals, the mirror of the existing prompt audit. | H1: a decay window exists that cuts idle exposure by 30% for 10% more prompts. | Tool built. No real-data result: the local corpus holds 1,079 events in one session; the 30-session precondition fails, so H1 is untestable there, not refuted. |
 | **Fan-out gate.** Before spawning workers, compute a coupling score from git history and default to one agent above a threshold. | H2: coupling predicts when fan-out loses at matched tokens. | Not built. Published work suggests fan-out often does not pay on bounded tasks (leads, partly unverified). |
 | **Provenance-linted memory with a compute-matched dream evaluation.** Every durable note carries a source pointer; dreaming is judged against the same tokens spent on retries. | H3 and H4. | Not built. Anthropic already ships dreaming and auto memory; we offer the test, not the feature. |
 

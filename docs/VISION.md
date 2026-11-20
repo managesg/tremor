@@ -1,7 +1,11 @@
 # murmuration: what we are trying to build
 
-Date: 2026-11-19. Status: **vision and design. Built so far: one permission-replay ledger with
-nine unit tests. Nothing else below is built or run.** `PRINCIPLES.md` wins any conflict.
+Date: 2026-11-19. Status: **vision and design.** Committed at `972dee3`: 14 Python files under
+`src/` (replay ledger, hazard fit, coupling, memlint, trapbench, stats, manifest, runner, token
+ledger, CLI); 89 passing tests is the figure in `docs/reports/E1-E8.1-local-results.md`, not
+re-run for this edit. Uncommitted and unverified on 2026-11-19: `cell.py`, `router.py`,
+`perturb.py`. No hypothesis has been tested; no model has been run in a cell.
+`PRINCIPLES.md` wins any conflict.
 Details: `ARCHITECTURE.md` (design), `PLAN.md` (hypotheses, tests, gates), `SCIENCE.md`
 (concepts, evidence status). Labels used here: *established* (accepted in its home field),
 *talk claim* (said or shown in a conference talk, owner-validated, not checked by us),
@@ -9,10 +13,15 @@ Details: `ARCHITECTURE.md` (design), `PLAN.md` (hypotheses, tests, gates), `SCIE
 
 ## The thesis in one paragraph
 
-A strong central model is good at planning, checking and judging. Small local models are cheap,
-private and always on, and are only good at narrow jobs. We want one system that uses both: a
-**hub** that plans and verifies, and many small **cells** that do narrow work under permissions
-the owner signs, with their own memory, on the owner's own machine where possible. Every part is
+A strong model is good at planning, checking and judging. Small local models are cheap and
+always on, and are only good at narrow jobs. We want one system that uses both. Its centre (the
+**hub**) is plain router code plus the owner's signing key, not a model. Every model, the
+strongest included, is a **cell**: a planner cell writes task specs, the router launches worker
+cells, and a verifier cell (or, first, a deterministic check) judges results. Cells work under
+permissions the owner signs, with their own memory, on the owner's own machine where possible.
+"Private" is narrow: a local open-weight cell keeps its raw log and the inputs the router passed
+by path and hash. Anything a Claude cell reads, including any task a Claude planner wrote, has
+been sent to the model provider (`ARCHITECTURE.md` 6a). Every part is
 a plain file the owner can read, edit and take away. Every design choice is a hypothesis with a
 number attached: how many tokens, joules and dollars one passing task costs. If a part does not
 earn its cost against a simpler baseline, it is deleted. We build the measuring instruments first and the
@@ -25,17 +34,17 @@ system second.
               |    signs permission ceilings; edits memory, prompts, routes, adapters
               v
    +--------------------------------------------+
-   | HUB  strong model (Claude)                 |
-   | plans - splits work - routes - verifies    |
-   | keeps the shared memory it has linted      |
+   | HUB  = router code (no model) + owner key  |
+   | routes - runs checks - lints digests       |
+   | launches cells; only the owner's key signs |
    +------+-----------------+-------------+-----+
           | signed policy   |             |      ^
           | + task          |             |      | result + evidence + cost,
-          v                 v             v      | memory digest (never raw logs)
-      [ cell ]          [ cell ]      [ cell ]---+
-      plain code        local model   Claude worker
-      (no model)        (+ adapter)
-      each cell: own folder, own log, own memory, narrow permissions
+          v                 v             v      | memory digest (raw log stays
+      [ cell ]          [ cell ]      [ cell ]---+  local only for local cells)
+      plain code        local model   Claude cell: worker, planner
+      (no model)        (+ adapter)   (writes task specs) or verifier
+      each cell: own folder, own log, own memory, narrow permissions, own cost line
 
    Central    = the routing table sends every job to the Claude tier.
    Decentral  = the routing table sends a job class to a local cell
@@ -83,7 +92,9 @@ it to lose. A hub that edits cell weights in a loop is *speculative* and not bui
 
 **Ownership, control, edit.** The owner's principle: I can open, understand, change and remove
 every part. So: a cell is a folder of plain files; policy takes effect only with the owner's
-signature and no model can hold the key; memory is corrected by appending, never by silent
+signature. The signature shows who approved a file; enforcement is the cell runner's code and
+permission rules. Keeping the key from every model is an intention, and holds on this box only
+if the key is off the box, on a hardware token or passphrase-protected (`ARCHITECTURE.md` 2); memory is corrected by appending, never by silent
 deletion; base weights are never modified, edited models are hashed copies; rollback is one line.
 
 ## Complex-systems ideas: used only where they give a number
@@ -145,3 +156,13 @@ well: open instruments, tests written before the data, and honest results, inclu
 that kill our own ideas.
 
 Model roles are in `PLAN.md` 4.2, with one open question for the owner.
+
+## Naming (owner decides; nothing renamed)
+
+"murmuration" names leaderless flocking. The design is a star with a signed ceiling, and this
+file says it is not a claim that agents self-organise, so the name contradicts the design
+(`docs/reports/adversarial-review-2.md` 7). The review's top pick is **Sortie** (one mission by
+one unit, with an objective, a return and a debrief: task spec, result, evidence bundle). Other
+candidates there: Slipstream, Muster, Outrider, Squadron, Relay, Flotilla, Convoy. None was
+checked for trademarks, package names or domains; Relay, Flotilla and Convoy carry noted
+collision risk. The repository, package and files keep the current name until the owner rules.

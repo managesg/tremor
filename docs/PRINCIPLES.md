@@ -49,8 +49,8 @@ research file 06. We use it as a working discipline, not as authority.)
 read and edit; the contract is four JSON files; cells talk only to the hub. No bus, daemon,
 framework or cell-to-cell channel is added until a measured failure of the plain version names
 it. A cell gets a model only where the model beats the no-model stub on held-out tasks, and a
-task class leaves the hub only after a tier has cleared that class's floor. The hub adds a
-model verifier only where no deterministic check exists. What this replaced: the T6
+task class leaves the Claude tier only after a cheaper tier has cleared that class's floor. The
+router adds a model verifier cell only where no deterministic check exists. What this replaced: the T6
 demonstrator, E3.2, and (deferred) Claude batch C3.
 
 ## Sustainability and compute rules ("when to run")
@@ -88,7 +88,8 @@ only if `P(change in decision) x value of that decision > cost` in the same unit
 We are not building a frontier-lab model, not pretraining, not racing a frontier model on general
 capability, and not training a local model to imitate one. The local model is an instrument that makes
 many seeds cheap and tests whether an idea survives without frontier capability; the hub stays a
-frontier model we do not build. A track that needs a bigger local model to make its point is cut.
+frontier model we do not build (terminology note, 2026-11-19: here "hub" means the strongest
+model cell; in `ARCHITECTURE.md` 2 the hub itself is router code plus the owner's key). A track that needs a bigger local model to make its point is cut.
 Every track must test one of three idea families, each with a matched-cost baseline:
 1. **Memory:** provenance-linted and supersedable shared memory, dreaming against equal-token
    controls, structure imposed versus free-form by model strength (H3, H4, H8, E8.x).
@@ -97,6 +98,10 @@ Every track must test one of three idea families, each with a matched-cost basel
 3. **Adaptive policies and rules:** grow-on-need / decay-on-idle permissions under a human-signed
    ceiling, adaptive fan-out gates, rules learned from observed use and tested on held-out sessions
    (H1, H2).
+The owner's term "KDS" (relayed 2026-11-19) is read as these three families. Each family is also
+a task control in one harness, scored by one measure, the control effect under the perturbation
+matrix P1-P5 (`SCIENCE.md` 4a, `PLAN.md` T10). Joules are GPU-only and never extrapolated to
+Claude's serving side (Honest limits), so no cross-tier energy comparison is computable today.
 Weight edits (T7) stay only as a cheap pre-test of whether a frontier model can adjust a small cell
 better than a decoding fix; if it cannot, it is deleted.
 

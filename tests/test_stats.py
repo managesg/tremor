@@ -43,6 +43,69 @@ class T(unittest.TestCase):
         self.assertEqual(a, stats.paired_bootstrap(rows, "c", mean, n=300, seed=1))
         self.assertNotEqual(a, stats.paired_bootstrap(rows, "c", mean, n=300, seed=2))
 
+    def _hrows(self, k=12):
+        return [{"c": i, "none": 0.2, "play": 0.5, "code": 0.8} for i in range(k)]
+
+    def test_hdi_known_answer_and_range(self):
+        # all clusters identical: (0.8-0.5)/(0.8-0.2) = 0.5, interval collapses
+        h = stats.hdi(self._hrows(), "c", n=200, seed=1)
+        self.assertFalse(h["undefined"])
+        self.assertAlmostEqual(h["point"], 0.5)
+        self.assertAlmostEqual(h["lo"], 0.5)
+        self.assertAlmostEqual(h["hi"], 0.5)
+        # play beats code -> below 0; play hurts -> above 1; both kept
+        lo_ = [{**r, "play": 0.9} for r in self._hrows()]
+        hi_ = [{**r, "play": 0.1} for r in self._hrows()]
+        self.assertAlmostEqual(stats.hdi(lo_, "c", n=50)["point"], -1 / 6)
+        self.assertAlmostEqual(stats.hdi(hi_, "c", n=50)["point"], 7 / 6)
+
+    def test_hdi_denominator_containing_zero_is_undefined(self):
+        rows = [{"c": i, "none": 0.5, "play": 0.4, "code": 0.5 + (0.3 if i % 2 else -0.3)} for i in range(10)]
+        h = stats.hdi(rows, "c", n=300, seed=2)
+        self.assertTrue(h["undefined"])
+        self.assertIsNone(h["point"])
+        self.assertIsNone(h["lo"])
+        self.assertIn("contains 0", h["reason"])
+        self.assertLessEqual(h["denom_ci"][0], 0)
+        self.assertGreaterEqual(h["denom_ci"][1], 0)
+        z = [{"c": i, "none": 0.5, "play": 0.4, "code": 0.5} for i in range(5)]  # denominator exactly 0
+        zz = stats.hdi(z, "c", n=20)
+        self.assertTrue(zz["undefined"])
+        self.assertEqual(zz["degenerate_resamples"], 20)
+        self.assertTrue(stats.hdi([], "c")["undefined"])
+
+    def test_hdi_cluster_permutation_and_seed(self):
+        import random
+        rows = [{"c": i // 3, "none": 0.1 * (i % 3), "play": 0.5 + 0.05 * (i % 5), "code": 0.9 - 0.02 * (i % 4)}
+                for i in range(30)]
+        a = stats.hdi(rows, "c", n=200, seed=7)
+        self.assertEqual(a, stats.hdi(rows, "c", n=200, seed=7))
+        self.assertNotEqual(a["lo"], stats.hdi(rows, "c", n=200, seed=8)["lo"])
+        shuf = rows[:]
+        random.Random(0).shuffle(shuf)  # permuting rows, hence within clusters, changes nothing
+        self.assertEqual(a, stats.hdi(shuf, "c", n=200, seed=7))
+        # clusters resampled whole: two clusters with HDI 0 and 1 only ever give 0, 0.5-ish pools or 1
+        two = [{"c": "a", "none": 0, "play": 1, "code": 1}, {"c": "b", "none": 0, "play": 0, "code": 1}]
+        self.assertAlmostEqual(stats.hdi(two, "c", n=50, seed=1)["point"], 0.5)
+
+    def test_emergence_gain_and_nominal_group(self):
+        self.assertAlmostEqual(stats.emergence_gain([1, 1, 0], [1, 0, 0]), 1 / 3)
+        self.assertEqual(stats.emergence_gain(0.7, 0.5), 0.7 - 0.5)
+        rows = [{"task": "t1", "agent": 1, "answer": "x", "pass": 1},
+                {"task": "t1", "agent": 2, "answer": "x", "pass": 1},
+                {"task": "t1", "agent": 3, "answer": "y", "pass": 0},
+                {"task": "t2", "agent": 1, "answer": "z", "pass": 0}]
+        g = stats.nominal_group(rows)
+        self.assertEqual([(r["task"], r["pass"], r["unique"], r["duplicates"]) for r in g],
+                         [("t1", True, 2, 1), ("t2", False, 1, 0)])
+
+    def test_incoherence(self):
+        self.assertIsNone(stats.incoherence([1, 2]))
+        self.assertEqual(stats.incoherence([2, 2, 2]), 0.0)
+        self.assertEqual(stats.incoherence([0, 0, 0]), 0.0)
+        self.assertAlmostEqual(stats.incoherence([1, 2, 3]), 1 / 7)  # var 2/3, bias^2 4
+        self.assertAlmostEqual(stats.incoherence([1, -1, 1, -1]), 1.0)
+
     def test_prereg(self):
         from murmuration.manifest import tree_hash
         with tempfile.TemporaryDirectory() as d:

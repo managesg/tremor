@@ -9,6 +9,12 @@ Parent's reading, verbatim (the ceiling of this plan):
 
 > APPROVED, within the documented scopes and caps in PLAN.md section 6.2 and the last report: G0 first LOCAL commit (no push, no remote); E8.1 read token-usage counts from local transcripts (counts only, salted, no content); all zero-cost build work (E1.0 already fixed; E1.1-E1.3 on local traces; hazard.py; coupling.py; memlint.py; trapbench generator+scorer; stats.py; manifest.py; E8.1 token-class ledger; tests); G2a pull of ONE NVIDIA PyTorch container image after the tag is verified to exist (docker manifest inspect, read-only) and disk/memory headroom is checked; G3(i) weights for Qwen/Qwen3.5-0.8B plus the released edited checkpoint ONLY after the exact HF IDs and licences are confirmed via the Hugging Face API/pages (record evidence); G9 clone github.com/RikiyaT/lm_understand-logs and run T7 arms 0 and A-D (inference only, 12 GPU-hour cap, abort if free memory < 10 GiB); G5 caps for E8.3 (8 GPU-hours), E8.2 (16), E8.4 (16, conditional); Claude-side batches staged with a smoke test first and a hard USD ceiling per batch (C0 smoke USD 5; total ceiling USD 185 as in PLAN; the owner has not given a C0 call number, so use the PLAN default of 9 calls for smoke and STOP to ask before exceeding). NOT APPROVED (must stop and ask): G1 (cloning up to 20 public repos), G2b Unsloth packages, any other weights, G4 serving port, G6 LoRA training, any push/PR/remote/publication/contacting the Claude Code team (G8), any spend beyond the stated ceilings, touching shared endpoints (spark-vllm, ports 8010/8080), any work in /home/adelmar/SeaBridgeAI/manageesg-backend or manageesg-frontend. Also still open: what the owner meant by '+5 from 5' (do not guess), who creates the signing key (owner), and the owner must confirm model licences (we only collect evidence).
 
+Reading note (2026-11-19, not part of the quote): "total ceiling USD 185 as in PLAN" is PLAN
+4.3's proposal total including the conditional C6, not an approved ceiling. Approved Claude
+spend is C0 only (USD 5, 9 requests); every later batch needs its own approval (PLAN 4.3, 6.2
+G7). Later owner decisions on 2026-11-19 (H8 exploratory; T7 12-point gate; E9 in principle,
+13 GPU-hours) are in PLAN 6.4 with the review's recommended cuts, none applied.
+
 Where 6.2 or the repo Safety rule is narrower, the narrower rule wins:
 
 | Item | Status | Stop and ask when |
@@ -18,7 +24,8 @@ Where 6.2 or the repo Safety rule is narrower, the narrower rule wins:
 | E1.1-E1.3, E8.1 on `~/.claude/projects` | Approved: salted counts | message text would be read |
 | G2a + `pip install transformers` in a derived image | Approved after preflight | tag missing; NGC login; any other package (`math-verify`, IFEval deps, vLLM) |
 | G3(i) | Evidence approved; download after the owner names the cache dir (6.2) and confirms licence (3.2) | ID missing, gated, or licence not Apache-2.0/MIT |
-| G9 clone, datasets, arms 0, A-D | Approved, 12 GPU-h | dataset licence unclear; projection above cap |
+| G9 clone, datasets, T7 staged (stage 1 B, A, 0; stage 2 C, D, D-null past the 12-point gate) | Approved, 12 GPU-h. Stage 2, arm 0, arm D, LoRA: RECOMMENDED CUT, awaiting owner (PLAN 6.4) | dataset licence unclear; projection above cap; watchdog kill cause still unknown |
+| G11 E9 | Approved in principle: 13 GPU-h, USD 0, downloads at most 20 GB (parent's design choice). E9-0 kept; E9-1, E9-2 RECOMMENDED CUT, awaiting owner (PLAN 6.4) | before any E9-1 or E9-2 GPU time |
 | E8.3 / E8.2 / E8.4 | Caps approved, **not runnable** | E8.3 subject is G3(ii) (not approved; needs G4 or in-process); E8.2 needs E2.2 tasks (G1 or unchecked CooperBench licence); E8.4 needs E3.3 |
 | C0 | Approved: USD 5, 9 requests | >9 requests; 4.4 isolation needs a Claude Code install plus firewall; billing route without API usage fields |
 | C1, C2, C4, C5, C6 | **Ask after C0 report** | 6.2 G7 "No second batch without a new approval"; Safety rule 8 |
@@ -62,7 +69,7 @@ Acceptance: `git log --oneline | wc -l` prints 1 and `git status --short` prints
 
 1. **E1.**
    1. Salt into `runs/.salt` (mode 600, never printed).
-   2. Fewer than 200 events or 30 sessions: report the H1 precondition kill and stop.
+   2. Fewer than 200 events or 30 sessions: report "H1 precondition not met: untestable on this corpus, not refuted" and stop.
    3. Else freeze H1, run E1.1-E1.3, salted summary to `docs/reports/`.
 2. **E8.1.**
    1. `tokens probe`; under 30 sessions with usage fields: counts only.
@@ -80,11 +87,12 @@ Acceptance: `git log --oneline | wc -l` prints 1 and `git status --short` prints
    2. Ask the owner: cache directory (proposed `data/hf/`) and licence confirmation.
    3. After yes: download the pinned revision, `chmod -R a-w`, sha256 manifests.
 7. **Datasets** (MATH-500, MMLU-Pro subset, IFEval, practice set). Record each licence first. Stop if a licence is unclear or the IFEval checker needs packages.
-8. **T7 smoke.**
-   1. 20 practice problems, arms 0 and B: tokens/s, watts, peak memory; choose arm C's setting here.
-   2. Projection above the 12 GPU-h remaining: **ask** (vLLM is separate). Never shrink n.
-9. **T7 main.**
-   Freeze H7; run arm 0 (100 seeded problems), A-D, D's random null, off-target for A-C; per-problem JSONL so a stop leaves a valid partial result.
+8. **T7 smoke.** Blocked: both smoke arms were killed by the 10 GiB watchdog, cause unknown; find the cause first.
+   1. `t7_samples.smoke_ids` (MATH-500 items outside the main set), arms 0 and B: tokens/s, watts, peak memory only. Never choose a setting on them.
+   2. Arm C's r is chosen on 20 seeded `math_train.jsonl` practice problems (`prereg/H7.md` 6), and only if stage 2 runs.
+   3. Projection above the 12 GPU-h remaining: **ask** (vLLM is separate). Never shrink n.
+9. **T7 main, staged (`prereg/H7.md` 6, 12).**
+   Freeze H7. Stage 1: arms B, A, then 0 on the 100 seeded problems; read the 12-point gate once. Stage 2 (C, D, D-null, off-target) only if the gate passes. Per-problem JSONL so a stop leaves a valid partial result. Stage 2, arm 0, arm D: RECOMMENDED CUT, awaiting owner (PLAN 6.4).
 10. **E8.3.** Harness and H8 prereg only; 0.8B as subject goes to Fable (D1), then the owner (the 30% stateless floor makes it likely uninformative). E8.2, E8.4: nothing.
 11. **C0 preflight only.** Ask unless all hold: a billing route returning usage fields (not the 20150 proxy or a subscription); 4.4 isolation; a 9-request counter checking USD 5 before each call. The runner's Claude backend waits for the yes.
 
@@ -135,7 +143,7 @@ Acceptance: `git log --oneline | wc -l` prints 1 and `git status --short` prints
 |---|---|
 | Shared unified memory | Kill the job if MemAvailable (`/proc/meminfo`, polled every 10 s) drops below 10 GiB. The "free" column read 3 GiB while the box was idle, so it is not used; owner to confirm. Run with `--memory 60g` |
 | Disk | No pull or download when less than 100 GiB is free (our choice) |
-| Shared box, caps | Never touch another process, spark-vllm, 8010/8080 or OmniRoute; GPU-h meter per arm stops at the cap. E1 and E8.1 probably hit their stop rules (155 events in one session seen earlier); nothing waits on them |
+| Shared box, caps | Never touch another process, spark-vllm, 8010/8080 or OmniRoute; GPU-h meter per arm stops at the cap. E1 hit its precondition (1,079 events, 1 session; E8.1: 42 sessions with usage fields, 5 main); nothing waits on them |
 | Destruction | Delete only the task's own temp files; the owner runs 6.2 rollbacks. Base weights read-only; a sha256 mismatch aborts T7 |
 
 ## 8. First 10 tasks (dispatch now)
@@ -144,7 +152,7 @@ Acceptance: `git log --oneline | wc -l` prints 1 and `git status --short` prints
 10. Read-only preflight (orchestrator): the tag's `docker manifest inspect`, disk and MemAvailable, the repo size via `gh api`, the HF API JSON for `Qwen/Qwen3.5-0.8B`. No pull, no download. Then send the owner the questions below.
 
 ## 9. Cut by the five-step filter
-- `cell.py`, `gate.py`, `memstore.py`, `board.py`: no reachable decision (section 1 rows; E5.6 exceeds 9 requests). Defers the signing key.
+- `cell.py`, `gate.py`, `memstore.py`, `board.py`: no reachable decision (section 1 rows; E5.6 exceeds 9 requests). Defers the signing key. Open (2026-11-19): adversarial review 2 recommends reinstating `cell.py`, the scripted router and the hub-as-cell contract tests (PLAN 6.1 P1b, 6.4); uncommitted `cell.py` and `router.py` exist, not verified. Owner ruling pending.
 - 6.3 #8, opening the ten sources: no public claim is approved. memlint over owner memory: no decision.
 - Pre-registrations H2-H4, H6, H9: runs blocked. Deleting `synth.py`: tests use it.
 

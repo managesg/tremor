@@ -23,6 +23,13 @@ Setup (slide "harness"):
 - Prompt: one lead, 999 helpers, awareness of Git, the database and the problem statement. No domain
   harness (earlier September work used a dozen agents, a domain harness "ProofToMe" and researcher support).
   No human steering of the solution. Ran about 30 hours.
+- CORRECTION (2026-11-19, from research/10 and research/14, which opened the written posts): this was
+  NOT a no-harness result. "No domain harness" means only that the ProofToMe platform was absent. The
+  agents were given lead and helper roles in the prompt, the 60 target statements, a one-sentence route
+  sketch, definitions and 47 already-proved lemmas; Lean checked every proof (a machine verifier); and the
+  sandbox, gateway, classifier, monitors and merge job above stayed in place. The post calls the run a
+  "toy experiment" and gives 28.7 hours; one run, not reproduced. Read "little coordination scaffolding",
+  never "no harness".
 Self-organization (the agents, not the prompt, created these tables about five minutes in):
 - Announce (lead's orders to everyone), Assign (who works on what), Notes (open board), Subtasks (shared
   to-do list, owned by first helper to grab it), Landed (log of finished work and whether it passed checks).
@@ -41,6 +48,7 @@ Self-organization (the agents, not the prompt, created these tables about five m
   Agents built their own task trees/abstractions for hard parts.
 - Lead's note: "Total freeze of origin/main, effective now ... Magnificent work, all 999 of you."
 - Claim: a formalization expected to take years completed autonomously with Git + a database only.
+  (Talk claim; see the CORRECTION above: roles, 47 proved lemmas and the Lean verifier were also given.)
 
 ## Story 2: memory and "dreaming" (Anthropic engineering blog)
 - Framing: life understood backward, lived forward (Kierkegaard). Agents write memory myopically/greedily
@@ -65,9 +73,11 @@ Self-organization (the agents, not the prompt, created these tables about five m
   shown; no-memory stayed flat. Talk: "a poison memory was injected and it's stuck there. Dreaming can rescue
   that."
 - Representations (Stainless corpus, anonymized, 25 questions answerable only from the corpus; wikis built
-  by Opus 5): search tool without wiki 53%; wiki alone 13% at 2M dreaming tokens rising to 48% at 128M;
-  wiki + search 54% at 2M rising to 61% at 128M. Axis is log scale, "budget of 1M tokens per session, not
-  measured spend". Example wiki after 2 sessions: 103 pages, 766 links; after 128 sessions: 222 pages,
+  by Opus 5): search tool without wiki 53%; wiki alone 13% after 2 dreaming sessions rising to 48% after
+  128; wiki + search 54% after 2 sessions rising to 61% after 128. Axis is log scale. The slide labels it
+  2M to 128M with the note "budget of 1M tokens per session, not measured spend"; Anthropic's written post
+  puts sessions (2 to 128) on the x-axis (research/14, research/17). CORRECTION (2026-11-19): the axis is
+  sessions at a nominal budget. Tokens actually spent are not reported. Example wiki after 2 sessions: 103 pages, 766 links; after 128 sessions: 222 pages,
   12,893 links. Dreaming also fills placeholder pages and builds an index.
 
 ## What this implies for murmuration (assistant's reading, interpretation, to be tested)
@@ -77,9 +87,10 @@ Self-organization (the agents, not the prompt, created these tables about five m
    This is the idle-compute-fraction metric in PRINCIPLES.md measured in the wild.
 3. Near-decomposability (Simon) and Ostrom-style rules appear in the design: statements grouped by staffing,
    own-branch pushes only, merge job for main, time/size limits, fail-closed monitoring.
-4. Dreaming has a compute curve: wiki alone gains 35 points for 64x tokens (2M->128M); wiki+search gains
-   7 points. Value-of-computation question: what is the marginal gain per token, and does equal-token extra
-   search/retry give the same? (H3 control.)
+4. Dreaming has a dose curve: wiki alone gains 35 points for 64x the dreaming sessions (2 -> 128, each
+   with a nominal 1M-token budget, not measured spend); wiki+search gains 7 points. Value-of-computation
+   question: what was actually spent, what is the marginal gain per token spent, and does equal-token
+   extra search/retry give the same? (H3 control.)
 5. CORRECTION (Fable review): the memory gain is NOT a smooth capability gradient. From the slide numbers the
    gain is +0.03 (Sonnet 4.6), +0.19 (Sonnet 5.5), +0.26 (Opus 5), +0.32 (Opus 4.7), +0.30 (Sonnet 5), +0.18
    (Opus 5.5): near zero only for the weakest model, largest for mid models, smaller at the top because
