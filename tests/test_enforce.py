@@ -206,7 +206,7 @@ class Counter(unittest.TestCase):
         r = E.Refusals()
         r.record(True), r.record(True), r.record(False)
         self.assertFalse(r.record(True))
-        self.assertEqual(r.consecutive, 1)
+        self.assertEqual(r.consecutive[None], 1)
 
     def test_twenty_total_exactly(self):
         r = E.Refusals()
@@ -242,6 +242,68 @@ class Counter(unittest.TestCase):
                          ["unknown_action_type"] * 3 + ["episode_stopped"])
         # even a compliant action is refused once stopped
         self.assertEqual(e.act({"type": "read", "agent": "a"}, SNAP, {})["reason"], "episode_stopped")
+
+
+class PerAgentStop(unittest.TestCase):
+    """D3: the stop is per agent; only an agent's own admitted action resets its own run."""
+
+    def test_three_by_the_same_agent_stop_that_agent_only(self):
+        r = E.Refusals(agents=["a", "b"])
+        [r.record(True, "a") for _ in range(3)]
+        self.assertTrue(r.agent_stopped("a") and not r.agent_stopped("b") and not r.stopped)
+
+    def test_other_agents_admitted_actions_do_not_reset(self):
+        r = E.Refusals(agents=["a", "b"])
+        r.record(True, "a"), r.record(False, "b"), r.record(True, "a"), r.record(False, "b"), r.record(True, "a")
+        self.assertTrue(r.agent_stopped("a"))  # b's admitted reads never touched a's run
+
+    def test_own_admitted_action_resets_only_own(self):
+        r = E.Refusals(agents=["a", "b"])
+        r.record(True, "a"), r.record(True, "a"), r.record(True, "b"), r.record(False, "a")
+        self.assertEqual((r.consecutive["a"], r.consecutive["b"]), (0, 1))
+
+    def test_episode_stops_when_every_agent_is_stopped(self):
+        r = E.Refusals(agents=["a", "b"])
+        [r.record(True, "a") for _ in range(3)]
+        self.assertFalse(r.stopped)
+        [r.record(True, "b") for _ in range(3)]
+        self.assertTrue(r.stopped)
+
+    def test_team_total_of_twenty_stops_everyone(self):
+        r = E.Refusals(agents=["a", "b", "c", "d"])
+        for i in range(19):  # never 3 in a row for anyone: the run is broken by each agent's own admit
+            r.record(True, "abcd"[i % 4])
+            if i % 4 == 3:
+                [r.record(False, x) for x in "abcd"]
+        self.assertEqual((r.total, r.stopped), (19, False))
+        r.record(True, "a")
+        self.assertTrue(r.stopped and r.total == 20)
+
+    def test_enforcer_herding_stops_nobody(self):
+        e = E.Enforcer("A")
+        claim = lambda a: {"type": "claim", "agent": a, "item": "t0"}  # noqa: E731
+        st = {}
+        got = [e.act(claim(a), SNAP, st) for a in ("a0", "a1", "a2", "a3")]
+        self.assertEqual([g["status"] for g in got], ["admitted", "refused", "refused", "refused"])
+        self.assertFalse(e.refusals.stopped)
+        self.assertEqual(e.act({"type": "read", "agent": "a1"}, SNAP, st)["status"], "admitted")
+
+    def test_enforcer_with_known_agents_is_not_fooled_by_a_late_team(self):
+        e = E.Enforcer("A", agents=["a0", "a1"])  # a0 has not acted yet
+        bad = {"type": "nope", "agent": "a1"}
+        self.assertEqual([e.act(bad, SNAP, {})["reason"] for _ in range(4)],
+                         ["unknown_action_type"] * 3 + ["agent_stopped"])
+        self.assertEqual(e.act({"type": "read", "agent": "a0"}, SNAP, {})["status"], "admitted")
+
+    def test_enforcer_stopped_agent_is_out_others_play_on(self):
+        e = E.Enforcer("A")
+        self.assertEqual(e.act({"type": "read", "agent": "a2"}, SNAP, {})["status"], "admitted")  # a2 is seen
+        bad = {"type": "nope", "agent": "a1"}
+        self.assertEqual([e.act(bad, SNAP, {})["reason"] for _ in range(4)],
+                         ["unknown_action_type"] * 3 + ["agent_stopped"])  # a1 is out, the team is not
+        self.assertEqual(e.act({"type": "read", "agent": "a2"}, SNAP, {})["status"], "admitted")
+        self.assertEqual(e.act({"type": "read", "agent": "a1"}, SNAP, {})["reason"], "agent_stopped")
+        self.assertEqual(e.refusals.total, 3)  # a stopped agent's later actions add nothing
 
 
 class EnforcementOff(unittest.TestCase):

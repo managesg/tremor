@@ -12,6 +12,14 @@ adopting the cuts recommended by adversarial review 2 and the GPT consult. Every
 reversible and **awaits the owner's explicit ruling**. Sources: `docs/reports/` and `docs/*.md`.
 Every cost is an **estimate** unless marked measured.
 
+**Amended 2026-11-20, Opus 5.5, after the GPT and Cursor/Grok reviews**
+(`docs/reports/review-integration.md`). "Verified" and "built" here mean the code passed a gate,
+not that anything is known about models: evidence status uses `ALIGNMENT-INTEGRATION.md` 1
+(INSTRUMENTED / PILOTED / EVIDENCED / NOT STARTED / OUT OF SCOPE), and nothing is PILOTED or
+EVIDENCED. Joules are a raw local field, never a headline. "Lease" throughout is a design: no lease
+object exists in the code (`ARCHITECTURE.md` 9a), so "out-of-lease action" is not yet computable. The GPT review would cut broad perturbation sweeps, which section 2's
+matrix is; that disagreement is for the owner (`WORKPLAN-ALIGN.md` 8a). T7 and H1 wording updated.
+
 ## 1. Thesis, and what Sortie is not
 
 When work crosses an agent boundary (a subagent returns, a session ends, a cell fails), state is
@@ -97,7 +105,7 @@ gives a tariff. Agent build tokens run on a subscription: USD unknown, not zero.
 | S1 | Router and cell contract; "every model is a cell" holds in code | `cell.py`, `router.py`, 11 tests: uncommitted, **unverified**. To build: policy signature check | 0 GPU; about 0.4M agent tokens | A new file type is needed: the symmetric claim is dropped |
 | S2 | Matrix instrument on scripted backends | `perturb.py` (7 tests, unverified), `runner.py`, trapbench. To build: floor stub and oracle per batch | 0 GPU; about 0.4M agent tokens | Floor passes or oracle fails: instrument void, fix before any model run |
 | S3 | E8.1 finished: cold-start cache write per subagent, priced | `tokens.py` verified. To do: record the dated price sheet | 0 | No price sheet readable: USD stays null, report tokens only |
-| S4 | H1 lives or stays parked | `ledger.py`, `hazard.py` verified | One salted command on the other machine | Fewer than 30 sessions with permission events: H1 stays parked |
+| S4 | H1 lives or stays parked | `ledger.py`, `hazard.py` verified | One salted command on the other machine | Fewer than 30 sessions with permission events: H1 stays parked (30 is a recruitment target, not a validated sample size) |
 | S5 | E9-0 only: scripted catalogue of nine routes to a protected file, plus the canary test (section 7) | To build | 0 GPU; about 0.4M agent tokens | None; a coverage table is the result |
 | S6 | Handoff store, raw-log search arm, notes arm | `memlint.py` verified. Store and arms to build | 0 GPU; about 0.6M agent tokens | Cannot be charged inside one cap: redesign before S7 |
 | S7 | **Headline run.** 10 tasks x 2 seeds x 6 conditions x 2 arms (retrieval, handoff) = 240 episodes per model; notes and no-memory arms only where those two differ | Needs S0-S2, S6, a frozen pre-registration | Per model at most 9.1M tokens (cap 30,000 in + 8,000 out per episode, calibrated on a pilot). Local: cap 8 GPU-hours, at most 6.9 MJ, USD n/a. Claude: ceiling USD 40 proposed, energy n/a | Section 2 ship rule |
@@ -109,10 +117,12 @@ tokens, memlint, coupling, trapbench, runner, CLI; 85 tests ran green 20 times. 
 holds 110 test functions (counted, not re-run here); the newer ones are unverified.
 
 Parked or cut:
-- **T7:** parked. If run at all, arms B and A only, as a labelled runtime smoke with no
-  hypothesis, inside the existing 12 GPU-hour cap. Stage 2, arm 0, arm D and the LoRA step are cut.
+- **T7:** parked; proposed cut (GPT review, 2026-11-20). Labelled runtime smokes of arms 0, B
+  and A ran (`docs/reports/T7-smoke.md`): 0/20, 8/20 and 1/20 at an 8,192-token cap with most
+  generations cut and different decoding per arm. Configuration results, not an edit effect.
+  Stage 2, arm D and the LoRA step are cut.
 - **E9:** only the scripted stage E9-0 (as S5). E9-1 and E9-2 (13 GPU-hours) are cut.
-- **H1:** parked until 30 sessions exist (S4).
+- **H1:** parked until 30 sessions exist (S4); not a headline even then.
 - **E8.1:** finish with a price sheet (S3).
 
 ## 6. Cross-model protocol
@@ -178,12 +188,15 @@ a failed check; no unchanged retries. Open: the owner's "+5 from 5" is still not
 ## 9. Honest status
 
 - **Verified:** the Wave 1 instruments above. **Unverified:** `cell.py`, `router.py`,
-  `perturb.py`, the T7 generation scripts, every doc edit made today.
+  `perturb.py`, the T7 generation scripts, every doc edit made today. (2026-11-20: cell, router
+  and the EP-1 rung 0 have since passed gates, but the model-facing layer was rejected once and its
+  fix is not re-verified, and the instrument pilot has not run.)
 - **No hypothesis has been tested. No pre-registration is frozen.**
 - **Failed or blocked:** the permissions corpus is too small (1,079 events, 11 denials, but 1
-  session; 30 needed). The T7 smoke was killed repeatedly by the host-memory watchdog; the leak's
-  cause is not isolated; there are **zero accuracy results**. A smoke arm was running while this
-  was written.
+  session; 30 is a recruitment target). The T7 smoke was killed repeatedly by the host-memory
+  watchdog; the leak's cause is not isolated. Smokes of arms 0, B and A later completed (0/20,
+  8/20, 1/20 at an 8,192 cap, most runs cut): configuration results under a cap, not an effect
+  estimate (updated 2026-11-20).
 - **Measured once, exploratory:** in 42 local sessions cache reads were 93.7% of tokens
   (unpriced; one user, one machine).
 - **Prior art:** orchestrator and workers, cascades, signed policy, governed memory with
@@ -242,4 +255,4 @@ No dates until throughput is measured.
 Not checked: no test or code was run; the leak figure and smoke history are as relayed by the
 parent; the documents were being edited while read.
 
-verified: 972dee3 (plus working tree) 2026-11-19
+verified: 972dee3 (plus working tree) 2026-11-19; amendments verified: 36bab4b (plus working tree) 2026-11-20

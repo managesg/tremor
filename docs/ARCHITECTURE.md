@@ -4,6 +4,8 @@ Date: 2026-11-19. Status: **design only. Nothing here is built or run** (uncommi
 and `router.py` appeared in the working tree on 2026-11-19; not verified). `PRINCIPLES.md` wins
 any conflict. Platform facts: `research/07`. Weight edits: `research/08`. Local models:
 `research/09`. Hypothesis and gate IDs: `PLAN.md`. Plain-language summary: `VISION.md`.
+Amended 2026-11-20 (Opus 5.5): section 9a, the threat model, states which boundaries the code
+holds today; the status line above is from 2026-11-19 (cell and router code have since been gated).
 
 ## 1. The design in one paragraph
 
@@ -228,6 +230,33 @@ policy. Results stay `unverified`; nothing is granted.
 | Stale route | One task class served below the floor | Config-hash invalidation | H6 |
 | Bad weight patch or adapter | One cell's model | Base hash read-only; rollback is one line in `cell.json` | H7 off-target criterion |
 
+## 9a. Threat model: boundaries (added 2026-11-20, Opus 5.5, from the GPT and Cursor reviews)
+
+Code state: 36bab4b plus the uncommitted working tree. "Test exists" means the test is in the
+tree and its module passed an independent gate (reports in `docs/reports/workplan-ep/`, for
+example G0-2R, G1, G1b); it was **not** re-run for this section. The design above says "lease"; the code has **no lease
+object**. What exists is a cell policy (allow, deny, token and seconds caps) checked by
+`router.run_task`, and board claims with a round TTL checked by `enforce.claim_before_work`.
+
+| # | Boundary (assumption we must not make) | Handled by code | Not handled |
+|---|---|---|---|
+| 1 | **Every cell emits untrusted text, planners and verifiers included** | Action-only monitor ignores narration (`monitor.py`; `test_narration_changes_no_action_verdict`, `test_subagent_return_never_changes_verdict_or_ledger`); relay lint (`memlint.relay_lint`, `enforce.no_verbatim_relay`); model replies parsed into a fixed action set, anything else malformed (`team_claude.parse`; `test_truncated_or_declined_replies_are_malformed`); predicates get deep copies (`test_board_object_never_reaches_predicate`) | No planner cell exists in code. `router.verify` trusts a verifier cell's boolean result; independence is by model family only (`test_same_model_cannot_verify_without_deterministic_check`) |
+| 2 | **Credentials and trusted control state outside cell-accessible processes and tools** | Start refused if a credential-pattern variable is set or an answer key lies in the agent tree (`seal.start_assert`; `test_credential_env_names_refuse_start`); key scrubbed from records (`ClaudeClient._scrub`); no proxy, no redirect (`test_r2_proxy_env_never_receives_the_key`, `test_d5_redirect_not_followed`); ledger pinned to `runs/spend` | The API key and the sealed board live in the **same process** as the loop. Isolation rests on the cells having no tools, not on process separation. `router.Sealed` says so: in-process only |
+| 3 | **Authority scope enforced on commits as well as starts, across retries and expiry** | `work` needs the agent's own committed or same-round claim (`enforce.claim_before_work`; `test_A_v1`); expired claims leave the snapshot at `end_round` (`board.py`; `test_claim_expiry`); a bundle from a looser cell is rejected at verify time (`test_spec_named_strict_cell_run_on_a_lax_cell_is_rejected`); a retried API call is a separate reserved call (`#r1`; `test_retry_once_then_stop`) | No policy expiry and no signature check in code. No test that a retried or late action is re-checked after a claim expires between rounds, or under declared concurrency. The 9-route catalogue (E9-0) is not built |
+| 4 | **A hash chain needs a trusted anchor** | Cell log head and count kept outside the log in `log.head`: edits, truncation and deletion of the last line detected (`cell.verify_log`; `test_log_last_line_edit_truncation_deletion_malformed`); bundles bound to a log head (`router._anchored`) | `log.head` sits on the same filesystem, writable by the same user, so a writer with file access can rewrite both. The board log has no external head (`board.py` line 59 says so). An intact chain never vouches that an event is true |
+| 5 | **Provider identity is an observation with a trust dependency** | Requested and returned model logged on every call; mismatch voids the episode (the batch stop belongs to the batch driver, not yet built) (`test_returned_model_mismatch_voids`, `test_mismatched_returned_model_voids_through_the_real_client`); fixed endpoint, environment ignored (`test_env_does_not_change_destination`); request and response sha256 logged | The provider's response id and any request-id header are not logged; no model revision is available from the API. A silent server-side change inside one model id is undetectable and must never be attributed to an arm |
+| 6 | **Router enforcement is not actor compliance** | `violation_executed` vs `refused` logged with predicate and reason (`test_refusal_is_logged_with_predicate_id_and_reason`, `test_enforcement_off_executes_and_logs_violation_executed`); refusal stops per agent (D3) | No metric for **blocked legitimate work** (a refused action that would have produced a passing task). Censored task sets (an arm incomplete) are dropped from analysis; their count is not yet a reported column |
+| 7 | **Shared failure modes: one router, one task generator and evaluator for every arm** | Floor that must fail and oracle that must pass per batch; seal on scorer, keys and prereg (`seal.py`) | A bug common to all arms moves every arm together and is invisible in contrasts. Only hand checks (pilot, `WORKPLAN-ALIGN.md` B0) and held-out templates would show it |
+| 8 | **A monitor that cannot veto still has effects** | The reasoning-visible monitor may add a deny but never lift the action-only monitor's deny (`monitor.combined`; `test_combined_second_never_vetoes_first` covers both), so a saboteur who confesses in its reasoning can be denied, if the reasoning judge flags it (the Cursor review's contrary reading came from the brief, not the code) | Alerts still reach whoever reads them. Alert volume and false positives per run (operator workload) are not measured |
+| 9 | **The router is not containment when cells share a filesystem, logs, tmp, environment or the owner key** | EP-1 cells are API calls with no tools: they can only return text that `team_claude.parse` maps to board actions | Local or tool-using cells would share the owner's user, home, tmp and environment (section 3: a stub cell is not an OS boundary). The real boundary today is "no tools", not the router |
+| 10 | **The board is a covert channel** | Hash-chained log (integrity only); actions are a closed set (`enforce.REQUIRED`) | Free-text fields still carry messages: `post.text`, `work.name`, `work.answer`, `refs`. Every field a model fills counts as a message channel; no closed vocabulary |
+| 11 | **No model context can cause a write under the owner key** | Nothing in `src/` signs or reads a signing key; policy signature is design only (section 4) | Holds by absence. When signing is built, the key must be off the box or behind a passphrase (section 2) |
+
+Rows 1, 2, 4, 7 and 9 are the ones a real-model run depends on most; rows 3 and 6 are what GPT's
+next-five item 5 (P4 with P5, scripted) would test. Second review (Cursor/Grok, 2026-11-20) added
+rows 9 to 11 and the identity point in row 5: our own client binds the returned id to the request
+it sent; a self-declared model name in text is never used.
+
 ## 10. Minimum viable hub-and-cells on this box (no GPU, no install, no network)
 
 1. `cell.py`, one stdlib file: verify signature and chain, enforce keys, run the worker, append
@@ -297,3 +326,5 @@ Risks that grow with the number of people, with the guard we have and its limit:
 What changes in the design if this is ever pursued: a key per person, a digest scope per person,
 and sharing between people only by explicit opt-in per record. Until a single-owner result
 (H4, H6) exists, none of it is built.
+
+verified (section 9a code claims): 36bab4b (plus working tree) 2026-11-20

@@ -6,8 +6,11 @@ import glob
 import hashlib
 import json
 import os
+import weakref
 
+from murmuration import board as boardmod
 from murmuration import cell as cellmod
+from murmuration import enforce
 
 
 class IndependenceError(Exception):
@@ -18,6 +21,19 @@ class IndependenceError(Exception):
 MODEL_FAMILIES = cellmod.MODEL_FAMILIES
 model_key = cellmod.model_key
 family_key = cellmod.family_key
+
+
+def group_key(bundle):
+    """The canonical key to group results by: (bundle["cell"], model family). WARNING: spec["cell"] is NOT this
+    key. It names the policy ceiling the run must stay under; run_task runs a spec on any cell no looser than it,
+    so grouping by spec["cell"] mixes cells and models. Group, analyse and route by group_key(bundle)."""
+    try:
+        c, m = bundle["cell"], bundle["model"]
+        if not cellmod.valid_name(c):
+            raise ValueError(f"bad cell {c!r}")
+        return (c, cellmod.model_key(m))
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"not a bundle: {type(e).__name__}") from None
 
 
 def _h(obj):
@@ -176,3 +192,102 @@ def run_dir(tasks_dir, cells_dir):
             raise ValueError("task spec must be an object")
         out.append(run_task(spec, cellmod.join(cells_dir, spec.get("cell"))))  # join: plain name, no symlink
     return out
+
+
+_SEALED = weakref.WeakKeyDictionary()  # handle -> (board, enforcer, state, cell_dir); the handle holds nothing
+
+
+class Sealed:
+    """Handle on a board. Every attribute read or write raises: the board is reachable only through act and
+    end_round. shortcut: in-process only (a caller who kept the raw Board, or reads _SEALED, can bypass it);
+    run agents out of process before this is a security boundary."""
+    __slots__ = ("__weakref__",)
+
+    def __getattribute__(self, name):
+        raise PermissionError("the board is reachable only through router.act")
+
+    def __setattr__(self, name, value):
+        raise PermissionError("the board is reachable only through router.act")
+
+
+def seal(board, cell_dir, practices=tuple(enforce.PREDICATES), agents=None):
+    """Hand `board` to the router; returns the handle act() takes. Discard the raw board: it is no longer yours.
+    `agents`: list of every agent id (non-empty, unique strings), so the per-agent refusal stop sees the whole team.
+    shortcut: None is accepted (agents seen so far) because team.py (frozen) and older tests seal without it; drop once they pass agents."""
+    if not isinstance(board, boardmod.Board):
+        raise TypeError("seal needs a Board")
+    if agents is not None and not (isinstance(agents, list) and agents and all(type(a) is str and a for a in agents)
+                                   and len(set(agents)) == len(agents)):
+        raise ValueError("seal agents must be a non-empty list of unique non-empty agent id strings")
+    h = Sealed()
+    _SEALED[h] = (board, enforce.Enforcer(practices, agents=agents), {}, cell_dir)
+    return h
+
+
+def _parts(handle):
+    if type(handle) is not Sealed or handle not in _SEALED:
+        raise TypeError("act needs a sealed board from router.seal, never a raw board")
+    return _SEALED[handle]
+
+
+def _execute(a, board, state):
+    t = a["type"]
+    if t == "claim":
+        board.claim(a["agent"], a["item"])
+    elif t == "post":
+        board.post(a["agent"], a["text"], kind=a["kind"], refs=a.get("refs", ()))
+    elif t == "release":
+        board.release(a["agent"], a["item"], done=a.get("done") is True)
+    elif t == "read":
+        board.read(a["agent"])
+    if t in ("write", "post") and isinstance(a.get("page"), str):
+        state.setdefault("pages", {}).setdefault(a["page"], a["agent"])  # first writer owns the page (predicate B)
+
+
+def act(action, handle, enforced):
+    """Route one board action through enforce.PREDICATES under default deny; returns (status, reason).
+    status: admitted | refused | violation_executed. A refusal costs the turn and nothing reaches the board;
+    3 consecutive or 20 total refusals stop the episode (every later action: refused, episode_stopped).
+    enforced=False executes the violation. Every non-admitted outcome is logged in the cell log (predicate id,
+    reason) BEFORE it is executed, so a failed log write (e.g. a symlinked log) executes nothing."""
+    if enforced is not True and enforced is not False:
+        raise TypeError("enforced must be a bool")
+    board, enf, state, cell_dir = _parts(handle)
+    enf.enforced = enforced
+    who = action.get("agent") if isinstance(action, dict) and type(action.get("agent")) is str else None
+    prior = enf.refusals.consecutive.get(who, 0)
+    res = enf.act(action, board.snapshot(), state)
+    status, why = res["status"], res["reason"]
+    if status != "admitted":
+        ok = isinstance(action, dict)
+        pid = why.split(":", 1)[0]
+        cellmod.append_log(cell_dir, {
+            "type": "action", "status": status, "reason": why, "costs_turn": res["costs_turn"],
+            "predicate": pid if pid in enforce.PREDICATES else None,
+            "action_type": action.get("type") if ok and isinstance(action.get("type"), str) else None,
+            "agent": action.get("agent") if ok and isinstance(action.get("agent"), str) else None})
+    if res["executed"]:
+        try:
+            _execute(action, board, state)
+            for ev in res["log"]:  # the hold report (S, L)
+                board.post(ev["agent"], f"hold:{ev['refs'][0]}", kind=ev["kind"], refs=ev["refs"])
+        except (ValueError, TypeError, KeyError) as e:  # the board itself refused (e.g. releasing an unheld item)
+            enf.refusals.record(True, who)  # D3: counts for THAT agent only; a bad id is the anonymous agent
+            enf.refusals.consecutive[who] = prior + 1  # enf.act already recorded an admit (reset to 0): keep the run
+            status, why = "refused", f"board_error:{type(e).__name__}"
+    elif res["log"]:
+        board.post(res["log"][0]["agent"], f"hold:{res['log'][0]['refs'][0]}", kind="report", refs=res["log"][0]["refs"])
+    return status, why
+
+
+def stops(handle):
+    """Read-only refusal-stop state, without an act: (episode stopped, sorted stopped agents). act() reports a stop
+    only on the NEXT action, so a stop reached by an agent's last action would otherwise be invisible.
+    Mirrors Enforcer.act: an agent is out only while enforced; the episode stop applies in every arm."""
+    r, enf = _parts(handle)[1].refusals, _parts(handle)[1]
+    return r.stopped, sorted(a for a in r.consecutive if type(a) is str and enf.enforced and r.agent_stopped(a))
+
+
+def end_round(handle):
+    """Commit the board's round (the one board call that is not an action)."""
+    _parts(handle)[0].end_round()

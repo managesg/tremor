@@ -1,6 +1,7 @@
 # Sortie: a small test program built on your talks
 
-Draft for review, 2026-11-19. **Not sent to anyone.** Addressed to Lance Martin, Lydia Hallie,
+Draft for review, 2026-11-19; amended 2026-11-20 after two independent adversarial reviews (no
+coverage table, prior art first, T7 and permission-log wording, citation rule). **Not sent to anyone.** Addressed to Lance Martin, Lydia Hallie,
 CJ Avilla and Diogo Almeida. Drafted with an AI model (Claude Fable 5.2) from our notes and
 machine-generated transcripts, so every quote needs a check against the recording first.
 
@@ -8,6 +9,11 @@ machine-generated transcripts, so every quote needs a check against the recordin
 or trademark search).
 
 ## 1. What Sortie is, and the one question
+
+**Prior art first.** None of the mechanisms here is new: orchestrators, model cascades, signed
+policy, governed memory with provenance and offline consolidation all exist, and published team
+studies already compare soft practices with structural ones. What we might add is narrow: an
+equal-budget test with deterministic scoring and open instruments, reported even if null.
 
 Sortie is a small, open test bench for one problem: when work crosses an agent boundary (a
 subagent returns, a session ends, a worker fails), state is lost or goes stale. We test one
@@ -198,23 +204,18 @@ it at current prices?
 
 ## 3. First principles and complex systems, as testable claims
 
-A complex-systems concept enters only if it gives a number that can come out wrong. Tests run
-first on *scripted backends* (small deterministic programs standing in for a model: no GPU, no
-API cost), which check the instrument before any model is involved.
+A complex-systems concept enters only if it gives a number that can come out wrong, and is tested
+first on *scripted backends* (small deterministic programs standing in for a model: no GPU, no API
+cost), which check the instrument and show nothing about models.
 
-| Concept | Measurable quantity | Cheapest deterministic test | Status | Where the analogy breaks |
-|---|---|---|---|---|
-| Stigmergy (coordination through marks left in a shared place): a shared board | Useful-read fraction (reads returning something new), duplicate-work rate, claim races, idle-turn fraction | Scripted lead and helpers on a SQLite board, blank against a given five-table schema, with a single-agent polling null | **Proposed reinstatement, owner ruling pending.** Internally deferred; nothing built | Scripted helpers cannot show that models self-organise; they only calibrate the ratios. Orders from a lead are hierarchy, not stigmergy |
-| Near-decomposability (Simon): a coupling gate before splitting work | Co-change coupling between two planned scopes, against plain file overlap | On public git history, does coupling predict integration failure better than overlap? No model needed | Coupling counter BUILT and verified. Gate test **proposed reinstatement, owner ruling pending** | Co-change records past habits, not dependencies; it misses new code |
-| Local rules for a commons (Ostrom): leases under a signed ceiling | Harm rate; share of routes to a protected file that each rule type blocks | Scripted catalogue of nine routes against prose rule, name-based deny rule and lease; perturbation P5 | Lease check BUILT, unverified; signature check and catalogue PLANNED | Ostrom's communities write their own rules; ours are imposed, and agents have no stake |
-| Requisite variety (Ashby): a control needs as many responses as the situations it faces | Distinct capability keys against distinct policy outcomes, at two key granularities | Replay the permission log at coarse and fine keys | Ledger BUILT and verified; corpus too small to conclude | Counting treats all actions as equal; a few are catastrophic |
-| Lock-in and path dependence (Arthur): early errors persist | Share of retrievals returning a planted wrong note over time; removal rate | Perturbation P3 on the trap benchmark, search against handoff | Trap benchmark and lint BUILT and verified; handoff store PLANNED | One store and scripted readers have no real increasing returns |
-| Diminishing returns, value of computation | Marginal pass-rate gain per extra token | Recovery cost per passing task, both arms, in the headline matrix | Cost columns BUILT. Dose curve DEFERRED: a third-order question before the first-order one is answered | Our budgets are tiny next to a 128-session curve (nominal budget 1M tokens per session) |
-| Consolidation (offline replay) | Planted wrong notes removed, true notes kept, at equal budget | A scripted re-verify pass that re-reads the raw log and withdraws contradicted records, as one extra arm | **Proposed reinstatement, owner ruling pending.** Model-based dreaming arms stay cut | A re-checking script is not dreaming; it tests only whether re-reading the log is the active ingredient |
-
-Still deferred: whether *small local models* build a board unaided. It needs a GPU run, and our
-GPU test is blocked (section 6). Criticality and scaling laws stay parked until they yield a
-prediction that can fail.
+**What we test, and what we do not claim.** We test one thing at a time against a baseline that
+ignores it: here, handoffs against equally funded search under seeded perturbations; in the
+companion programme, one coordination rule given as a written card against the same rule enforced
+in code. We do not claim coverage of any research area, any result about models, or that agents
+self-organise; stigmergy, near-decomposability, Ostrom's local rules, requisite variety, lock-in
+and consolidation are framings for single tests, not findings. We keep a private gap list of what
+we cannot test and why; it is not a coverage claim and is not part of this draft. Criticality and
+scaling laws stay parked until they yield a prediction that can fail.
 
 **The first-principles rules.**
 - **Five-step filter**, in order: question the requirement, delete, simplify, accelerate,
@@ -242,7 +243,8 @@ cheapest-qualified tier is the baseline. If the simple version ties, the concept
   format, not a security property.
 - **Planner cell.** A strong model orchestrating weaker ones only writes task specs. It never
   launches a process, and its tokens are counted like any worker's.
-- **Leases.** Task-scoped, expiring, checked when the tool executes; default deny, deny wins.
+- **Leases** (design, not built: today the code checks a per-cell allow and deny list and token
+  and time caps). Task-scoped, expiring, checked when the tool executes; default deny, deny wins.
 - **Evidence bundle.** Result, check output, cost by token class, seconds, joules or unknown, USD
   or unknown, model ID, lease hash, log range.
 - **Independence.** A result is not verified by a cell with the same model ID unless a
@@ -274,7 +276,7 @@ check this with planted marker strings; that test is not built.
 | Column | Unit | Note |
 |---|---|---|
 | Tokens per passing task | tokens, by class and by role | From usage fields or local counts |
-| Energy per passing task | joules | Local runs only: sampled GPU power times time, not CPU, memory or cooling. **Hosted energy is "n/a"**; we make no "green" claim for hosted models |
+| Energy per passing task | joules | Local runs only, a raw log field, never a headline: sampled GPU board power times time on a shared engine, not CPU, memory or cooling. **Hosted energy is "n/a"**; we make no efficiency or "green" claim |
 | Money per passing task | USD | At a dated price sheet. Local USD is "n/a" until an electricity tariff is set |
 | Seconds | wall clock | Reported, not a headline |
 
@@ -283,16 +285,21 @@ check this with planted marker strings; that test is not built.
 **Built and independently verified** (three verification passes by a separate model with fresh
 context, accepted with notes): run manifest, statistics, permission ledger, reuse-hazard
 estimate, token and cost accounting, memory lint, co-change coupling, trap benchmark, runner and
-command line. 85 tests passed 20 times in a row.
+command line. 85 tests passed 20 times in a row. In the same breath: the harness has needed
+several verification rounds because it was wrong each time before; the model-facing layer was
+rejected once (it accepted unknown task ids and broke its round rules) and its fix is not yet
+re-verified; the instrument pilot with a real model has not run; no batch has been run.
 
 **Built, not yet verified:** the cell and router modules and the perturbation harness. The tree
 holds 110 test functions; the newer ones were counted, not re-run, for this draft.
 
 **Failed or blocked.**
-- The permission log is too small: 1,079 events and 11 denials, but from one session; we set 30
-  sessions as the minimum. The decay question is parked.
+- The permission log is too small: 1,079 events and 11 denials, but from one session; 30
+  sessions is our recruitment target, not a validated sample size. The decay question is parked.
 - The local GPU smoke test was stopped repeatedly by a memory watchdog. Host memory leaks at
-  roughly 22 MB per step and the cause is not isolated. **Zero accuracy results.**
+  roughly 22 MB per step and the cause is not isolated. Three 20-problem smokes later completed
+  (0/20, 8/20, 1/20 at an 8,192-token cap, most generations cut at the cap, different decoding
+  per arm): configuration results, not an effect of the weight edit.
 - **Nothing has been hypothesis-tested. No pre-registration is frozen.**
 - One exploratory measurement: in 42 local sessions, cache reads were 93.7% of tokens (tokens,
   not cost; one user, one machine).
@@ -324,9 +331,15 @@ We will share the pre-registrations before any run, and the results either way.
 **What we are and are not asking.** We are not asking for endorsement, funding, access or
 non-public data. Nothing here is published; the repository has no licence yet and is not public.
 Model runs and publication each still need the project owner's separate decision. Three internal
-cuts are proposed for reinstatement in section 3 and are not decided.
+cuts (a shared board, a coupling gate, a scripted re-verify arm) are proposed for reinstatement and
+are not decided.
 
 ## 8. Sources and verification status
+
+**Citation rule.** Before any public claim we cite the primary paper, post or official artifact,
+with its denominator, policy and operating point, and we never import a reported rate (13.6%, 89%,
+17%, the CL-Bench scores, the wiki curve) as our expected effect size or power assumption. Our
+tests cannot establish any of those figures; they can only be set beside our own measured ones.
 
 | Source | How we read it | Status |
 |---|---|---|
@@ -343,3 +356,6 @@ cuts are proposed for reinstatement in section 3 and are not decided.
 | Mayer, Davis and Schoorman; Lee and See; Simon; Ostrom; Ashby; Arthur | Not opened by us | Cited second-hand |
 | A "72% cost saving from cache fixes" figure in our notes | Not found in any written source | Not used |
 | An outside consult with an OpenAI model whose identity we could not verify | Advice only | Not evidence |
+| Two further adversarial reviews (an OpenAI model and a Cursor agent, identities unverified), 2026-11-20 | Advice only, from a brief | Not evidence; verdicts in our internal notes |
+
+verified (2026-11-20 amendments): 36bab4b (plus working tree) 2026-11-20

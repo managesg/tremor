@@ -6,3 +6,4 @@ results/
 runs/
 data/
 .salt
+formal/**/.lake/

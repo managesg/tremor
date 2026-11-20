@@ -34,7 +34,8 @@ class AllocTest(unittest.TestCase):
                w("a3", "x3", 3, name="same"), {"agent": "a0", "action": "claim", "task": "x5"}]
         before = copy.deepcopy(log)
         self.assertEqual(alloc.score(log, ts),
-                         {"distinct_passing": 2, "surviving_passing": 2, "slots": 4, "duplicates": 1, "name_collisions": 1})
+                         {"distinct_passing": 2, "surviving_passing": 2, "slots": 4, "duplicates": 1, "name_collisions": 1,
+                          "Y": 0.5, "unknown_task_events": 0, "extra_work_events": 0, "valid": True})
         self.assertEqual(log, before)
 
     def test_floor_and_oracle(self):
@@ -80,6 +81,61 @@ class AllocTest(unittest.TestCase):
         log = [{"agent": f"a{i}", "action": "work", "task": t["id"], "answer": t["expect"], **extra}
                for i, (t, extra) in enumerate(zip(ts["tasks"], [{"name": ""}, {"name": None}, {}, {"name": ""}]))]
         self.assertEqual(alloc.score(log, ts)["surviving_passing"], 1)
+
+    def test_unknown_task_is_a_noop(self):  # EP1: unknown task = logged no-op; changes no other field
+        ts = {"n_agents": 4, "name_rule": alloc.NAME_RULE,
+              "tasks": [{"id": f"h14t{i}", "check": "", "expect": 150 + i} for i in range(6)]}
+        log = [w("a0", "t6", 1, name="x"), w("a2", "h14t2", 152, name="x")]  # minimal repro
+        r = alloc.score(log, ts)
+        self.assertEqual((r["name_collisions"], r["duplicates"], r["unknown_task_events"]), (0, 0, 1))
+        base = [w("a1", "h14t0", 150), w("a2", "h14t2", 152, name="x"), w("a3", "h14t2", 0, name="y")]
+        want = {k: v for k, v in alloc.score(base, ts).items() if k != "unknown_task_events"}
+        for junk in (w("a0", "t6", 1, name="x"), w("a0", "t6", 152, name="y"), w("a0", "t6", 150, name=""),
+                     w("a0", None, 150), {"agent": "a0", "action": "work", "answer": 150}, w("a0", "t6", 150)):
+            for pos in range(len(base) + 1):  # every log position
+                got = alloc.score(base[:pos] + [junk] + base[pos:], ts)
+                self.assertEqual(got.pop("unknown_task_events"), 1)
+                self.assertEqual(got, want)
+        rej = alloc.score(base + [w("a0", "t6", 1, rejected=True)], ts)  # rejected unknown is not counted
+        self.assertEqual(rej["unknown_task_events"], 0)
+
+    def test_answer_is_a_json_integer_only(self):  # EP1 7, rule 2: 30.0, "30", true are not 30
+        ts = {"n_agents": 4, "tasks": [{"id": "x0", "expect": 1}, {"id": "x1", "expect": 30}]}
+        for a in (30.0, "30", True, 30.5, [30], None):
+            self.assertEqual(alloc.score([w("a0", "x1", a)], ts)["distinct_passing"], 0, a)
+        self.assertEqual(alloc.score([w("a0", "x0", True)], ts)["distinct_passing"], 0)  # True == 1 in Python
+        self.assertEqual(alloc.score([w("a0", "x1", 30)], ts)["distinct_passing"], 1)
+
+    def test_invalid_log_is_void_not_capped(self):  # EP1 7, option C
+        ts = alloc.gen(2)
+        five = [w(f"a{i}", t["id"], t["expect"]) for i, t in enumerate(ts["tasks"][:5])]
+        r = alloc.score(five, ts)
+        self.assertEqual((r["distinct_passing"], r["extra_work_events"], r["valid"], r["Y"]), (5, 0, False, None))
+        t0, t1 = ts["tasks"][:2]
+        r = alloc.score([w("a0", t0["id"], t0["expect"]), w("a0", t1["id"], t1["expect"])], ts)
+        self.assertEqual((r["distinct_passing"], r["extra_work_events"], r["valid"], r["Y"]), (2, 1, False, None))
+        ok = alloc.score([w("a0", t0["id"], t0["expect"]), w("a0", t1["id"], 0, rejected=True), w("a0", "zz", 1)], ts)
+        self.assertEqual((ok["extra_work_events"], ok["valid"], ok["Y"]), (0, True, 0.25))
+        for log in (alloc.oracle_log(ts), alloc.floor_log(ts), []):
+            self.assertTrue(alloc.score(log, ts)["valid"])
+
+    def test_malformed_event_makes_log_invalid(self):
+        ts = alloc.gen(2)
+        good = alloc.oracle_log(ts)[:1]
+        for ev in (3, None, {"action": 1}, dict(good[0], agent=5), dict(good[0], task=["x"]),
+                   dict(good[0], name=5), dict(good[0], rejected="yes")):
+            r = alloc.score(good + [ev], ts)
+            self.assertEqual((r["valid"], r["Y"], r["distinct_passing"]), (False, None, 1), ev)
+
+    def test_event_without_action_is_malformed(self):  # ruling: scorer input is the episode action log only
+        ts = alloc.gen(2)
+        good = alloc.oracle_log(ts)[:1]
+        t = ts["tasks"][1]
+        for ev in ({"agent": "a1", "task": t["id"], "answer": t["expect"]},
+                   {"type": "work", "agent": "a1", "task": t["id"], "answer": t["expect"]},
+                   {"type": "release", "agent": None, "data": {"item": "t9", "done": True}, "rejected": False}, {}):
+            r = alloc.score(good + [ev], ts)
+            self.assertEqual((r["valid"], r["Y"], r["distinct_passing"]), (False, None, 1), ev)
 
 
 if __name__ == "__main__":

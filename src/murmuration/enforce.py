@@ -143,46 +143,64 @@ def check(practices, action, snapshot, state):
 
 
 class Refusals:
-    """Defensive test 8: stop the episode at 3 consecutive or 20 total refusals."""
+    """Defensive test 8, per agent (D3 decision, docs/reports/workplan-ep/D3-decision.md).
 
-    def __init__(self, max_consecutive=3, max_total=20):
-        self.max_consecutive, self.max_total, self.consecutive, self.total = max_consecutive, max_total, 0, 0
+    Rule: 3 consecutive refusals by the SAME agent stop that agent's contribution (agent_stopped). The episode
+    stops only when every agent is stopped or the team total reaches 20 refusals. Only an agent's OWN admitted
+    action (a read counts) resets its own counter; reads and admitted actions of other agents never touch it, so
+    four agents herding on one task in round 1 (three refused once each) end nothing.
+    `agents`: the full agent set; None means the agents seen so far (shortcut: a team that has not yet acted is
+    invisible, so pass `agents` where the set is known). `agent=None` is one anonymous agent."""
 
-    def record(self, refused):
-        self.consecutive = self.consecutive + 1 if refused else 0
+    def __init__(self, max_consecutive=3, max_total=20, agents=None):
+        self.max_consecutive, self.max_total = max_consecutive, max_total
+        self.agents = None if agents is None else set(agents)
+        self.seen, self.consecutive, self.total = set(), {}, 0
+
+    def record(self, refused, agent=None):
+        self.seen.add(agent)
+        self.consecutive[agent] = self.consecutive.get(agent, 0) + 1 if refused else 0
         self.total += bool(refused)
         return self.stopped
 
+    def agent_stopped(self, agent):
+        return self.consecutive.get(agent, 0) >= self.max_consecutive
+
     @property
     def stopped(self):
-        return self.consecutive >= self.max_consecutive or self.total >= self.max_total
+        pool = self.seen if self.agents is None else self.agents
+        return self.total >= self.max_total or bool(pool) and all(self.agent_stopped(a) for a in pool)
 
 
 class Enforcer:
     """Router-side wrapper. act() returns {status, reason, executed, costs_turn, log} where status is
     admitted | refused | violation_executed; `log` holds extra events (the hold report for S and L)."""
 
-    def __init__(self, practices, enforced=True):
+    def __init__(self, practices, enforced=True, agents=None):
         bad = [p for p in practices if p not in PREDICATES]
         if bad:
             raise ValueError(f"unknown practice {bad}")
-        self.practices, self.enforced, self.refusals, self.events = tuple(practices), enforced, Refusals(), []
+        self.practices, self.enforced, self.events = tuple(practices), enforced, []
+        self.refusals = Refusals(agents=agents)
 
     def act(self, action, snapshot, state):
+        who = action.get("agent") if type(action) is dict and type(action.get("agent")) is str else None
         if self.refusals.stopped:
             return {"status": "refused", "reason": "episode_stopped", "executed": False, "costs_turn": True, "log": []}
+        if self.enforced and self.refusals.agent_stopped(who):  # this agent is out; the others play on
+            return {"status": "refused", "reason": "agent_stopped", "executed": False, "costs_turn": True, "log": []}
         if "C" in self.practices and self.enforced and _valid(action, snapshot) is None and action["type"] == "work":
             action = dict(action, name=f"{action['agent']}-{action['task']}")  # the router assigns the name
         if _valid(action, snapshot) is None and isinstance(state, dict) and state.get("claims_round") != snapshot.get("round"):
             state["round_claims"], state["claims_round"] = {}, snapshot.get("round")
         ok, why = check(self.practices, action, snapshot, state)
         if ok:
-            self.refusals.record(False)
+            self.refusals.record(False, who)
             res = {"status": "admitted", "reason": why, "executed": True, "costs_turn": False, "log": []}
         elif not self.enforced:
             res = {"status": "violation_executed", "reason": why, "executed": True, "costs_turn": False, "log": []}
         else:
-            self.refusals.record(True)
+            self.refusals.record(True, who)
             res = {"status": "refused", "reason": why, "executed": False, "costs_turn": True, "log": []}
             if any(why.startswith(f"{p}:task_on_hold:") for p in REPORTING):
                 res["log"] = [{"agent": action["agent"], "action": "post", "kind": "report", "refs": [action["task"]]}]

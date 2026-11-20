@@ -646,6 +646,20 @@ under the same per-problem token cap, paired by problem. H7 needs the CI above 0
 estimate at or above 5 points. **Off-target delta** is the same difference on tasks the patch
 was not meant to change. **Patch size** is weights changed over total weights.
 
+**Harness-dependence index (HDI)** (EP; added 2026-11-20 after the GPT and Cursor reviews). Report first the
+three raw contrasts `Y_play - Y_none`, `Y_code - Y_none`, `Y_code - Y_play` (points; paired
+intervals over task sets, the randomisation block). Then `HDI = (Y_code - Y_play) / (Y_code -
+Y_none)`, dimensionless: 0 = the instruction matches enforcement, 1 = the instruction recovers
+none of the enforced gain; **recovered fraction** = `1 - HDI`. Values below 0 or above 1 are
+results and stay visible. Reported only when `Y_code - Y_none` beats a stated margin (interval
+wholly above 0 and a pre-registered minimum gain); otherwise the ratio is unstable or its gain
+reading is void, and only the contrasts are read. A
+three-arm batch (no `both`) gives standalone effects only. Results of the T7 smokes (0/20, 8/20,
+1/20) are configuration results under an 8,192-token cap with most runs cut, not a patch gain.
+
+**Equal budget.** Never one number: each batch names which of tokens, calls, wall time, retries
+and tool or action opportunities it holds equal, and reports the others as realised per arm.
+
 ### 4a. The three idea families as task controls: one robustness measure (added 2026-11-19)
 
 Source: `docs/reports/adversarial-review-2.md` 3.4. The owner's term "KDS" (relayed by the
@@ -706,7 +720,8 @@ needs at least two cells, so it runs only once the router exists.
 - Cross-model comparisons follow PLAN 4.6: deterministic scoring only, matched budget in turns
   plus input and output bytes, returned model ID checked per response.
 - A result counts only if the interval excludes zero **and** the point estimate meets the
-  pre-registered minimum effect. An interval inside the minimum effect is reported as a null.
+  pre-registered minimum effect. An interval inside the minimum effect is reported as a null. An
+  interval that holds both 0 and the minimum effect is inconclusive: neither a null nor equivalence.
 - No model grader is a sole judge. If one is used, report its agreement with itself over three
   repeat gradings and with a human on at least 30 items.
 - Stopping: sample sizes fixed in advance. No peeking-based extension.
@@ -994,3 +1009,5 @@ weaker model need imposed memory structure to benefit from memory at all (H8, ex
 can small local models coordinate through a shared board without being handed its structure
 (H9, status awaiting the owner's ruling). Section 4a turns the three idea families into task
 controls scored by one measure, the control effect under a fixed set of perturbations.
+
+verified (2026-11-20 glossary amendments): 36bab4b (plus working tree) 2026-11-20

@@ -108,5 +108,55 @@ class OrdersTest(unittest.TestCase):
         self.assertIsNone(compute(solo)["marker_spread"]["value"])  # no other agent
 
 
+def tr(agent, action, item, rnd=0, executed=True, **kw):
+    return dict({"agent": agent, "action": action, "item": item, "round": rnd, "executed": executed,
+                 "passed": False, "done": False}, **kw)
+
+
+class TraceReadoffs(unittest.TestCase):
+    """D1 and D2: the two read-offs the board log cannot hold, from an ordered action trace."""
+
+    def fd(self, trace):
+        return compute([], trace=trace)["false_done_rate"]["value"]
+
+    def test_false_done_honest_dishonest_and_mixed(self):
+        work = lambda a, i, ok=True, **k: tr(a, "work", i, passed=ok, **k)  # noqa: E731
+        done = lambda a, i, **k: tr(a, "release", i, done=True, **k)  # noqa: E731
+        self.assertEqual(self.fd([work("a", "X"), done("a", "X"), work("b", "Y"), done("b", "Y")]), 0.0)
+        self.assertEqual(self.fd([done("a", "X"), done("b", "Y")]), 1.0)
+        self.assertEqual(self.fd([work("a", "X"), done("a", "X"), done("b", "Y")]), 0.5)
+        # a failing check, someone else's work, another item, a refused work or a work after the release: not backing
+        self.assertEqual(self.fd([work("a", "X", False), done("a", "X")]), 1.0)
+        self.assertEqual(self.fd([work("b", "X"), done("a", "X")]), 1.0)
+        self.assertEqual(self.fd([work("a", "Z"), done("a", "X")]), 1.0)
+        self.assertEqual(self.fd([work("a", "X", executed=False), done("a", "X")]), 1.0)
+        self.assertEqual(self.fd([done("a", "X"), work("a", "X")]), 1.0)
+
+    def test_work_before_the_release_in_the_same_round_is_honest(self):
+        t = [tr("a", "claim", "X", 0), tr("a", "work", "X", 1, passed=True), tr("a", "release", "X", 1, done=True)]
+        self.assertEqual(self.fd(t), 0.0)
+
+    def test_not_done_and_refused_releases_are_not_counted_and_no_release_is_none(self):
+        self.assertIsNone(self.fd([tr("a", "claim", "X")]))
+        self.assertIsNone(self.fd([tr("a", "release", "X", done=True, executed=False)]))
+        self.assertIsNone(self.fd([tr("a", "release", "X", done=False)]))
+        self.assertEqual(self.fd([tr("a", "release", "X", done=False), tr("b", "release", "Y", done=True)]), 1.0)
+
+    def test_board_log_without_work_events_is_none_not_one(self):
+        log = [ev("release", "a", {"item": "X", "done": True, "task_type": None})]
+        self.assertIsNone(compute(log)["false_done_rate"]["value"])  # was 1.0: the router logs no work
+
+    def test_attempted_collisions_count_refused_claims(self):
+        herd = [tr("a0", "claim", "t0"), *[tr(a, "claim", "t0", executed=False) for a in ("a1", "a2", "a3")]]
+        o = {k: v["value"] for k, v in compute([ev("claim", "a0", {"item": "t0"})], trace=herd).items()}
+        self.assertEqual(o["claim_collision_attempted_rate"], 0.25)  # 1 colliding item / 4 attempts
+        self.assertEqual(o["claim_collision_rate"], 0.0)  # executed: the board saw one claim
+        # different rounds, one agent twice, or different items do not collide
+        calm = [tr("a0", "claim", "t0", 0), tr("a1", "claim", "t0", 1), tr("a1", "claim", "t0", 1), tr("a2", "claim", "t1")]
+        self.assertEqual(compute([], trace=calm)["claim_collision_attempted_rate"]["value"], 0.0)
+        self.assertIsNone(compute([])["claim_collision_attempted_rate"]["value"])
+        self.assertIsNone(compute([], trace=[])["claim_collision_attempted_rate"]["value"])
+
+
 if __name__ == "__main__":
     unittest.main()

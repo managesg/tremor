@@ -4,6 +4,14 @@
 run.** Repo is still `murmuration` (rename pending). This file re-centres `docs/PROPOSAL.md`; it
 does not delete it. Decisions for the owner: `docs/reports/emergence-decision-memo.md`.
 
+**Amended 2026-11-20, Opus 5.5, after the GPT and Cursor/Grok adversarial reviews**
+(`docs/reports/review-integration.md`): HDI wording, reporting order and margin rule (2.2), the
+budget definition (3), the lease wording (5), EP-1 as approved (3 arms x 20 sets) and an
+instrument pilot before it (6, 9). Evidence status words are those of `ALIGNMENT-INTEGRATION.md` 1
+(INSTRUMENTED / PILOTED / EVIDENCED / NOT STARTED / PARTLY / OUT OF SCOPE); BUILT,
+PLANNED and DEFERRED in section 5 describe build state, not evidence. Nothing here is PILOTED or
+EVIDENCED.
+
 Reading rule: every outside number is a **lead**. Most papers were read as abstracts only (notes
 15, 16, 17). Vendor figures are single runs with no independent replication (note 14). Costs are
 estimates unless marked measured.
@@ -47,7 +55,8 @@ What we must not overclaim:
 
 ## 2. Thesis and the one headline question
 
-**Thesis.** A harness does two jobs. Containment (sandbox, leases, signed ceiling) stays in code.
+**Thesis.** A harness does two jobs. Containment (sandbox, leases, signed ceiling; leases and
+signing are design, not built) stays in code.
 Coordination and memory discipline (claims, ownership, checking, hygiene, consolidation) may need
 only a short written practice, if the model is capable enough. If so, the practice is portable to
 any harness and the code can go. If not, we learn which rules must stay in code, for which models.
@@ -80,13 +89,28 @@ counts shown). Four arms give `Y_none`, `Y_play`, `Y_code`, `Y_both`.
 
 - **Playbook-to-enforcement ratio** `R = Y_play / Y_code` (dimensionless; numerator and
   denominator reported). Simple, but misleading when `Y_none` is already high.
-- **Harness-dependence index** `HDI = (Y_code - Y_play) / (Y_code - Y_none)`. 0 means the playbook
-  alone recovers everything enforcement gives. 1 means the playbook does nothing. Below 0 means the
-  playbook beats enforcement. Above 1 means the playbook hurts.
-- `HDI` is defined only when the 95% interval of `Y_code - Y_none` excludes 0. Otherwise the
-  practice is not needed at this capability, or does not help; `Y_none` says which.
-- Residual harness value: `Y_both - Y_play`. Cost: tokens and USD per passing task, each arm.
-- Intervals: paired cluster bootstrap over task sets, 10,000 resamples, percentile.
+- **Report first, always:** the three raw contrasts `Y_play - Y_none`, `Y_code - Y_none` and
+  `Y_code - Y_play`, each with its paired interval over task sets (the randomisation block). The
+  index below is a summary of them, never a substitute.
+- **Harness-dependence index** `HDI = (Y_code - Y_play) / (Y_code - Y_none)`, polarity: 0 = the
+  instruction matches enforcement; 1 = the instruction recovers none of the enforced gain. Below 0:
+  the playbook beats enforcement. Above 1: the playbook does worse than no card. Report the
+  **recovered fraction** `1 - HDI` beside it. Out-of-range values stay visible; never clip.
+- `HDI` is reported only when `Y_code - Y_none` beats a **stated margin**: its 95% interval wholly
+  **above** 0 and a pre-registered minimum gain (proposed: 10 points). Below the margin, only the
+  contrasts are reported. If the interval contains 0 the ratio is unstable (a near-zero
+  denominator makes it swing without bound); the practice is not needed at this capability, or
+  does not help, and `Y_none` says which. If it lies wholly below 0, enforcement hurts and the
+  "gain" reading is void. (`stats.hdi` today handles only the interval-contains-0 case:
+  `docs/reports/review-integration.md` 8.)
+- A three-arm batch (`none`, `playbook`, `code`; EP-1) estimates standalone effects only.
+  Residual harness value `Y_both - Y_play` needs the `both` arm, added only if complementarity
+  becomes a live question.
+- Cost: tokens and USD per passing task, each arm. Intervals: paired cluster bootstrap over task
+  sets, 10,000 resamples, percentile.
+- Under `code` a duplicate claim cannot execute, so a drop in claim violations is a manipulation
+  check, not a benefit. The benefit is the independently checked team outcome, with refusals,
+  blocked legitimate work and delay reported beside it.
 
 **Capability prediction, written before any data** (from slide-read memory scores and
 Anthropic's steering notes, so a lead). Three regimes: below a threshold the model does not adopt
@@ -127,6 +151,12 @@ Negative emergence means lock-in, herding, collusion or sprawl. Both are measure
 - Budgets are matched per team episode in turns plus input and output bytes; card text, board
   reads, rejected actions and any offline pass are charged inside the cap. Native tokens are
   reported beside it.
+- **"Equal budget" is stated per dimension** (added 2026-11-20). Each batch says which it holds
+  equal and reports the rest as realised, per arm: tokens (input, output, cache, by class), calls,
+  wall time, retries (the client's one retry, `#r1`) and **tool or action opportunities** (offered
+  and admitted). In EP-1 calls and per-call token caps are equal; action opportunities are not,
+  because a refusal under `code` costs the turn. The controlled comparison is not a statement
+  about deployment economics.
 - Scoring is deterministic: task checks, canaries, counts from the log. No model grader.
 - Every batch includes a scripted floor that must fail and a scripted oracle that must pass.
 - Team size 4, never above 8 in this program (the scaling paper tested at most nine).
@@ -196,7 +226,7 @@ words: BUILT, PLANNED (in this proposal), DEFERRED.
 |---|---|---|---|---|
 | Stigmergy: a shared board | `EG`; useful-read fraction; duplicate work; idle-turn fraction | Team of 4 on the board, practices A and D, four arms; single-agent polling null | Board PLANNED. **Proposed reinstatement** (was H9 and E8.2, cut) | A table row is exact and global, not a decaying local trace; agents read prose, so this may be ordinary messaging through a file |
 | Near-decomposability: coupling | Co-change coupling against file overlap; `EG` by coupling tercile | On public git history, no model; then split tasks by coupling in the team runs | Counter BUILT and verified. Gate test **proposed reinstatement** (needs a clone gate) | Co-change records habits, not dependencies |
-| Polycentric local rules | `HDI` per practice; harm rate under a signed ceiling | The four-arm design itself: rules agents hold against rules imposed | Lease check BUILT, unverified. Cards PLANNED | Ostrom's users write their own rules and have a stake; ours are handed down and agents have none. A later arm lets the team write its card |
+| Polycentric local rules | `HDI` per practice; harm rate under a signed ceiling | The four-arm design itself: rules agents hold against rules imposed | No lease object in code (corrected 2026-11-20); router-checked policy allow/deny and claim TTL BUILT. Cards BUILT (A to H, S, L) | Ostrom's users write their own rules and have a stake; ours are handed down and agents have none. A later arm lets the team write its card |
 | Requisite variety | Distinct situations against distinct responses; unhandled-case rate | Count board states a card does not cover; replay at two key granularities | Ledger BUILT; corpus too small. Card coverage PLANNED | Counting treats all cases as equal; a few are catastrophic |
 | Lock-in and path dependence | Poison-adoption fraction; correction half-life; convention flip rate | Planted wrong note and a seeded deviating convention, with and without a "challenge what fails a test" card | Trap benchmark and lint BUILT and verified. Probe PLANNED. **Proposed reinstatement** (was H4) | One small store has weak increasing returns; same-model agents are correlated by construction |
 | Diminishing returns; value of computation | Marginal pass rate per token; break-even H | Cost per pass in every arm; dose curve only after ladder rung 3 passes | Cost columns BUILT. Dose curve DEFERRED | Our budgets are tiny next to a 128-session curve |
@@ -238,6 +268,15 @@ a finding**: it restates what we coded.
   usage fields stop the batch.
 - Before EP-1, a 9-call smoke inside the unchanged default checks the adapter, usage fields and
   model ID. It decides nothing else.
+- **As approved (owner addendum 2026-11-20, `docs/reports/ep-approvals.md`):** practice A only,
+  3 arms (`none`, `playbook`, `code`; `both` dropped) x 20 task sets x 8 calls = 480, plus 20; the
+  4-arm x 15 figures above are the original proposal. `prereg/EP1.md` governs.
+- **Instrument pilot before the freeze** (added 2026-11-20, `WORKPLAN-ALIGN.md` wave B0): after
+  the fixed model loop passes its re-gate and after the canary, a tiny real-model run on
+  train-range task sets, every trace hand-checked across EP-1's three arms plus two leakage-control
+  cards ("states the check", keyword-stuffed with no norm) that never enter EP-1; tool and action
+  opportunities verified. Its own batch, small cap and approval inside the USD 10 ceiling; never
+  part of any confirmatory estimate.
 - A second tier (Sonnet 5.5, batch EP-2, same ceiling) is a separate approval. Only then can the
   capability question be read, and only as exploratory.
 
@@ -253,7 +292,10 @@ coding work; that needs the trap benchmark tasks at the next step.
 `2.8 x sd_d / sqrt(n)`, where `sd_d` is the standard deviation of paired differences. n = 10 gives
 0.89 sd_d; n = 15 gives 0.72 (our arithmetic); n = 20 gives 0.63; n = 40 gives 0.44. `sd_d` is
 measured, not guessed. EP-1 therefore detects only large effects: about 20 points if `sd_d` is
-near 0.25 (an assumption). Not detectable at this size: `playbook` against `both`, small `HDI`
+near 0.25 (an assumption). `sd_d` depends on the within-set correlation of arms: with a per-arm sd
+of 0.25 it is 0.35 at correlation 0 and 0.25 only at 0.5, so the minimum detectable effect at
+n = 20 runs from about 16 to 23 points (`WORKPLAN-ALIGN.md` 6a; our arithmetic). At low correlation
+the 20-point smallest effect is not detectable. Not detectable at this size: `playbook` against `both`, small `HDI`
 differences between practices, and the tier interaction.
 
 **Kill criteria and "inconclusive"** (smallest effect of interest: 20 points; a design choice the
@@ -266,7 +308,7 @@ owner may change before the freeze):
 | `Y_play - Y_none` interval above 0 and at least 20 points | Card adopted; report `HDI` with its interval | Carry the card to real tasks |
 | `Y_code - Y_none` clear, `Y_play - Y_none` interval wholly below 20 points | Harness needed here | Keep the rule in code for this tier. A result, not a failure |
 | Interval of `Y_play - Y_none` contains both 0 and 20 | **Inconclusive** | One predeclared doubling of n under a new approval, then report "not shown" |
-| Any harm: canary hit, protected-file change, action outside the lease | Harm | Stop the batch |
+| Any harm: canary hit, protected-file change, action outside the lease (no lease exists in code: this needs an operational definition before the freeze) | Harm | Stop the batch |
 
 **Program-level kill.** If, for the first three practices on two tiers, every `HDI` interval lies
 above 0.8, the "less harness" thesis is rejected for those tiers: we ship enforcement and stop
@@ -313,6 +355,7 @@ GPU-hour is at most 0.86 MJ at the 240 W supply rating.
 | E0 | Owner rulings; verify the existing `cell.py`, `router.py`, `perturb.py` | S | Opus verifies | About 0.2M tokens; 0 GPU | Memo decisions |
 | E1 | Build `practice.py` (load, hash, attach card; enforcement predicates), `board.py`, `team.py` (turn loop), `orders.py` (order parameters, `HDI`, `EG`), scripted adopters; tests; rung 0 | M | Sonnet builds; Opus verifies; Haiku or a script formats cards | About 0.8M tokens; 0 GPU; USD 0 | Reinstatement ruling |
 | E2 | Pre-registration `prereg/EP1.md` frozen; Claude adapter in `runner.py`; 9-call smoke | S | Fable writes the pre-registration; Sonnet builds; Opus checks | About 0.3M tokens; at most USD 5 | Commit ruling; G7 default |
+| E2b | Instrument pilot (added 2026-11-20): train-range sets, 3 EP-1 arms plus 2 leakage-control cards, blind hand-checked traces, opportunities verified; excluded from confirmatory estimates. Sits after the loop re-gate and the canary, before the freeze | S | Opus hand-checks; cells: Haiku 5.5 | Own batch inside the USD 10 ceiling: 80 calls, USD 0.75 cap proposed | Its own approval |
 | E3 | EP-1 | S | Cells under test: Haiku 5.5 | At most 1.15M tokens, USD 5, 500 calls | EP-1 approval |
 | E4 | EP-2, second tier; practices B and E on trap benchmark tasks | M | Fable reads results; Sonnet builds | One batch each, same ceiling proposed | Separate approvals |
 | E5 | Dream ladder: scripted check, then rungs 1 and 2 | M | Sonnet builds `consolidate.py`; Opus verifies | Local: cap 8 GPU-hours, at most 6.9 MJ, USD n/a; or one API batch | S0 fixed and G3 (ii), or a batch approval |
@@ -324,7 +367,8 @@ GPU-hour is at most 0.86 MJ at the 240 W supply rating.
 **Keep from `PROPOSAL.md`:** S0 to S5, the cross-model protocol, the confidentiality section, the
 lease.
 **Cut or demote:** the handoff-against-search matrix as headline (S7 becomes practice F, with no
-separate store); T7 beyond the running smoke; E9-1 and E9-2; dream dose; every hypothesis number
+separate store); T7 beyond the finished smokes (configuration results only:
+`ALIGNMENT-INTEGRATION.md` 7); E9-1 and E9-2; dream dose; every hypothesis number
 not mapped in section 5.
 
 Document debt is real: this file adds about 4,000 words to a repo with under 1,300 lines of code.
@@ -349,4 +393,4 @@ Not checked: no code or test was run; the leak and smoke status are as relayed; 
 was not readable; note 14 keyword-scanned several pages; notes 15 to 17 read most papers as
 abstracts.
 
-verified: 972dee3 (plus working tree) 2026-11-19
+verified: 972dee3 (plus working tree) 2026-11-19; amendments verified: 36bab4b (plus working tree) 2026-11-20

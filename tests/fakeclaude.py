@@ -37,6 +37,12 @@ def ok(model, text="SELECT 1", usage=None):
                                     "cache_creation": {"ephemeral_5m_input_tokens": 5, "ephemeral_1h_input_tokens": 15}}}
 
 
+def usage_ok(model, inp, out, cache_creation=0, text="x"):
+    """A 200 whose usage block is exactly (inp, out) with a chosen cache_creation_input_tokens, for batch tests."""
+    return ok(model, text, {"input_tokens": inp, "output_tokens": out, "cache_read_input_tokens": 0,
+                            "cache_creation_input_tokens": cache_creation})
+
+
 def dry_run(task, arm, seed, ledger, price_sheet, responder=None, **kw):
     """Whole claude path against the fake server only: no key, no network beyond 127.0.0.1.
     Returns (run record, requests the fake server saw)."""

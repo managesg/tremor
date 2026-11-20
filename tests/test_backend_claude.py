@@ -54,6 +54,39 @@ class ClaudeBackendTests(unittest.TestCase):
         self.assertEqual(charge["usage"]["cache_creation"]["ephemeral_1h_input_tokens"], 15)
         self.assertEqual(charge["returned_model"], M)
 
+    def test_real_client_accepts_the_batch_argument_team_claude_forwards(self):
+        # R3: the real client (not a fake) takes batch= and canary_input_tokens, as team_claude's call site passes them
+        c = self.client(lambda *a: fakeclaude.usage_ok(M, 30, 5), batch="ep1")
+        for i, extra in enumerate(({"batch": "ep1"}, {})):
+            rec = c.call(self.ep(), f"t:{i}", M, self.msgs(), 50, 0.0, system="sys", **extra)
+            self.assertIsNone(rec["void"])
+        self.assertEqual(spend.batch_report(self.d, "ep1")["calls"], 2)
+        with self.assertRaises(spend.SpendError):  # a batch the ledger does not carry fails closed, no request leaves
+            c.call(self.ep(), "t:x", M, self.msgs(), 50, 0.0, batch="canary")
+        self.assertEqual(len(self.seen), 2)
+        c2 = self.client(lambda *a: fakeclaude.usage_ok(M, 30, 5))  # unbatched ledger: batch="ep1" is refused too
+        with self.assertRaises(spend.SpendError):
+            c2.call(self.ep(), "t:y", M, self.msgs(), 50, 0.0, batch="ep1")
+
+    def test_batch_cache_creation_stops_through_the_client(self):
+        c = self.client(lambda *a: fakeclaude.usage_ok(M, 20, 5, cache_creation=7), batch="ep1")
+        with self.assertRaises(spend.BatchStopped):
+            c.call(self.ep(), "t:0", M, self.msgs(), 50)
+        with self.assertRaises(spend.BatchStopped):  # no second request leaves the process
+            c.call(self.ep(), "t:1", M, self.msgs(), 50)
+        self.assertEqual(len(self.seen), 1)
+        self.assertIn("cache_creation", spend.batch_report(self.d, "ep1")["stop_reason"])
+
+    def test_batch_per_call_cap_and_canary_declaration_through_the_client(self):
+        c = self.client(lambda *a: fakeclaude.usage_ok(M, 30, 5), batch="ep1")
+        big = [{"role": "user", "content": "x" * 2500}]  # body bytes > 2,000: the strict bound refuses it
+        with self.assertRaises(spend.SpendError):
+            c.call(self.ep(), "t:0", M, big, 50)
+        with self.assertRaises(spend.SpendError):  # ep1 cannot use the canary exception
+            c.call(self.ep(), "t:1", M, big, 50, canary_input_tokens=5000)
+        self.assertEqual(len(self.seen), 0)
+        self.assertEqual(c.call(self.ep(), "t:2", M, self.msgs(), 50)["usage"]["input_tokens"], 30)
+
     def test_returned_model_mismatch_voids(self):
         c = self.client(lambda *a: fakeclaude.ok("glm-5.3-flash"))
         e = self.ep()

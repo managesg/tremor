@@ -344,7 +344,7 @@ class PerturbTests(unittest.TestCase):
 
     WATCH = """import json, os, sys, time
 roots, stop = sys.argv[1:-1], sys.argv[-1]
-tmps = [r for r in ("/tmp", "/var/tmp", "/dev/shm") if os.path.isdir(r)]
+tmps = [os.environ["TMPDIR"]]  # private per test: a concurrent test cannot write here
 old = {r: set(os.listdir(r)) for r in tmps}
 seen = {}
 def poll(wide):
@@ -373,12 +373,14 @@ print(json.dumps(seen))
         P3 episodes). 100 P3 episodes under a private TMPDIR: no file is opened for writing or directory made during
         the run, and a sibling process polling TMPDIR and new /tmp, /var/tmp, /dev/shm entries reads 0 of 100 golds."""
         priv, ctl = tempfile.mkdtemp(), tempfile.mkdtemp()
+        wide = os.path.join(ctl, "tmp")  # the watcher's "new tmp entries" root; nothing else writes here
+        os.mkdir(wide)
         self.addCleanup(lambda: __import__("shutil").rmtree(priv, ignore_errors=True))
         self.addCleanup(lambda: __import__("shutil").rmtree(ctl, ignore_errors=True))
         with open(os.path.join(priv, "control.txt"), "w") as f:
             f.write("make fix-control-000")  # proves the watcher reads files there
         w = subprocess.Popen([sys.executable, "-B", "-I", "-c", self.WATCH, priv, os.path.join(ctl, "stop")],
-                             stdout=subprocess.PIPE, text=True)
+                             stdout=subprocess.PIPE, text=True, env=dict(os.environ, TMPDIR=wide))
         self.assertEqual(w.stdout.readline().strip(), "ready")
         os.remove(os.path.join(priv, "control.txt"))
         writes, real_open, real_osopen, real_mkdir = [], builtins.open, os.open, os.mkdir

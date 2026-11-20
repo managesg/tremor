@@ -6,6 +6,12 @@ file **supersedes the open items of `WORKPLAN-EP.md`** where it says so. Everyth
 WORKPLAN-EP stands: approvals table, verification protocol (its section 4), freeze order (section 5),
 risk register (section 7), wave B and wave C rows.
 
+**Amended 2026-11-20, Opus 5.5, after the GPT and Cursor/Grok adversarial reviews**
+(`docs/reports/review-integration.md`):
+wave B0 (instrument pilot) inserted before wave B; section 6a (pre-registration discipline) and
+section 8a (proposed order and cuts) added; the T7 rows corrected. Section 1's table is as of
+2026-11-19 except the T7 row; rows A6, A7, A9, B2 have since been built and gated (G1, G1b).
+
 ## 1. What is built and what is not (read from the tree today)
 
 | Piece | File | State |
@@ -16,13 +22,13 @@ risk register (section 7), wave B and wave C rows.
 | Order parameters | `orders.py` | Built (A4) |
 | `hdi`, `emergence_gain`, `nominal_group` | `stats.py` | Built (A5) |
 | Dream arms A to E, poison task | `consolidate.py`, `trapbench/poison.py` | Built (A8) |
-| Leases, router, perturbations | `cell.py`, `router.py`, `perturb.py` | Built. **Changed since A0-1 failed them**: today's sha256 prefixes are `b76b1b65`, `5ff1f8e3`, `4665ea90`, not the hashes A0-1 reviewed. Unverified at these bytes |
+| Cell policy (no lease object exists; `ARCHITECTURE.md` 9a), router, perturbations | `cell.py`, `router.py`, `perturb.py` | Built. **Changed since A0-1 failed them**: today's sha256 prefixes are `b76b1b65`, `5ff1f8e3`, `4665ea90`, not the hashes A0-1 reviewed. Unverified at these bytes |
 | Spend ledger, Claude client | `spend.py`, `backend_claude.py` | Built. Last verdict: not accepted, one blocking fix (R1). Fix status unknown to me |
 | Scripted adopters, team loop | `adopters.py`, `team.py` | **Not built** (A6) |
 | Enforcement predicates | `enforce.py` | **Not built** (A7) |
 | Rung 0 driver | `rung0.py` | **Not built** (A9) |
 | EP-1 adapter, pre-registration | `team_claude.py`, `prereg/EP1.md` | **Not built** (B2, B3) |
-| T7 arms 0, A, B, C, D | `train/t7_*.py` | Built; smoke running (arm 0 done, arm B running). Do not touch `train/` |
+| T7 arms 0, A, B, C, D | `train/t7_*.py` | Built. Smokes of arms 0, B, A done (`T7-smoke.md`): 0/20, 8/20, 1/20 at an 8,192 cap, most runs cut at the cap, different decoding per arm: configuration results, not an edit effect. Do not touch `train/` |
 | Hold task, cards H, S, L, seal, monitors | — | **Not built** (this plan) |
 
 Suite size was 186 tests at A0-3. I did not run it.
@@ -155,11 +161,29 @@ A gateway is not built until a second egress path exists.
 **Gate G1 (Opus):** rung-0 report accepted; every instrument check holds; every record carries
 `instrument_validation: true`. Nothing paid starts before G1.
 
+### Wave B0: instrument pilot (added 2026-11-20, GPT review next-five item 1)
+
+Between the fixed model loop (G1b fixes, accepted at a re-gate on a fixed SHA) and the frozen EP-1.
+It tests the instrument with a real model, not the hypothesis.
+
+| Item | Rule |
+|---|---|
+| Order | Loop re-gate, then the canary (price and model ID), then the pilot, then any pilot-driven fix and its re-gate, then the freeze. A fix after the freeze restarts the freeze |
+| Tasks | Train-range task sets only (`alloc.gen(s, "train")`); the held-out seeds belong to EP-1 |
+| Arms | EP-1's three (`none`, `playbook`, `code`) plus two **leakage controls that never enter EP-1** (Cursor review): a **"states the check" card** (the scorer's predicate written out plainly, no norm) and a **keyword-stuffed no-norm card** (the scorer's words, no instruction). If either moves `Y` like the playbook card, the playbook arm measures instruction following on a visible answer key, and the card is rewritten before the freeze |
+| Size | 5 arms x 2 task sets x 8 calls = 80 calls, Haiku 5.5, same caps and prompts as EP-1 |
+| Checks | Every trace hand-checked by Opus on a copy with arm labels and the card slot redacted (the card text would otherwise reveal the arm), against the deterministic score: parsed actions, refusals and the status line, opportunities offered and admitted per agent, realised tokens per card slot, retries, denials and wall time per arm, prompt truncation, returned model ID |
+| Use | Instrument decisions only (parser, prompt shape, caps, opportunity accounting). Never pooled into, or used to size, a confirmatory estimate; reported in its own file |
+| Spend | Its own batch, not inside `ep1` (G0-2R: `ep1` is token-bound at about 491 reserves). Proposed cap USD 0.75 and 80 calls, inside the USD 10 ceiling and the USD 9 code stop; estimate about USD 0.56 at the cap with the Sonnet price as the stand-in. Needs a `pilot` entry in `spend.BATCH_SPECS` (code, not done) |
+| Approval | Its own: the owner names the batch, call count and USD cap. The 9-call default cannot hold one episode per arm |
+| Kill | Any trace where the score disagrees with the hand check, an opportunity is missing in one arm, or the parser misreads a reply: fix, re-gate, re-pilot under a new approval |
+
 ### Wave B: EP-1, API, as in WORKPLAN-EP with two changes
 
 - B3 `prereg/EP1.md`: **practice A only**; primary `Y` = distinct passing tasks / 4 slots; read-offs
   name collisions and false-done rate; the novelty wording from G0-3.
 - B2 unchanged. 4 arms x 15 sets x 8 calls = 480, plus 20: 500 calls, at most 1.15M tokens.
+  Superseded by the owner addendum of 2026-11-20: 3 arms x 20 sets, same 480 plus 20.
 
 **Gate G2:** WORKPLAN-EP section 5 freeze; the owner's verbatim approval and soft-budget
 acknowledgement in `ep-approvals.md`; price sheet fetched within 3 days of the canary (the current
@@ -179,7 +203,7 @@ The ledger decides, not this table. No ceiling is raised to finish a batch.
 
 | Item | Content | Estimate |
 |---|---|---|
-| T7 full run | Arms 0, A, B, C, D on the frozen problem set, plus the random-direction arm | Arm 0 smoke: 2,683 s and about 19 kJ for 20 problems at an 8,192 cap. Five arms at that size: about 3.7 GPU-hours, about 0.1 MJ GPU-only. A full set scales with problem count |
+| T7 full run | Arms 0, A, B, C, D on the frozen problem set, plus the random-direction arm | Arm 0 smoke: 2,683 s and about 19 kJ for 20 problems at an 8,192 cap. Five arms at that size: about 3.7 GPU-hours, about 0.1 MJ GPU-only. The registered run (100 problems, 32,768 cap, six arms) projects to about 53 GPU-hours, 4.4 times the cap (`T7-smoke.md` 6). Proposed cut (8a) |
 | AT12 | Difference-of-means "defers to notes" projection | One model already loaded; sized after T7 |
 | AT4, AT5 on an open-weight model | Relay and dose-response with a real reader | Sized from a 10-task pilot |
 | Dream ladder rungs 1 and 2 with a model | EP section 4 | As EP |
@@ -202,6 +226,45 @@ per item.
 | Program | For the first three practices on two tiers every `HDI` interval lies above 0.8 | Ship enforcement; stop writing cards (EP section 6) |
 | Novelty | G0-3 finds the same-norm comparison already published | Reframe as replication; continue only if the practices differ |
 | Spend | Any cap or stop | Halt, report, never raise |
+
+## 6a. Pre-registration discipline: the self-deception audit (added 2026-11-20)
+
+Every pre-registration from EP-1 on states how it handles each item, or names it as a limit.
+Items 1 to 5 are the GPT review's audit; items 6 to 13 come from the second, independent review
+(Cursor/Grok), which agreed on 1 to 5.
+
+| # | How we could fool ourselves | Control | State today |
+|---|---|---|---|
+| 1 | Scripted adoption read as model evidence | Scripts are positive and negative instrument controls only, excluded from real-model estimates; scoring frozen before the paid run | Rule exists (EP 6; G1 and G1b banners) |
+| 2 | Byte parity hides unequal treatment | Inspect token counts and presentation per arm; a credible **placebo** (the equal-length neutral card, checked free of task keywords); **counterbalanced templates** (at least two card wordings and two neutral texts, alternated across task sets) or the single wording stated as a limit; log opportunities and costs per arm. Primary benefit is the independently checked task outcome, with blockage and delay measured: duplicates vanish by construction under enforcement | Neutral card built; one wording only; opportunity log not in the analysis |
+| 3 | Small n makes noise look decisive | Randomise by task block; team events are within-episode observations, never independent; one primary contrast and smallest effect; raw paired differences with intervals first; **MDE recomputed** with the actual randomisation and a stated within-block correlation (below). Inconclusive is neither equivalence nor null | Primary contrast fixed in the prereg draft; MDE assumed `sd_d` 0.25 |
+| 4 | Same-family agents fail together | Measure **agreement on identical wrong outcomes** (same wrong answer, or the same herded claim, across agents in an episode) beside rho; where a verifier exists, independent-context against shared-context verification; cross-family is a follow-up | rho is a read-off; identical-wrong agreement not computed |
+| 5 | Leakage and gaming inflate apparent safety | Fixture generation apart from immutable outcome checks (`seal.py`); answer keys hidden; **blinded outcome checks** wherever a human or model looks (pilot hand checks, any audit) with arm labels removed; **held-out task templates**, not only held-out seeds; benign controls; score against durable artifacts. A non-empty answer, a sealed verdict or an intact hash chain does not establish correctness | Seal built; scoring is deterministic code; held-out split is an operand range of one `alloc` template (`alloc.RANGES`), not a new template |
+| 6 | The playbook card restates the scorer's predicate (Cursor review: "the one built-in cheat") | **Ban scorer predicate words from the playbook card**, enforced by a static check against the scorer's vocabulary, run by someone other than the card's author; cards frozen before any score; the two leakage-control cards run in the pilot only (B0) | Not built: card A is not checked against the scorer's words |
+| 7 | Unequal presentation survives byte matching | **Token-matched card slot** (same token count, measured from usage fields in the pilot, not only bytes); **log prompt truncation** per call (a tail card disappears first and fake-wins the `code` arm); **match retries and denials across arms** and report them | Byte-matched only; truncation not logged |
+| 8 | HDI read when enforcement does not help | **No HDI unless `Y_code - Y_none` beats a stated margin** (proposed: interval wholly above 0 and point at least 10 points); otherwise report the three contrasts only | `stats.hdi` checks only that the interval excludes 0 |
+| 9 | Agent-turns counted as independent | **Task-level n** (the task set is the unit); report **pairwise error correlation** between agents | rho exists as a read-off |
+| 10 | The harness itself is wrong (five verification rounds so far) | **Model-free canary suite** that must score zero or fail closed: empty success, unknown task id, unmapped HTTP status, truncated action, wrong returned model id, overspend attempt, any-non-empty acceptance, fabricated source passing the lint. A **second scorer implementation**, written apart from the first; any disagreement voids the run | Canaries exist as scattered tests; no single suite; one scorer |
+| 11 | We measure incompetence, not coordination | A **human baseline**: the owner (or a delegate) plays about ten allocation tasks by hand, zero spend, before the freeze | Not done |
+| 12 | A post-gate fix silently changes the instrument | Any fix after a gate **updates the pre-registration before spend**, and the diff ships with the result | Rule not written into the prereg |
+| 13 | Scripted runs leak onto a model figure | The analysis script refuses to plot or pool any record whose run id carries the scripted prefix (machine check, not a promise) | `instrument_validation: true` flag exists; no refusal in the analysis |
+
+**MDE, recomputed (our arithmetic, for EP-1 as approved: 3 arms x 20 task sets, paired within
+set).** `sd_d = sd * sqrt(2 (1 - rho))` for two arms of per-arm sd `sd` and within-set correlation
+`rho`; MDE at 80% power, two-sided 5%, is about `2.8 sd_d / sqrt(n)` (2.95 with a t multiplier at
+df 19). With `sd` = 0.25 (an assumption; `Y` moves in steps of 0.25 per episode):
+
+| rho | `sd_d` | MDE, n = 20 (normal / t) |
+|---|---|---|
+| 0 | 0.35 | 22 / 23 points |
+| 0.3 | 0.30 | 19 / 20 points |
+| 0.5 | 0.25 | 16 / 17 points |
+
+The quoted "about 16 points" assumes rho near 0.5. rho is unknown: arms share the task set and
+board seed (common random numbers), which pushes it up, but four sampled agents at temperature 1
+may not track the set much. The range shows the sensitivity: at low rho the 20-point smallest
+effect is at or beyond what EP-1 can detect. The pilot (B0) is too small to estimate rho and is
+not used to size the confirmatory run.
 
 ## 7. Cost per wave (estimates)
 
@@ -233,6 +296,46 @@ per item.
 Tasks 1 to 10 run in parallel (disjoint files). S8 and S9 follow when `orders.py` and `stats.py`
 are free. B1 to B3 start after tasks 2 and 3.
 
+## 8a. GPT's next five and cuts, with our verdict (added 2026-11-20; proposed, owner rules)
+
+Section 8 is the build order already executed. From here on the proposed order is:
+
+| # | GPT's item | Verdict | Why |
+|---|---|---|---|
+| 1 | Tiny real-model instrument pilot after the model-facing fix; hand-checked traces; opportunities verified; excluded from estimates | Accept | Cheapest way to catch a parser, prompt or opportunity defect before 480 paid calls. Wave B0 |
+| 2 | Frozen EP-1 in randomised task blocks; verified completion, wasted work, collisions, delays, raw contrasts; claim-violation drop is a manipulation check | Accept | Already the plan; the manipulation-check wording and raw contrasts are now in EP 2.2 |
+| 3 | Extend exactly one dimension conditional on EP-1 (more blocks, a second family, or stop) | Accept | Matches EP 6's one predeclared doubling and EP-2; each is a new approval |
+| 4 | Small real-model wrong-note and re-verification experiment, clean counterfactuals, blinded checks | Partly | A good candidate, but EP-1b (hold task, cards S and L) is equally ready; the owner picks one after EP-1 reports. Not both at once |
+| 5 | P5 and P4 together on an inert workflow; deny and expiry enforcement; recovery under timeouts without duplicate or unauthorised effects | Accept, reordered | Scripted and zero cost, so it runs now in parallel and blocks nothing. Note: there is no lease object; the test is on router-checked policy and claim TTL (`ARCHITECTURE.md` 9a) |
+
+**The second review's next five** (Cursor/Grok, independent of GPT):
+
+| # | Item | Verdict | Why |
+|---|---|---|---|
+| 1 | Re-gate the model layer, then EP-1 directly (with the denominator rule, leakage card, truncation logged, inconclusive allowed) | Partly | Same content as GPT 1 and 2, but we keep the pilot (B0) between them; the leakage cards go into the pilot, not into EP-1 |
+| 2 | No-API replication of the one-line memory warning, one local model | Partly | The most credible replication line, but it needs gate G3 and the host-memory leak isolated; next after EP-1 if the GPU is cleared |
+| 3 | Cross-agent error correlation; four copies against three plus a dissenter | Partly | Correlation is a free read-off (6a, items 4 and 9); the dissenter arm is a new design, after EP-1 |
+| 4 | Model-free canary suite | Accept | Zero cost, now, in parallel (6a item 10); it also freezes the 3.9 case study |
+| 5 | Close the ledger canary-size decision; trip the hard stop by trying to overspend | Partly | Canary size is closed (owner addendum 2026-11-20: Haiku only, padded). Overspend probes ran in G0-2R; a deliberate trip belongs in the canary suite |
+
+**GPT's cuts**, against our state:
+
+| Cut | State before the review | Now |
+|---|---|---|
+| Weight-edit thread (T7, AT11) | Parked; arm E cut; stage 2 cut (Fable review 2, action 8) | Proposed cut. Smokes stand as configuration results only |
+| Activation demo (AT12) | Parked behind GPU gate G3 | Proposed cut (3.7 now "PARTLY, NOT STARTED") |
+| Recursion (3.10) | PARTLY | OUT OF SCOPE, deferred until one layer helps |
+| Welfare | OUT OF SCOPE | Unchanged |
+| Broad perturbation sweeps | EP demoted the handoff matrix; Fable review 2 ranked the matrix 7th and made it its research question; `PROPOSAL.md` 2 still states it as the question | **Disagreement, owner rules.** Our view: park the model matrix (S7) behind EP-1; keep the scripted matrix as an instrument |
+| Observational permissions-decay headline (H1) | Parked "until 30 sessions" | Parked. 30 sessions is a recruitment target, not a validated sample size |
+
+The second review agrees on the edit and probe thread, recursion and the permissions replay, and
+adds: joules (now out of every headline, raw local field only), persona vectors (T7 arm D, AT12:
+proposed cut), "chain-of-thought" and "recursive" labels (removed), and **any second practice, paid
+tier or task family before EP-1 is reported** (already the rule). It also says stop publishing the
+coverage table: `ALIGNMENT-INTEGRATION.md` 2 and 3 are now marked a private gap list, and
+`PROPOSAL-SHARE.md` no longer carries a status table.
+
 ## 9. Cut by the five-step filter
 
 - A third generator file for H (it is one function beside the hold task).
@@ -251,4 +354,4 @@ are free. B1 to B3 start after tasks 2 and 3.
 Eight yes/no items: `docs/reports/alignment-decision-memo.md`. Two from WORKPLAN-EP still block the
 first paid call: the soft-budget acknowledgement, and key delivery unseen by any agent.
 
-verified: 972dee3 (plus working tree) 2026-11-19
+verified: 972dee3 (plus working tree) 2026-11-19; amendments verified: 36bab4b (plus working tree) 2026-11-20

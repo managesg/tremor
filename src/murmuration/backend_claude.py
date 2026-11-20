@@ -113,7 +113,7 @@ class ClaudeClient:
             except ValueError:
                 return e.code, {}
 
-    def call(self, episode, call_id, model, messages, max_tokens, temperature=0.0, system=None):
+    def call(self, episode, call_id, model, messages, max_tokens, temperature=0.0, system=None, canary_input_tokens=None, batch=None):
         """One /v1/messages request. Returns the per-call record (also written to the ledger).
 
         Retries at most once, only when the first attempt produced no usable response (network error,
@@ -121,6 +121,8 @@ class ClaudeClient:
         """
         if episode.void:
             raise EpisodeVoided(episode.void)
+        if batch != self.ledger.batch and batch is not None:  # the ledger's batch is authoritative; a mismatch fails closed
+            raise spend.SpendError(f"call batch {batch!r} does not match the ledger's batch {self.ledger.batch!r}")
         if not spend._pos_int(max_tokens, spend.MAX_TOKENS_LIMIT):
             raise spend.SpendError(f"max_tokens must be a positive int <= {spend.MAX_TOKENS_LIMIT}")
         for m in messages:  # image/document blocks break the bytes >= tokens bound
@@ -141,7 +143,7 @@ class ClaudeClient:
                 raise EpisodeCapExceeded("episode wall-second cap reached")
             if episode.tokens + ub + max_tokens > episode.token_cap:
                 raise EpisodeCapExceeded("episode token cap would be crossed by this call")
-            worst = self.ledger.reserve(cid, model, ub, max_tokens)
+            worst = self.ledger.reserve(cid, model, ub, max_tokens, canary_input_tokens)
             t0 = time.monotonic()
             try:
                 status, resp = self._post(body, min(self.timeout, left))

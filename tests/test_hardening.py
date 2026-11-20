@@ -570,6 +570,20 @@ class PolicyBindingClass(Base):
         self.assertEqual(n, 25 * 8)
         self.assertIs(router.verify({x: y for x, y in spec.items() if x != "cell"}, b, self.d), False)  # names no cell
 
+    def test_no_cell_spec_run_itself_is_not_verified(self):
+        """kills: spec["cell"] -> spec.get("cell", bundle["cell"]) (the old no-cell assertion only changed the spec
+        hash). The bundle is run FROM the no-cell spec, so its hash matches and only the missing cell can refuse it."""
+        self.mk("w")
+        v = self.mk("v", "scripted_strong", "claude-opus-5-5")
+        nocell = {x: y for x, y in SPEC.items() if x != "cell"}
+        b = router.run_task(dict(nocell, expect=["a", "b"]), os.path.join(self.d, "w"))
+        self.assertEqual(b["status"], "done")
+        self.assertIs(router.verify(dict(nocell, expect=["a", "b"]), b, self.d), False)
+        b2 = router.run_task(dict(nocell, id="t2"), os.path.join(self.d, "w"))
+        self.assertIs(router.verify(dict(nocell, id="t2"), b2, self.d, verifier_dir=v), False)
+        c = dict(SPEC, id="t3", expect=["a", "b"])  # control: the same task naming its cell verifies
+        self.assertIs(router.verify(c, router.run_task(c, os.path.join(self.d, "w")), self.d), True)
+
 
 if __name__ == "__main__":
     unittest.main()

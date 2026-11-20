@@ -1,0 +1,10 @@
+name = "allocscore"
+version = "0.1.0"
+defaultTargets = ["AllocScore", "allocscore"]
+
+[[lean_lib]]
+name = "AllocScore"
+
+[[lean_exe]]
+name = "allocscore"
+root = "Main"

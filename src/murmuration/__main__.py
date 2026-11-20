@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-from . import coupling, hazard, ledger, manifest, memlint, runner, stats, synth, tokens
+from . import coupling, ep1, hazard, ledger, manifest, memlint, runner, stats, synth, tokens
 from .trapbench import sqlseq, traps
 
 
@@ -96,6 +96,23 @@ def build_parser():
     pp = sub.add_parser("power-parse", help="integrate nvidia-smi CSV power samples (file or - for stdin)")
     pp.add_argument("csv")
     pp.add_argument("--baseline-csv", help="separate pre-job idle record")
+    e = sub.add_parser("ep1", help="EP-1 batches: dry-run (fake server), canary/pilot/run (paid, gated), analyse")
+    es = e.add_subparsers(dest="ep1_cmd", required=True)
+    d = es.add_parser("dry-run", help="canary, pilot and the whole schedule against the fake server; stamped FAKE")
+    d.add_argument("--out-dir", required=True)
+    d.add_argument("--schedule-seed", type=int, default=0)
+    d.add_argument("--review", default=ep1.REVIEW_FILE, help="recorded non-author review of the play card")
+    for name in ("canary", "pilot", "run"):
+        g = es.add_parser(name, help=f"paid {name}: needs --i-have-owner-confirm and MURMURATION_EP1_KEY in the environment")
+        g.add_argument("--out-dir", required=True)
+        g.add_argument("--schedule-seed", type=int, default=0)
+        g.add_argument("--i-have-owner-confirm", action="store_true")
+        g.add_argument("--review", default=ep1.REVIEW_FILE, help="recorded non-author review of the play card")
+        g.add_argument("--base-url", help="test hook: a loopback fake server (the client refuses any other host)")
+        g.add_argument("--ledger-dir", help="test hook, with --base-url only")
+        g.add_argument("--price-sheet", help="test hook")
+    an = es.add_parser("analyse", help="report for an EP-1 or pilot output directory")
+    an.add_argument("outdir")
     return ap
 
 
@@ -166,6 +183,8 @@ def _main(a):
             _out(runner.run(a.task, a.arm, a.seed, a.backend, a.out_dir))
         except (RuntimeError, NotImplementedError) as e:
             return _fail(str(e))
+    elif a.cmd == "ep1":
+        return ep1.cli(a)
     elif a.cmd == "power-parse":
         p = _power()
         read = lambda f: sys.stdin.read() if f == "-" else open(f).read()

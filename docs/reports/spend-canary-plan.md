@@ -17,8 +17,10 @@ verifiers never read or hold one. Follows `spend-verification.md` section (8).
 - A returned model that differs from the requested one is priced at the dearer of the two (worst case if unknown).
 - The key and its 10-character ends are scrubbed from everything persisted or returned.
 - The run record's `usd` is the ledger spend for the episode, retried attempts included.
-- Price sheet staleness: 3 days. The sheet fetched 2026-11-19 expires 2026-11-22 (`PriceSheet.expires_on()`).
-  Refetch and bump `fetched` before then; an older sheet is refused.
+- Price sheet staleness: 3 days (`PriceSheet.expires_on()`); an older sheet is refused. The canary's first reserve pins
+  the sheet sha256 for both `canary` and `ep1`, so a changed sheet is refused mid-batch. See the price-sheet rule below.
+- A batch is settled only when no stop is recorded anywhere in its subtree or the batch it depends on: a stopped
+  canary refuses the pilot and any settle of `ep1`, so `ar1` never opens after a stop.
 
 ## Step 0: dry run (no key, no network)
 
@@ -30,30 +32,38 @@ Check the ledger: one `reserve` then one `charge` per call, run `usd` equals the
 
 Owner sets a Console workspace spend limit of USD 10 or less. The ledger is an estimate; the Console is the backstop.
 
-## Step 2: Sonnet canary
+## Price-sheet rule (G0-2R2 section 4; binding for canary, pilot and EP-1)
 
-- One call, model `claude-sonnet-5-5`, `max_tokens=16`, a one-line prompt.
-- Fresh canary ledger in the pilot ledger directory, `ceiling=0.05`, `max_calls=1`.
-- Assert: returned model equals the requested one; usage fields present and finite; no `overspent` marker; no key in
-  the ledger or stdout.
-- Compare: the Console cost for that request must equal the ledger `charge` USD (to display precision). A mismatch stops
-  everything, and nobody raises any limit.
+- Refetch `docs/reports/price-sheet.json` on canary day. Re-verify every row against the source URL, set `fetched` to
+  that UTC date and record the new sha256.
+- Leave the sheet byte-unchanged until EP-1 settles. The canary, the pilot, the pilot hand-check, EP-1 and every resume
+  must all finish by `fetched` + 3 days (UTC) on that unchanged sheet. Otherwise EP-1 is stranded: a refetch is refused
+  mid-batch and the old sheet is too old.
+- Never pass `--price-sheet` (nor `--ledger-dir` or `--base-url`) on a paid command; they are test hooks.
+- One process at a time, ever: no second driver on the same ledger or output directory (a second one strands the batch).
 
-Skeleton for the owner's shell (the key comes from the owner's environment, never from a file in the repo):
+## Step 2: canary through the CLI (Haiku, one padded call)
 
-```python
-led = spend.Ledger(f"{PILOT_DIR}/canary.jsonl", spend.PriceSheet.load(SHEET), ceiling=0.05, max_calls=1)
-cl = backend_claude.ClaudeClient(api_key, led)
-rec = cl.call(backend_claude.Episode("canary", 200, 30), "canary:0", "claude-sonnet-5-5",
-              [{"role": "user", "content": "Reply with OK."}], 16)
+The only canary path is `ep1 canary`: one `claude-haiku-5-5` call with a 90,000-byte padded request, `max_tokens` 300,
+batch `canary` (cap USD 0.05, 1 call, 90,300 tokens) in the pinned ledger directory `runs/spend`. The key is read from
+`MURMURATION_EP1_KEY` in the owner's environment only, never from a file or an argument.
+
+```sh
+MURMURATION_EP1_KEY=... PYTHONPATH=src python3 -m murmuration ep1 canary --out-dir <out>/canary --i-have-owner-confirm
 ```
 
-## Step 3: Haiku canary (only after step 2 passes)
+- Pass: `<out>/canary/canary.json` has `ok: true` and `reason: complete`; the batch settled `complete`.
+- Any other reason (`stopped:<why>`) leaves the canary stopped: the pilot and EP-1 stay refused, EP-1 can never settle
+  and ar1 never opens. Do not settle anything by hand.
+- Compare: the Console cost and tokens for that one request must equal `ledger_usd` and `usage` in `canary.json` (to
+  display precision). A mismatch stops everything, and nobody raises any limit.
 
-The sheet lists Haiku 5.5 input at USD 0.10 per million tokens, 10x below Haiku 4.5. Repeat step 2 with
-`claude-haiku-5-5` and the same 0.05 sub-ceiling. Console cost must equal the ledger. No Haiku batch before this.
+## Step 3: pilot, then EP-1 (only after step 2 passes)
 
-## Step 4: batches
+```sh
+MURMURATION_EP1_KEY=... PYTHONPATH=src python3 -m murmuration ep1 pilot --out-dir <out>/pilot --i-have-owner-confirm
+MURMURATION_EP1_KEY=... PYTHONPATH=src python3 -m murmuration ep1 run --out-dir <out>/ep1 --i-have-owner-confirm
+```
 
-One process at a time, a `max_calls` per batch, directory total checked against 9.00 after each batch. Stop at the first
-void, `unbilled_unknown`, `overspent` marker or Console mismatch.
+Hand-check `<out>/pilot/pilot_trace.txt` before `run`. Each batch writes `final.json`; stop at the first
+`stopped:<why>`, void, `unbilled_unknown`, `overspent` marker or Console mismatch. All of it within the sheet's 3 days.
