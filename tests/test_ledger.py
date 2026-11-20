@@ -81,6 +81,43 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(ledger.classify_denials(e, window=1), {"retried": 1, "workaround": 1, "moved_on": 1})
 
 
+def _stream(test_events):
+    # 10 sessions: s00..s06 train (days 0-69), s07..s09 test (days 70-99)
+    base = [ev(d, "Grep", session="s%02d" % (d // 10)) for d in range(70)]
+    base += [ev(d, "Read", session="s00") for d in (0, 1, 2)]  # promoted, then idle ~67 days in train
+    return sorted(base + test_events, key=lambda e: e.t)
+
+
+class HoldoutTests(unittest.TestCase):
+    def test_counts_and_split_never_share_a_session(self):
+        e = _stream([ev(d, "Grep", denied=d == 71, session="s%02d" % (d // 10)) for d in range(70, 100)])
+        self.assertEqual(ledger.counts(e), {"events": 103, "sessions": 10, "denials": 1})
+        tr, te = ledger.split_sessions(e, 0.7)
+        self.assertEqual((len({x.session for x in tr}), len({x.session for x in te})), (7, 3))
+        self.assertFalse({x.session for x in tr} & {x.session for x in te})
+        self.assertLess(max(x.t for x in tr), min(x.t for x in te))
+
+    def test_tau_chosen_on_train_only_poisoned_test_half(self):
+        clean = _stream([ev(d, "Grep", session="s%02d" % (d // 10)) for d in range(70, 100)])
+        poison = _stream([ev(d, "Read", session="s%02d" % (d // 10)) for d in (70, 71, 72)]
+                         + [ev(85, "Grep", session="s08")]  # keeps 10 sessions so the 7/3 split matches
+                         + [ev(d, "Bash:rm", denied=True, session="s09") for d in range(90, 100)])
+        a, b = ledger.tau_sweep(clean), ledger.tau_sweep(poison)
+        self.assertEqual(a["chosen_tau"], 1)  # train half alone: fixture is meaningful
+        self.assertEqual(a["chosen_tau"], b["chosen_tau"])
+        self.assertEqual(a["rows"]["train"], b["rows"]["train"])
+        self.assertNotEqual(a["rows"]["test"], b["rows"]["test"])  # the poison did reach the test half
+
+    def test_mine_allowlist_scores_late_window(self):
+        e = [ev(0, "Read", session="a"), ev(1, "Read", session="a"), ev(2, "Read", session="a"),
+             ev(3, "Bash:ls", session="a"), ev(4, "Bash:rm", True, session="a"),
+             ev(10, "Read", session="b"), ev(11, "Bash:rm", True, session="b")]
+        r = ledger.mine_allowlist(e, 0.5, promote_after=3, deny_keys={"Bash:rm"})
+        self.assertEqual(r["allowlist"], ["Read"])
+        self.assertEqual((r["false_deny"], r["excess_grant"], r["covered"]), (0, 0, 1))
+        self.assertEqual(ledger.mine_allowlist(e, 0.5, promote_after=3)["false_deny"], 0)  # rm never reached 3 approvals
+
+
 class CliTests(unittest.TestCase):
     def test_synth_pipeline_end_to_end(self):
         env = dict(os.environ, PYTHONPATH=os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -88,12 +125,28 @@ class CliTests(unittest.TestCase):
             p = os.path.join(d, "s.jsonl")
             open(p, "w").write(subprocess.run([sys.executable, "-m", "murmuration", "synth"], env=env,
                                               capture_output=True, text=True, check=True).stdout)
-            out = subprocess.run([sys.executable, "-m", "murmuration", "report", p, "--deny", "Bash:rm"],
+            out = subprocess.run([sys.executable, "-m", "murmuration", "report", p, "--deny", "Bash:rm", "--unsafe-raw-keys"],
                                  env=env, capture_output=True, text=True, check=True).stdout
         rep = json.loads(out)
         names = [x["policy"] for x in rep["policies"]]
         self.assertEqual(names, ["always_ask", "static", "promote_repeated", "grow_decay"])
         self.assertGreater(rep["n_events"], 1000)
+
+
+class TauRowNullTest(unittest.TestCase):
+    def test_zero_denominators_are_none_and_never_meet_bar(self):
+        row = ledger._tau_row([], 14, 3, ())
+        self.assertIsNone(row["exposure_saving"])
+        self.assertIsNone(row["extra_prompts"])
+        self.assertFalse(row["meets_bar"])
+        self.assertEqual(row["prompts"], {"promote_repeated": 0, "grow_decay": 0})
+
+    def test_defined_row_carries_numerators(self):
+        ev = [ledger.Event("s", d * ledger.DAY, "Read", "Read", False) for d in (0, 1, 2, 3, 40)]
+        row = ledger._tau_row(ev, 7, 3, ())
+        self.assertIsNotNone(row["exposure_saving"])
+        self.assertIn("promote_repeated", row["idle_days"])
+        self.assertGreater(row["prompts"]["promote_repeated"], 0)
 
 
 if __name__ == "__main__":

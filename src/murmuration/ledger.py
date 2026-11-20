@@ -143,3 +143,66 @@ def report(events, tau_days=14.0, promote_after=3, deny_keys=(), allow0=()):
         "after_denial": classify_denials(events),
         "policies": [replay(events, p, tau_days, promote_after, deny_keys, allow0) for p in pols],
     }
+
+
+def counts(events):
+    return {"events": len(events), "sessions": len({e.session for e in events}),
+            "denials": sum(e.denied for e in events)}
+
+
+def split_sessions(events, train_frac=0.7):
+    """(train, test) by whole sessions in time order of each session's first event; no session in both."""
+    first = {}
+    for e in sorted(events, key=lambda e: e.t):
+        first.setdefault(e.session, e.t)
+    order = sorted(first, key=first.get)
+    # shortcut: with <2 sessions the test half is empty, and ties in first-event time break by sorted() stability, i.e. first-seen order
+    train = set(order[:int(round(len(order) * train_frac))])
+    return [e for e in events if e.session in train], [e for e in events if e.session not in train]
+
+
+def _tau_row(events, tau, promote_after, deny_keys):
+    pr = replay(events, "promote_repeated", tau, promote_after, deny_keys)
+    gd = replay(events, "grow_decay", tau, promote_after, deny_keys)
+    # a zero denominator means the ratio is undefined: None, never 0.0, and it cannot meet the bar
+    saving = 1 - gd["exposure_idle_days"] / pr["exposure_idle_days"] if pr["exposure_idle_days"] else None
+    extra = (gd["prompts"] - pr["prompts"]) / pr["prompts"] if pr["prompts"] else None
+    ok = saving is not None and extra is not None and saving >= 0.3 and extra <= 0.1
+    return {"tau": tau, "exposure_saving": None if saving is None else round(saving, 4),
+            "extra_prompts": None if extra is None else round(extra, 4),
+            "idle_days": {"promote_repeated": pr["exposure_idle_days"], "grow_decay": gd["exposure_idle_days"]},
+            "prompts": {"promote_repeated": pr["prompts"], "grow_decay": gd["prompts"]},
+            "meets_bar": ok}  # H1 bar: -30% idle exposure for <=+10% prompts
+
+
+def tau_sweep(events, taus=(1, 3, 7, 14, 30), train_frac=0.7, promote_after=3, deny_keys=()):
+    """H1: pick tau on the TRAIN sessions only (best saving among those meeting the bar), report both halves."""
+    train, test = split_sessions(events, train_frac)
+    rows = {"train": [_tau_row(train, t, promote_after, deny_keys) for t in taus],
+            "test": [_tau_row(test, t, promote_after, deny_keys) for t in taus]}
+    ok = [r for r in rows["train"] if r["meets_bar"]]
+    chosen = max(ok, key=lambda r: (r["exposure_saving"], -r["tau"]))["tau"] if ok else None
+    held = next((r for r in rows["test"] if r["tau"] == chosen), None)
+    return {"train": counts(train), "test": counts(test), "rows": rows, "chosen_tau": chosen,
+            "held_out_meets_bar": bool(held and held["meets_bar"])}
+
+
+def mine_allowlist(events, train_frac=0.7, promote_after=3, deny_keys=()):
+    """Grow-side baseline ('promote repeated requests'): keys approved >= promote_after times in the train
+    sessions, minus the ceiling. Scored on test sessions: false_deny = denied test events on a mined key,
+    excess_grant = mined keys never used in test."""
+    train, test = split_sessions(events, train_frac)
+    n = {}
+    for e in train:
+        if not e.denied:
+            n[e.key] = n.get(e.key, 0) + 1
+    allow = {k for k, c in n.items() if c >= promote_after and k not in deny_keys}
+    used = {e.key for e in test if not e.denied}
+    return {"allowlist": sorted(allow), "false_deny": sum(e.denied and e.key in allow for e in test),
+            "excess_grant": len(allow - used), "covered": sum(not e.denied and e.key in allow for e in test),
+            "test_events": len(test)}
+
+
+def cli_report(events, **kw):
+    """Hold-out section for the CLI report; wiring into __main__ is the caller's job."""
+    return {"counts": counts(events), "tau_sweep": tau_sweep(events, **kw), "allowlist": mine_allowlist(events)}

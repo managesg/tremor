@@ -84,6 +84,22 @@ only if `P(change in decision) x value of that decision > cost` in the same unit
 - A weight edit or adapter is a *cost* decision too: it must beat a decoding setting under the
   same token cap (H7).
 
+## Scope guard: what this project is NOT (owner, 2026-11-19)
+We are not building a frontier-lab model, not pretraining, not racing a frontier model on general
+capability, and not training a local model to imitate one. The local model is an instrument that makes
+many seeds cheap and tests whether an idea survives without frontier capability; the hub stays a
+frontier model we do not build. A track that needs a bigger local model to make its point is cut.
+Every track must test one of three idea families, each with a matched-cost baseline:
+1. **Memory:** provenance-linted and supersedable shared memory, dreaming against equal-token
+   controls, structure imposed versus free-form by model strength (H3, H4, H8, E8.x).
+2. **Green efficiency:** tokens, joules and USD per passing task, idle-compute fraction, the
+   value-of-computation run gate, cheapest-model-that-clears-the-floor cascades (H6, E8.1, T7 cost).
+3. **Adaptive policies and rules:** grow-on-need / decay-on-idle permissions under a human-signed
+   ceiling, adaptive fan-out gates, rules learned from observed use and tested on held-out sessions
+   (H1, H2).
+Weight edits (T7) stay only as a cheap pre-test of whether a frontier model can adjust a small cell
+better than a decoding fix; if it cannot, it is deleted.
+
 ## What these rules deliberately forbid
 - A simulator whose constants we invent, and any result that only restates its assumptions.
 - A metric with no unit, or a comparison with unequal budgets.
