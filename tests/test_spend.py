@@ -968,5 +968,121 @@ class SettledMeansNoStopTests(unittest.TestCase):
         self.assertTrue(opened["ar1"] and opened["pilot"] and opened["settles"], opened)  # not vacuous
 
 
+class Pilot2Tests(unittest.TestCase):
+    """Pre-freeze change 16: pilot2 is a sibling of ep1, gated on a completed canary, independent of the stopped pilot."""
+    MID, setUp, use, led, canary = PilotTests.MID, PilotTests.setUp, PilotTests.use, PilotTests.led, PilotTests.canary
+
+    def test_pilot2_spec(self):
+        p = spend.BATCH_SPECS["pilot2"]
+        self.assertEqual((p["usd"], p["calls"], p["tokens"], p["parent"], p["requires_settled"], p["settled_reasons"]),
+                         (0.25, 260, 598_000, None, spend.CANARY, ("complete",)))
+        self.assertNotIn("canary_input_tokens_max", p)
+        self.assertEqual(p["tokens"], p["calls"] * (spend.PER_CALL_INPUT_TOKENS + spend.PER_CALL_OUTPUT_TOKENS))
+        self.assertEqual((spend.PER_CALL_OUTPUT_TOKENS, spend.BATCH_SPECS["ep1"]["tokens"],
+                          spend.BATCH_SPECS["pilot"]["tokens"]), (300, 1_250_000, 345_000))  # unchanged
+
+    def test_worst_case_across_all_batches_stays_within_the_owner_ceiling(self):
+        roots = [n for n, sp in spend.BATCH_SPECS.items() if sp["parent"] is None]
+        for n, sp in spend.BATCH_SPECS.items():  # a child's spend counts inside its root, so the roots bound the total
+            self.assertIn(spend._lineage(n, spend.BATCH_SPECS)[-1], roots)
+            self.assertLessEqual(sp["usd"], spend.BATCH_SPECS[spend._lineage(n, spend.BATCH_SPECS)[-1]]["usd"])
+        total = sum(spend.BATCH_SPECS[n]["usd"] for n in roots)
+        self.assertLessEqual(total, spend.HARD_CAP_USD)
+        self.assertAlmostEqual(spend.HARD_CAP_USD - total, 1.00)  # pilot2 and pilot3 came out of the unallocated 1.50
+
+    def test_pilot2_refused_unless_the_canary_completed(self):
+        with self.assertRaises(spend.BatchStopped):  # canary never ran
+            self.led("pilot2").reserve("q", M, 100, 100)
+        for why in ("inconclusive",) + spend.STOP_WHY:
+            self.d = tempfile.mkdtemp()
+            self.use(None)
+            c = self.led("canary")
+            c.reserve("c0", M, 10, 10, canary_input_tokens=10)
+            c.charge("c0", M, {"input_tokens": 5, "output_tokens": 5})
+            if why in spend.SETTLED_REASONS:
+                c.settle(why)
+            else:
+                c.stop_batch(why)
+            with self.assertRaises(spend.BatchStopped, msg=why):
+                self.led("pilot2").reserve("q", M, 100, 100)
+
+    def test_pilot2_refused_after_a_canary_stop_even_following_completion(self):
+        self.canary()
+        self.led("canary", "canary-late.jsonl").stop_batch("owner")
+        with self.assertRaises(spend.BatchStopped):
+            self.led("pilot2").reserve("q", M, 100, 100)
+
+    def test_a_stopped_pilot_does_not_block_pilot2(self):
+        self.canary()
+        p = self.led("pilot")
+        p.reserve("p0", M, 100, 100)
+        p.stop_batch("void_model")  # the real state after pilot 1
+        with self.assertRaises(spend.BatchStopped):
+            p.reserve("p1", M, 100, 100)
+        self.led("pilot2").reserve("q0", M, 100, 100)
+        self.assertEqual((spend.batch_report(self.d, "pilot2")["calls"], spend.batch_report(self.d, "pilot")["calls"]), (1, 1))
+
+    def test_pilot2_cap_260_full_calls_is_exactly_598000_tokens(self):
+        self.use({**P, "input": 0.1, "output": 0.5, "cache_write_5m": 0.2, "cache_write_1h": 0.2})
+        self.canary()
+        q = self.led("pilot2")
+        for i in range(260):
+            q.reserve(f"q{i}", M, 2000, 300)
+        self.assertEqual(spend.batch_report(self.d, "pilot2")["tokens"], 598_000)
+        with self.assertRaises(spend.MaxCallsExceeded):
+            q.reserve("q260", M, 1, 1)
+
+    def test_pilot2_usd_cap_binds(self):
+        self.use(self.MID)  # 0.395 USD per full call: one call crosses 0.25
+        self.canary()
+        with self.assertRaises(spend.SpendCeilingExceeded):
+            self.led("pilot2").reserve("q0", M, 2000, 300)
+
+
+class Pilot3Tests(unittest.TestCase):
+    """Prereg change 19: pilot3 has the pilot2 caps and gate, independent of the stopped pilot and pilot2."""
+    MID, setUp, use, led, canary = PilotTests.MID, PilotTests.setUp, PilotTests.use, PilotTests.led, PilotTests.canary
+
+    def test_pilot3_spec(self):
+        p = spend.BATCH_SPECS["pilot3"]
+        self.assertEqual(p, spend.BATCH_SPECS["pilot2"])
+        self.assertEqual((p["usd"], p["calls"], p["tokens"], p["parent"], p["requires_settled"], p["settled_reasons"]),
+                         (0.25, 260, 598_000, None, spend.CANARY, ("complete",)))
+        self.assertEqual(spend.HARD_CAP_USD, 10.0)  # unchanged in this round
+
+    def test_pilot3_refused_unless_the_canary_completed(self):
+        with self.assertRaises(spend.BatchStopped):
+            self.led("pilot3").reserve("q", M, 100, 100)
+        self.canary()
+        self.led("canary", "canary-late.jsonl").stop_batch("owner")
+        with self.assertRaises(spend.BatchStopped):
+            self.led("pilot3").reserve("q", M, 100, 100)
+
+    def test_stopped_pilot_and_pilot2_do_not_block_pilot3_and_do_not_share_its_caps(self):
+        self.canary()
+        for b in ("pilot", "pilot2"):
+            p = self.led(b)
+            p.reserve(b + "0", M, 100, 100)
+            p.stop_batch("void_model")
+        self.led("pilot3").reserve("r0", M, 100, 100)
+        self.assertEqual([spend.batch_report(self.d, b)["calls"] for b in ("pilot", "pilot2", "pilot3")], [1, 1, 1])
+
+    def test_pilot3_cap_260_full_calls_is_exactly_598000_tokens(self):
+        self.use({**P, "input": 0.1, "output": 0.5, "cache_write_5m": 0.2, "cache_write_1h": 0.2})
+        self.canary()
+        q = self.led("pilot3")
+        for i in range(260):
+            q.reserve(f"r{i}", M, 2000, 300)
+        self.assertEqual(spend.batch_report(self.d, "pilot3")["tokens"], 598_000)
+        with self.assertRaises(spend.MaxCallsExceeded):
+            q.reserve("r260", M, 1, 1)
+
+    def test_pilot3_usd_cap_binds(self):
+        self.use(self.MID)
+        self.canary()
+        with self.assertRaises(spend.SpendCeilingExceeded):
+            self.led("pilot3").reserve("r0", M, 2000, 300)
+
+
 if __name__ == "__main__":
     unittest.main()

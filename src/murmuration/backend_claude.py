@@ -20,6 +20,8 @@ from murmuration import spend
 DEFAULT_HOST = "api.anthropic.com"
 DEFAULT_BASE_URL = "https://" + DEFAULT_HOST
 ANTHROPIC_VERSION = "2023-06-01"
+# Haiku 5.5 thinks when the field is absent; off keeps hidden thinking out of max_tokens (prereg change 13)
+THINKING_OFF = {"type": "disabled"}
 LOOPBACK = ("127.0.0.1", "localhost", "::1")
 
 
@@ -129,7 +131,8 @@ class ClaudeClient:
             c = m.get("content") if isinstance(m, dict) else None
             if not (isinstance(c, str) or (isinstance(c, list) and all(isinstance(b, dict) and b.get("type") == "text" for b in c))):
                 raise ValueError("only text messages are allowed (token bound needs bytes >= tokens)")
-        payload = {"model": model, "max_tokens": max_tokens, "temperature": temperature, "messages": messages}
+        payload = {"model": model, "max_tokens": max_tokens, "temperature": temperature, "messages": messages,
+                   "thinking": dict(THINKING_OFF)}
         if system:
             payload["system"] = system
         body = json.dumps(payload, sort_keys=True).encode()
@@ -167,6 +170,7 @@ class ClaudeClient:
         returned = s(resp["model"]) if isinstance(resp["model"], str) else "[non-string model]"
         stop = s(resp.get("stop_reason")) if resp.get("stop_reason") is not None else None
         blocks = resp.get("content") if isinstance(resp.get("content"), list) else []
+        types = [s(str(b.get("type")))[:32] if isinstance(b, dict) else "?" for b in blocks][:16]  # scrub before cut (G0-2R4)
         text = "".join(b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text" and isinstance(b.get("text"), str))
         void = None if self.ledger.sheet.accepts(model, returned) else f"returned model {returned!r} != requested {model!r}"
         usd = self.ledger.charge(
@@ -176,7 +180,7 @@ class ClaudeClient:
         u = spend.clean_usage(usage)  # charge() already accepted it
         episode.tokens += sum(u.get(k) or 0 for k in spend.USAGE_FIELDS)
         rec = {"id": cid, "requested_model": model, "returned_model": returned, "usage": u, "usd": usd,
-               "void": void, "text": s(text), "stop_reason": stop, "wall_seconds": wall}
+               "void": void, "text": s(text), "stop_reason": stop, "wall_seconds": wall, "block_types": types}
         episode.records.append(rec)
         if void:
             episode.void = void

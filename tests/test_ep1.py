@@ -552,7 +552,7 @@ class CliTests(Base):
 
     def test_refuses_without_the_confirm_flag_and_without_the_key(self):
         out = os.path.join(self.d, "cliout")
-        for cmd in ("canary", "pilot", "run"):
+        for cmd in ("canary", "pilot", "pilot2", "pilot3", "run"):
             rc, text = self.run_cli(["ep1", cmd, "--out-dir", out], {ep1.KEY_ENV: KEY})  # key but no confirm
             self.assertEqual(rc, 2)
             self.assertIn("--i-have-owner-confirm", text)
@@ -574,12 +574,12 @@ class CliTests(Base):
         common = ["--i-have-owner-confirm", "--base-url", url, "--ledger-dir", self.ldir, "--price-sheet", sheet,
                   "--review", self.review]
         outs = []
-        for cmd, out in (("canary", "c"), ("pilot", "p")):
+        for cmd, out in (("canary", "c"), ("pilot", "p"), ("pilot2", "p2"), ("pilot3", "p3")):
             rc, text = self.run_cli(["ep1", cmd, "--out-dir", os.path.join(self.d, out)] + common, {ep1.KEY_ENV: KEY})
             outs.append(text)
             self.assertNotIn(KEY, text)
             self.assertEqual(rc, 0, text)
-        self.assertEqual(json.loads(outs[1])["reason"], "complete")
+        self.assertEqual([json.loads(t)["reason"] for t in outs[1:]], ["complete"] * 3)
         self.assertNotIn(KEY.encode(), files_text(self.d))  # ledger, schedule, episodes, trace, canary, final
         self.assertTrue(all(KEY not in t for t in outs))
         self.assertIn(b"[redacted]", files_text(self.ldir))  # the echoed key was scrubbed, not stored
@@ -592,7 +592,7 @@ class CliTests(Base):
         self.assertEqual(rc, 2)
 
     def test_base_url_alone_is_refused(self):  # G0-2R3 N10: a fake canary must not settle in the real runs/spend
-        for cmd in ("canary", "pilot", "run"):
+        for cmd in ("canary", "pilot", "pilot2", "pilot3", "run"):
             rc, text = self.run_cli(["ep1", cmd, "--out-dir", os.path.join(self.d, "z" + cmd), "--i-have-owner-confirm",
                                      "--base-url", "http://127.0.0.1:9"], {ep1.KEY_ENV: KEY})
             self.assertEqual(rc, 2, text)
@@ -753,6 +753,246 @@ class InvalidLogTests(Base):
         recs[0].update(Y=None, void="invalid_log")  # the void shape the driver writes: excluded, counted as censored
         arms = ep1._summary(recs, True)["arms"]
         self.assertEqual(arms[recs[0]["arm"]]["censored_task_sets"], 1)
+
+
+def thinking_responder(p, h, b, n):
+    code, resp = ep1.worst_case_responder(p, h, b, n)
+    resp["content"] = [{"type": "thinking", "thinking": ""}] + resp["content"]
+    return code, resp
+
+
+class Pilot1ChangesTests(Base):
+    """Pre-freeze changes 13 to 16 at the driver: thinking off on the wire, the thinking-block stop, pilot2."""
+
+    def test_canary_wire_body_is_exactly_the_probe_and_carries_thinking_off(self):
+        out, seen = self.canary()
+        self.assertEqual(out["reason"], "complete", out)
+        self.assertEqual(seen[0]["body"]["thinking"], {"type": "disabled"})
+        self.assertEqual(len(json.dumps(seen[0]["body"], sort_keys=True).encode()), ep1.CANARY_BYTES)
+
+    def test_pilot2_plan_six_train_sets_five_conditions(self):
+        pl = ep1.plan("pilot2", 0)
+        self.assertEqual(len(pl), 6)
+        self.assertTrue(all(b["split"] == "train" and sorted(b["order"]) == sorted(ep1.BASE_CONDS + tuple(ep1.PILOT_CARDS))
+                            for b in pl))
+        self.assertEqual(len(pl) * 5 * ep1.CALLS_PER_EPISODE, 240)
+        self.assertLessEqual(240, spend.BATCH_SPECS["pilot2"]["calls"])
+
+    def test_pilot2_after_a_stopped_pilot_runs_with_its_own_episode_ids(self):
+        self.batch("pilot", n_sets=1, out="p1")
+        # pilot 1 settled complete here; record a stop as well, the real state after pilot 1
+        led = spend.Ledger(os.path.join(self.ldir, "pilot-stop.jsonl"), self.sheet, batch="pilot")
+        led.stop_batch("void_model")
+        res = self.batch("pilot2", n_sets=1, out="p2")
+        self.assertEqual(res["reason"], "complete", res)
+        recs, old = self.records("p2"), self.records("p1")
+        self.assertEqual(len(recs), 5)
+        self.assertTrue(all(r["attempt"] == 0 and r["kind"] == "pilot2" for r in recs))
+        self.assertFalse(os.path.exists(os.path.join(self.d, "p2", "events.jsonl")))  # no fake "interrupted" attempts
+        self.assertFalse({r["episode_id"] for r in recs} & {r["episode_id"] for r in old})
+        self.assertTrue(os.path.exists(os.path.join(self.d, "p2", "pilot_trace.txt")))
+        self.assertIn("cond", ep1.analyse(os.path.join(self.d, "p2")))
+
+    def test_pilot2_refused_after_a_canary_stop(self):
+        out, _ = self.canary(with_stop("max_tokens"))
+        self.assertTrue(out["reason"].startswith("stopped:"))
+        with self.assertRaises(spend.BatchStopped):
+            self.batch("pilot2", n_sets=1, canary=False)
+
+    def test_a_thinking_block_stops_the_batch_at_the_first_call(self):
+        res = self.batch("pilot2", thinking_responder, n_sets=1)
+        self.assertEqual((res["reason"], res["detail"]), ("stopped:void_model", "void_thinking_block"))
+        self.assertEqual(len(self.seen), 1)
+        first = ep1.plan("pilot2", 0)[0]["order"][0]
+        self.assertEqual(res["voids"], {first: 1})  # keyed on the condition, not the folded arm
+        self.assertEqual(self.records()[0]["turns"][0]["block_types"], ["thinking", "text"])
+
+    def test_a_request_without_thinking_off_is_a_400_and_stops_the_batch(self):
+        bad = {"type": "adaptive"}
+        self.canary()
+        with mock.patch.object(bc, "THINKING_OFF", bad), mock.patch.dict(ep1.tc.CAPS, thinking=bad):
+            res = self.batch("pilot2", n_sets=1)
+        self.assertEqual(res["reason"], "stopped:http400", res)
+        self.assertEqual(self.seen[0]["body"]["thinking"], bad)
+
+    def test_dry_run_bracket_holds(self):
+        b = ep1._bracket(self.d, 0, self.review, None)
+        self.assertTrue(b["floor_fails"] and b["oracle_passes"], b)
+
+
+# sha256 of the 48 EP-1 request bodies (canary excluded) for n_sets=2, seed 0, recorded before the task-order factor
+EP1_BODIES_SHA = "8a8e4766a9f264c528d85ce953814088283069c0d39a1de7ed593988b9c2ea8d"
+
+
+class TaskOrderTests(Base):
+    """Owner 2026-11-20 (prereg 16b): pilot 2 runs both task orders, one per task set, balanced, seeded without the arm."""
+
+    def test_pilot2_task_orders_are_balanced_and_other_kinds_carry_none(self):
+        for seed in range(6):
+            orders = [b["task_order"] for b in ep1.plan("pilot2", seed)]
+            self.assertEqual(sorted(orders), ["per_agent"] * 3 + ["shared"] * 3, seed)
+        self.assertGreater(len({tuple(b["task_order"] for b in ep1.plan("pilot2", s)) for s in range(6)}), 1)  # seeded
+        for kind in ("pilot", "ep1"):
+            self.assertFalse(any("task_order" in b for b in ep1.plan(kind, 0)))
+        self.assertEqual(len(ep1.plan("pilot2", 0)) * 5 * ep1.CALLS_PER_EPISODE, 240)
+        self.assertEqual((spend.BATCH_SPECS["pilot2"]["calls"], spend.BATCH_SPECS["pilot2"]["usd"],
+                          spend.BATCH_SPECS["pilot2"]["tokens"]), (260, 0.25, 598_000))
+
+    def test_task_order_assignment_is_independent_of_the_arms(self):
+        want = [b["task_order"] for b in ep1.plan("pilot2", 3)]
+        with mock.patch.object(ep1, "BASE_CONDS", ("code", "none")), mock.patch.dict(ep1.PILOT_CARDS, clear=True):
+            self.assertEqual([b["task_order"] for b in ep1.plan("pilot2", 3)], want)
+
+    def test_every_arm_of_a_task_set_runs_its_order_and_the_order_is_recorded(self):
+        res = self.batch("pilot2", n_sets=2)
+        self.assertEqual(res["reason"], "complete", res)
+        plan = {b["set"]: b["task_order"] for b in ep1.plan("pilot2", 0, 2)}
+        self.assertEqual(sorted(plan.values()), ["per_agent", "shared"])
+        recs = self.records()
+        self.assertEqual(len(recs), 10)
+        for s, o in plan.items():
+            have = [r for r in recs if r["set"] == s]
+            self.assertEqual({r["cond"] for r in have}, set(ep1.BASE_CONDS) | set(ep1.PILOT_CARDS))
+            self.assertEqual({r["task_order"] for r in have}, {o})
+            self.assertTrue(all(("pa" in r["id_tag"]) == (o == "per_agent") for r in have))
+        ids = [r["episode_id"] for r in recs]
+        self.assertEqual(len(set(ids)), 10)
+        self.assertTrue(all(r["id_tag"].startswith("p2") for r in recs))
+        tr = open(os.path.join(self.d, "out", "pilot_trace.txt")).read()
+        self.assertEqual((tr.count("task_order=shared"), tr.count("task_order=per_agent")), (5, 5))
+        # on the wire: per_agent sets show agents different task orders in one round, shared sets never do
+        views = {}
+        for x in self.seen:
+            u = x["body"]["messages"][0]["content"]
+            m = re.search(r"Round (\d) of 2\. You are (a\d)\.", u)
+            sid = re.findall(r"^(\w+): sum \d+ \d+$", u, re.M)
+            views.setdefault(tuple(sorted(sid)), {}).setdefault(m.group(1), set()).add(tuple(sid))
+        self.assertEqual(sorted(any(len(v) > 1 for v in r.values()) for r in views.values()), [False, True])
+
+    def test_pilot_report_shows_mean_y_by_order_and_arm_as_exploratory(self):
+        self.batch("pilot2", n_sets=2)
+        rep = ep1.analyse(os.path.join(self.d, "out"))
+        self.assertIn("exploratory, not a pre-registered contrast", rep)
+        for o in ("shared", "per_agent"):
+            for c in ep1.BASE_CONDS + tuple(ep1.PILOT_CARDS):
+                self.assertRegex(rep, rf"(?m)^{o}\s+{c}\s+1\s+\d\.\d{{3}}$")
+
+    def test_pilot_report_prints_the_order_rule_as_a_design_decision(self):
+        self.batch("pilot2", n_sets=2)
+        rep = ep1.analyse(os.path.join(self.d, "out"))
+        self.assertIn("order rule (prereg 16b): design decision, not a confirmatory result", rep)
+        self.assertRegex(rep, r"(?m)^picked order: .*design decision, not a confirmatory result\)$")
+        for o in ("shared", "per_agent"):
+            self.assertRegex(rep, rf"(?m)^{o}: sets \[\d\], 1/1 with scored none and code; duplicates none=\d+ code=0")
+
+    def test_ep1_requests_are_byte_identical_and_shared(self):
+        self.batch("ep1", n_sets=2)
+        bodies = [json.dumps(x["body"], sort_keys=True) for x in self.seen]
+        self.assertEqual((len(bodies), hashlib.sha256("\n".join(bodies).encode()).hexdigest()), (48, EP1_BODIES_SHA))
+        self.assertEqual({r["task_order"] for r in self.records()}, {"shared"})
+        self.assertFalse(any("pa" in r["id_tag"] for r in self.records()))
+
+
+class Pilot3Tests(Base):
+    """Prereg change 19: pilot 3 repeats the pilot 2 design under its own batch and episode ids."""
+
+    def test_pilot3_plan_is_the_pilot2_design(self):
+        for seed in range(6):
+            self.assertEqual(ep1.plan("pilot3", seed), ep1.plan("pilot2", seed))
+        pl = ep1.plan("pilot3", 0)
+        self.assertEqual((len(pl), sorted(b["task_order"] for b in pl)), (6, ["per_agent"] * 3 + ["shared"] * 3))
+        self.assertEqual(len(pl) * 5 * ep1.CALLS_PER_EPISODE, 240)
+        self.assertLessEqual(240, spend.BATCH_SPECS["pilot3"]["calls"])
+
+    def test_pilot3_after_stopped_pilot_and_pilot2_runs_with_its_own_episode_ids(self):
+        self.batch("pilot", n_sets=1, out="p1")
+        self.batch("pilot2", n_sets=2, out="p2")
+        for b in ("pilot", "pilot2"):  # the real state: both stopped
+            spend.Ledger(os.path.join(self.ldir, f"{b}-stop.jsonl"), self.sheet, batch=b).stop_batch("void_model")
+        res = self.batch("pilot3", n_sets=2, out="p3", canary=False)
+        self.assertEqual(res["reason"], "complete", res)
+        recs = self.records("p3")
+        self.assertEqual(len(recs), 10)
+        self.assertTrue(all(r["attempt"] == 0 and r["kind"] == "pilot3" for r in recs))
+        self.assertFalse(os.path.exists(os.path.join(self.d, "p3", "events.jsonl")))  # no id collision, no "interrupted"
+        old = {r["episode_id"] for r in self.records("p1") + self.records("p2")}
+        self.assertFalse({r["episode_id"] for r in recs} & old)
+        self.assertTrue(all(r["id_tag"].startswith("p3pa" if r["task_order"] == "per_agent" else "p3") for r in recs))
+        self.assertIn("picked order:", ep1.analyse(os.path.join(self.d, "p3")))
+
+    def test_pilot3_refused_after_a_canary_stop(self):
+        out, _ = self.canary(with_stop("max_tokens"))
+        self.assertTrue(out["reason"].startswith("stopped:"))
+        with self.assertRaises(spend.BatchStopped):
+            self.batch("pilot3", n_sets=1, canary=False)
+
+
+def _gate(cells, n_sets=6):
+    """order_gate on a synthetic pilot2 plan; cells: {set: {cond: (Y, duplicates)}}."""
+    sched = {"plan": ep1.plan("pilot2", 0, n_sets)}
+    recs = [{"set": s, "cond": c, "Y": y, "ended": "complete", "scores": {"duplicates": d}}
+            for s, cs in cells.items() for c, (y, d) in cs.items()]
+    return sched, ep1.order_gate(sched, recs)
+
+
+class OrderGateTests(unittest.TestCase):
+    """Prereg 16b order rule: (a) mean Y_none 0.30 to 0.80, (b) >= 2 duplicates under none, (c) Y_code != Y_none."""
+
+    def sets(self):
+        pl = ep1.plan("pilot2", 0)
+        return ([b["set"] for b in pl if b["task_order"] == "shared"], [b["set"] for b in pl if b["task_order"] == "per_agent"])
+
+    def cells(self, sh, pa):  # sh/pa: lists of (Y_none, dup_none, Y_code) per set of that order
+        out = {}
+        for sets, rows in ((self.sets()[0], sh), (self.sets()[1], pa)):
+            for s, (yn, dn, yc) in zip(sets, rows):
+                out[s] = {"none": (yn, dn), "code": (yc, 0), "play": (0.5, 0)}
+        return out
+
+    GOOD = [(0.5, 1, 0.75), (0.5, 1, 0.5), (0.25, 0, 0.5)]  # mean 5/12, 2 duplicates, code moves
+
+    def test_both_usable_tie_goes_to_shared(self):
+        _, g = _gate(self.cells(self.GOOD, self.GOOD))
+        self.assertTrue(g["orders"]["shared"]["usable"] and g["orders"]["per_agent"]["usable"])
+        self.assertEqual(g["picked"], "shared")
+        self.assertEqual(g["label"], "design decision, not a confirmatory result")
+
+    def test_exactly_one_usable_is_picked(self):
+        locked = [(y, d, y) for y, d, _ in self.GOOD]  # (c) fails: code equals none in every set
+        _, g = _gate(self.cells(locked, self.GOOD))
+        self.assertEqual((g["orders"]["shared"]["c_not_locked"], g["picked"]), (False, "per_agent"))
+
+    def test_neither_usable_picks_nothing(self):
+        few = [(y, 0, c) for y, _, c in self.GOOD]  # (b) fails: 0 duplicates
+        _, g = _gate(self.cells(few, few))
+        self.assertIsNone(g["picked"])
+        self.assertIn("criterion 5 fails", g["why"])
+
+    def test_room_bounds(self):
+        for ys, want in (([0.25, 0.25, 0.5], True), ([0.25, 0.25, 0.25], False),  # 4/12 in, 3/12 out
+                         ([0.75, 0.75, 0.75], True), ([1.0, 0.75, 0.75], False)):  # 9/12 in, 10/12 out
+            rows = [(y, 1, 0.0) for y in ys]
+            _, g = _gate(self.cells(rows, self.GOOD))
+            self.assertEqual(g["orders"]["shared"]["a_room"], want, ys)
+
+    def test_one_duplicate_fails_b(self):
+        rows = [(0.5, 1, 0.75), (0.5, 0, 0.5), (0.25, 0, 0.5)]
+        _, g = _gate(self.cells(rows, self.GOOD))
+        self.assertEqual((g["orders"]["shared"]["b_duplicates"], g["picked"]), (False, "per_agent"))
+
+    def test_incomplete_order_is_not_decidable(self):
+        c = self.cells(self.GOOD, self.GOOD)
+        del c[self.sets()[1][2]]["code"]
+        _, g = _gate(c)
+        self.assertIsNone(g["orders"]["per_agent"]["usable"])
+        self.assertEqual((g["picked"], g["why"]), (None, "not decidable: an order is incomplete"))
+        self.assertIn("n/a (incomplete)", "\n".join(ep1._render_gate(g)))
+
+    def test_void_episode_does_not_count(self):
+        sched, _ = _gate({})
+        recs = [{"set": s, "cond": c, "Y": 0.5, "ended": "complete", "scores": {"duplicates": 1}, "void": "x"}
+                for s in range(6) for c in ("none", "code")]
+        self.assertIsNone(ep1.order_gate(sched, recs)["picked"])
 
 
 if __name__ == "__main__":

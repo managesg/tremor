@@ -35,7 +35,11 @@ FAKE_STAMP = "FAKE: loopback fake server or scripted responder; not evidence abo
 REAL_LABEL = "model episode: real backend; evidence about the named model only"
 CAPS = {"model": "claude-haiku-5-5", "input_tokens": 2000, "output_tokens": 300, "temperature": 1.0,
         "calls": 8, "episode_tokens": 18_400, "wall_seconds": 600, "budget": None, "id_tag": "",
-        "max_reply_bytes": 600}
+        "max_reply_bytes": 600, "thinking": bc.THINKING_OFF, "task_order": "shared"}
+# "shared": every agent sees the taskset order (default, unchanged). "per_agent": prereg change 14, not confirmed by the
+# owner (herding may be the effect card A acts on), so it is opt-in only.
+TASK_ORDERS = ("shared", "per_agent")
+THINKING_BLOCKS = ("thinking", "redacted_thinking")  # any of these in a response voids the episode (pilot 2 stop)
 USAGE_IN = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 ROUND_ORDER = (("claim",), ("claim", "work", "release"))  # prereg section 6; `pass` stands alone
 ALLOWED_TEXT = ("This round send one action: claim one task, or pass.",
@@ -109,25 +113,50 @@ def _action(obj, ids):
     return dict(obj), None
 
 
+def _last_array(s):
+    """The last top-level JSON list in `s` if only whitespace follows it, else None (prereg change 19)."""
+    found, i = None, 0
+    while i < len(s):
+        if s[i] == "[":
+            try:
+                obj, n = _DEC.raw_decode(s, i)
+            except (ValueError, RecursionError):
+                obj, n = None, i + 1
+            if type(obj) is list:
+                found, i = (obj, n), n
+                continue
+        i += 1
+    if found is None or s[found[1]:].strip():
+        return None
+    return found[0]
+
+
 def parse(text, rnd, ids, max_bytes=CAPS["max_reply_bytes"]):
-    """Strict: the whole reply is one JSON array of allowed actions (a bare object is a list of one).
+    """Strict first: the whole reply is one JSON value (a bare object is a list of one). Prereg change 19: if that
+    fails, accept the LAST top-level JSON array when only whitespace follows it; prose before it is ignored.
     -> (list of actions | None, reason). `ids`: the task ids shown to this agent."""
     if not isinstance(text, str) or not text.strip():
         return None, "empty"
     if len(text.encode()) > max_bytes:
         return None, "oversize"
     s = text.strip()
+    obj, why = None, None
     try:
         obj, end = _DEC.raw_decode(s)
+        rest = s[end:].strip()
+        if rest:
+            try:
+                _DEC.raw_decode(rest)
+                why = "multiple_values"
+            except (ValueError, RecursionError):
+                why = "extra_text"
     except (ValueError, RecursionError):
-        return None, "not_json"
-    rest = s[end:].strip()
-    if rest:
-        try:
-            _DEC.raw_decode(rest)
-            return None, "multiple_values"
-        except (ValueError, RecursionError):
-            return None, "extra_text"
+        why = "not_json"
+    if why:
+        last = _last_array(s)  # shortcut: prose length before the array is not logged yet; add extra_text_bytes if needed
+        if last is None:
+            return None, why
+        obj = last
     objs = obj if type(obj) is list else [obj]
     if not objs:
         return None, "empty_list"
@@ -203,7 +232,10 @@ class _ModelEpisode(team._Episode):
 
     def prompt(self, agent, rnd, view):
         head, tail = self.turn_tpl.split("<<card>>")
-        tasks = "\n".join(f"{t['id']}: {t['check']}" for t in self.ts["tasks"])  # never `expect`
+        order = self.ts["tasks"]
+        if self.caps["task_order"] == "per_agent":  # no arm in the seed: identical across arms of a task set
+            order = random.Random(f"ep1:view:{self.ts['split']}:{self.ts['seed']}:{agent}").sample(order, len(order))
+        tasks = "\n".join(f"{t['id']}: {t['check']}" for t in order)  # never `expect`
         claims = json.dumps(view["claims"], sort_keys=True, separators=(",", ":"))
         user = _fill(head, round=rnd + 1, rounds=2, agent=agent, left=2 - rnd, allowed=ALLOWED_TEXT[min(rnd, 1)],
                      tasks=tasks)
@@ -306,7 +338,8 @@ class _ModelEpisode(team._Episode):
         system, user = self.prompt(agent, rnd, view)
         messages = [{"role": "user", "content": user}]
         body = json.dumps({"model": self.caps["model"], "max_tokens": self.caps["output_tokens"],
-                           "temperature": self.caps["temperature"], "messages": messages, "system": system},
+                           "temperature": self.caps["temperature"], "messages": messages, "system": system,
+                           "thinking": self.caps["thinking"]},
                           sort_keys=True).encode()
         t = {"agent": agent, "round": rnd, "call_id": f"{self.eid}:r{rnd}:{agent}", "status": None,
              "reason": None, "prompt_sha256": hashlib.sha256((system + "\n" + user).encode()).hexdigest()}
@@ -352,13 +385,15 @@ class _ModelEpisode(team._Episode):
         stop = rec.get("stop_reason")
         ret = rec.get("returned_model")
         t.update(returned_model=ret if ret is None or isinstance(ret, str) else repr(ret)[:80], usage=u,
-                 usd=rec.get("usd"), stop_reason=stop)
+                 usd=rec.get("usd"), stop_reason=stop, block_types=list(rec.get("block_types") or [])[:16])
         t["retries"] = int(str(rec.get("id") or "").endswith("#r1"))  # the client's one retry has its own `#r1` id
         used = sum(u.get(k) or 0 for k in USAGE_IN)
         if not ret:
             self.void = "response names no model"
         elif not model_matches(self.caps["model"], ret):  # checked here on every call, not left to the client
             self.void = f"returned model {t['returned_model']!r} != requested {self.caps['model']!r}"
+        elif any(b in THINKING_BLOCKS for b in t["block_types"]):
+            self.void = "thinking block in response: the request asked for thinking off"
         elif rec.get("void") or used > self.caps["input_tokens"]:
             self.void = rec.get("void") or f"reported input usage {used} > cap {self.caps['input_tokens']}"
         if self.void:
@@ -391,6 +426,10 @@ def _check_caps(caps):
     t = caps["temperature"]
     if isinstance(t, bool) or not isinstance(t, (int, float)) or not 0 <= t <= 1:
         raise ValueError("caps.temperature must be a number in [0, 1]")
+    if caps["task_order"] not in TASK_ORDERS:
+        raise ValueError(f"caps.task_order must be one of {TASK_ORDERS}")
+    if caps["thinking"] != bc.THINKING_OFF:  # the client always sends THINKING_OFF; the size probe must match it
+        raise ValueError("caps.thinking must be {'type': 'disabled'}")
     if not isinstance(caps["model"], str) or not caps["model"]:
         raise ValueError("caps.model must be a string")
     if not isinstance(caps["id_tag"], str) or not re.fullmatch(r"[A-Za-z0-9_-]{0,16}", caps["id_tag"]):
@@ -433,7 +472,7 @@ def run_episode_model(taskset, arm, practice, client, seed=0, batch=None, n_agen
     return {"instrument_validation": not real, "evidence": "model" if real else "fake",
             "label": REAL_LABEL if real else FAKE_STAMP, "seed": seed, "arm": arm, "practice": "A",
             "n_agents": n_agents, "rounds": rounds, "model": returned[0] if len(returned) == 1 else None,
-            "requested_model": caps["model"], "temperature": caps["temperature"],
+            "requested_model": caps["model"], "temperature": caps["temperature"], "task_order": caps["task_order"],
             "caps": {k: caps[k] for k in ("input_tokens", "output_tokens", "calls", "episode_tokens")},
             "episode_id": eid, "id_tag": caps["id_tag"], "batch": batch,
             "outcome": outcome, "Y": y, "scores": scores, "log": ep.log, "ended": ended,

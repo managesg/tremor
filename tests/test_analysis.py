@@ -238,5 +238,23 @@ class T(unittest.TestCase):
         self.assertNotIn("inconclusive is neither", an.render(an.summarise(batch(0.2, 0.5, 0.8))).split("HDI")[0])
 
 
+class RefusalRowsTests(unittest.TestCase):
+    """Pre-freeze change 15: refusals per arm in two rows, `A:*` and `board_error:*`, never one summed column."""
+
+    def test_two_rows_per_arm_and_no_summed_column(self):
+        rs = [rec("code", "s1", .5, refusals=[["a1", "A:duplicate_claim:t0"], ("a2", "A:x"), ("a1", "board_error:KeyError")]),
+              rec("none", "s1", .5, refusals=[["a3", "board_error:ValueError"]]),
+              rec("play", "s1", .5, refusals=[["a0", "something_else"]])]
+        s = an.summarise(rs)
+        self.assertEqual(s["arms"]["code"]["refusal_rows"], {"A": 2, "board_error": 1, "other": 0})
+        self.assertEqual(s["arms"]["none"]["refusal_rows"], {"A": 0, "board_error": 1, "other": 0})
+        self.assertEqual(s["arms"]["play"]["refusal_rows"]["other"], 1)  # an unknown label is shown, never dropped
+        text = an.render(s)
+        self.assertNotIn("denials", text)
+        self.assertRegex(text, r"(?m)^code A:\*\s+2$")
+        self.assertRegex(text, r"(?m)^code board_error:\*\s+1$")
+        self.assertIn("never summed", text)
+
+
 if __name__ == "__main__":
     unittest.main()

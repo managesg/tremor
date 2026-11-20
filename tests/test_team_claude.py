@@ -30,7 +30,7 @@ KEY = "sk-ant-FAKEKEY-do-not-leak-0123456789"
 def ctx(user):
     rnd, agent = re.search(r"Round (\d) of 2\. You are (a\d)\.", user).groups()
     tasks = {m[0]: int(m[1]) + int(m[2]) for m in re.findall(r"^(\w+): sum (\d+) (\d+)$", user, re.M)}
-    return {"round": int(rnd), "agent": agent, "tasks": tasks, "ids": list(tasks), "user": user,
+    return {"round": int(rnd), "agent": agent, "tasks": tasks, "ids": sorted(tasks), "user": user,  # canonical, not shown order
             "claims": json.loads(re.search(r"held by agent: (\{.*\})", user).group(1)),
             "status": re.search(r"Your last action: (.*)", user).group(1)}
 
@@ -180,7 +180,7 @@ class ParseAndMalformedTests(unittest.TestCase):
              "fence": ('```json\n{"type":"pass"}\n```', "not_json"),
              "two": ('{"type":"claim","item":"h50t0"}{"type":"claim","item":"h50t1"}', "multiple_values"),
              "two_lines": ('{"type":"pass"}\n{"type":"pass"}', "multiple_values"),
-             "two_arrays": ('[{"type":"pass"}][{"type":"pass"}]', "multiple_values"),
+             # "two_arrays" moved out: prereg change 19 accepts the last array (test_only_last_array_accepted)
              "list": ('[{"type":"pass"},{"type":"pass"}]', "pass_not_alone"),
              "pass_and_claim": ('[{"type":"claim","item":"h50t0"},{"type":"pass"}]', "pass_not_alone"),
              "empty_list": ("[]", "empty_list"),
@@ -274,6 +274,24 @@ class ParseAndMalformedTests(unittest.TestCase):
         rec, cl = run(lambda c: reply({"type": "pass"}))
         self.assertEqual((rec["malformed"], rec["Y"], {t["status"] for t in rec["turns"]}), (0, 0.0, {"pass"}))
         self.assertEqual({s["ctx"]["status"] for s in cl.seen if s["ctx"]["round"] == 2}, {"no-op"})
+
+    def test_trailing_prose_accepted(self):  # prereg change 19: prose BEFORE the last array is ignored
+        c0 = {"type": "claim", "item": "h50t0"}
+        text = 'Here is why: t0 is free [and "unheld"].\n\n[{"type":"claim","item":"h50t0"}]\n'
+        self.assertEqual(tc.parse(text, 0, self.IDS), ([c0], None))
+        # text AFTER the last array stays malformed (the rule in change 19, not its example)
+        self.assertEqual(tc.parse('[{"type":"claim","item":"h50t0"}] and then more', 0, self.IDS), (None, "extra_text"))
+        self.assertEqual(tc.parse('ok [{"type":"claim","item":"h50t0"}] bye', 0, self.IDS), (None, "not_json"))
+
+    def test_only_last_array_accepted(self):  # prereg change 19: several arrays, only the last counts
+        acts, why = tc.parse('[{"type":"pass"}] [{"type":"claim","item":"h50t1"}]', 0, self.IDS)
+        self.assertEqual(([a.get("item") for a in acts], why), (["h50t1"], None))
+
+    def test_no_array_still_not_json(self):  # prereg change 19: prose with no array is unchanged
+        self.assertEqual(tc.parse("no json here", 0, self.IDS), (None, "not_json"))
+        self.assertEqual(tc.parse('I pick {"type":"pass"}', 0, self.IDS), (None, "not_json"))  # objects need the strict path
+        # the fallback never weakens a rule: the last array is checked exactly like a strict reply
+        self.assertEqual(tc.parse('see: [{"type":"claim","item":"h50t9"}]', 0, self.IDS), (None, "unknown_task"))
 
 
 class CapsAndSealTests(unittest.TestCase):
@@ -852,6 +870,116 @@ class InvalidLogTests(unittest.TestCase):
     def test_a_valid_log_is_not_void(self):
         rec, _ = run(oracle)
         self.assertEqual((rec["valid"], rec["status"], rec["extra_work_events"], rec["void"], rec["Y"]), (True, "ok", 0, None, 1.0))
+
+
+class ThinkingOffTests(unittest.TestCase):
+    """Pre-freeze change 13: every request carries thinking off; the size probe measures the wire body; a thinking
+    block in a response voids the episode at that call."""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        sp = os.path.join(self.d, "ps.json")
+        with open(sp, "w") as f:
+            json.dump({"fetched": datetime.now(timezone.utc).date().isoformat(), "source_url": "https://x",
+                       "models": {M: P}, "aliases": {M: [M]}}, f)
+        self.sheet = spend.PriceSheet.load(sp)
+
+    def episode(self, tag, **caps):
+        srv, url, seen = fakeclaude.start(lambda p, h, b, n: fakeclaude.ok(M, reply({"type": "pass"})))
+        self.addCleanup(srv.shutdown)
+        led = spend.Ledger(os.path.join(self.d, f"{tag}.jsonl"), self.sheet)
+        cl = bc.ClaudeClient(KEY, led, url, allow_host="127.0.0.1")
+        return run(None, client=cl, caps={"id_tag": tag, **caps})[0], seen
+
+    def test_caps_and_every_wire_body_carry_thinking_disabled(self):
+        self.assertEqual(tc.CAPS["thinking"], {"type": "disabled"})
+        self.assertEqual(tc.CAPS["output_tokens"], 300)
+        rec, seen = self.episode("a")
+        self.assertEqual((rec["ended"], rec["calls"], len(seen)), ("complete", 8, 8))
+        for s in seen:
+            self.assertEqual(s["body"]["thinking"], {"type": "disabled"})
+            self.assertEqual(s["body"]["max_tokens"], 300)
+
+    def test_size_probe_measures_the_wire_body_byte_for_byte(self):
+        _, seen = self.episode("a")
+        wire = len(json.dumps(seen[0]["body"], sort_keys=True).encode())
+        rec, seen2 = self.episode("b", input_tokens=wire - 1)  # one byte short: refused before anything is sent
+        self.assertEqual((rec["ended"], len(seen2)), ("prompt_too_large", 0))
+        self.assertIn(f"request {wire} bytes", rec["abort_reason"])
+        rec, seen3 = self.episode("c", input_tokens=wire)
+        self.assertGreaterEqual(len(seen3), 1)
+
+    def test_caps_cannot_change_the_thinking_field(self):
+        for bad in ({"type": "adaptive"}, {"type": "enabled", "budget_tokens": 1024}, None, {}):
+            with self.assertRaises(ValueError):
+                run(floor, caps={"thinking": bad})
+
+    def test_a_thinking_block_voids_the_episode_at_that_call(self):
+        for kind in ("thinking", "redacted_thinking"):
+            class Thinks(Scripted):
+                def call(self, *a, **kw):
+                    return dict(super().call(*a, **kw), block_types=[kind, "text"])
+            rec, cl = run(floor, client=Thinks(floor))
+            self.assertEqual((rec["ended"], rec["calls"], len(cl.seen)), ("void", 1, 1), kind)
+            self.assertIn("thinking block", rec["void"])
+            self.assertEqual(rec["turns"][0]["block_types"], [kind, "text"])
+        rec, _ = run(floor)  # text-only responses are untouched
+        self.assertEqual((rec["ended"], rec["void"]), ("complete", None))
+
+
+class TaskOrderTests(unittest.TestCase):
+    """Pre-freeze change 14, opt-in only (caps task_order="per_agent"): each agent sees the tasks in its own seeded
+    order, no arm in the seed. The default keeps the shared taskset order."""
+
+    @staticmethod
+    def shown(arm, seed=50, order="per_agent"):
+        rec, cl = run(oracle, arm, seed, caps={} if order is None else {"task_order": order})
+        return {s["ctx"]["agent"]: re.findall(r"^(\w+): sum", s["user"], re.M) for s in cl.seen if s["ctx"]["round"] == 1}
+
+    def test_default_keeps_the_shared_taskset_order_for_every_agent_and_arm(self):
+        self.assertEqual(tc.CAPS["task_order"], "shared")
+        for seed in (50, 51):
+            ids = [t["id"] for t in alloc.gen(seed, "heldout")["tasks"]]
+            for arm in team.ARMS:
+                for order in (None, "shared"):
+                    views = self.shown(arm, seed, order)
+                    self.assertEqual(views, {a: ids for a in ("a0", "a1", "a2", "a3")}, (seed, arm, order))
+        rec, _ = run(oracle)
+        self.assertEqual(rec["task_order"], "shared")
+
+    def test_default_prompts_are_identical_with_and_without_the_explicit_option(self):
+        _, a = run(oracle, "code")
+        _, b = run(oracle, "code", caps={"task_order": "shared"})
+        self.assertEqual([(s["system"], s["user"]) for s in a.seen], [(s["system"], s["user"]) for s in b.seen])
+
+    def test_unknown_task_order_refused(self):
+        for bad in ("per-agent", "", None, "sorted"):
+            with self.assertRaises(ValueError):
+                run(oracle, caps={"task_order": bad})
+
+    def test_order_is_arm_independent_per_agent_and_matches_the_prereg_seed(self):
+        ts = alloc.gen(50, "heldout")
+        views = {arm: self.shown(arm) for arm in team.ARMS}
+        for arm in team.ARMS:
+            self.assertEqual(views[arm], views["none"], arm)
+        for agent, ids in views["none"].items():
+            want = random.Random(f"ep1:view:heldout:50:{agent}").sample(ts["tasks"], len(ts["tasks"]))
+            self.assertEqual(ids, [t["id"] for t in want], agent)
+            self.assertEqual(sorted(ids), sorted(t["id"] for t in ts["tasks"]))
+
+    def test_order_differs_across_agents(self):
+        for seed in (50, 51, 52):
+            views = self.shown("none", seed)
+            self.assertEqual(len(views), 4)
+            self.assertGreater(len({tuple(v) for v in views.values()}), 1, seed)
+            self.assertGreater(len({v[0] for v in views.values()}), 1, seed)  # not every agent sees the same first task
+
+    def test_scoring_still_reads_the_canonical_task_list(self):
+        ts = alloc.gen(50, "heldout")
+        before = [t["id"] for t in ts["tasks"]]
+        rec = tc.run_episode_model(ts, "none", "A", Scripted(oracle), caps={"task_order": "per_agent"})
+        self.assertEqual((rec["task_order"], rec["Y"]), ("per_agent", 1.0))
+        self.assertEqual([t["id"] for t in ts["tasks"]], before)
 
 
 if __name__ == "__main__":

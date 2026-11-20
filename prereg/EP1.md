@@ -5,9 +5,12 @@ papers already do it in real teams (section 3), and this study extends their des
 coordination rule on a toy task. It measures, with four Haiku 5.5 agents, 20 task sets and a
 matched budget, how the share of distinct passing work changes when a claim-before-work rule is
 given as a card, enforced in code, or absent. It reports three raw contrasts with intervals and
-no verdict; a null and "inconclusive" are allowed results. No model has been run.
+no verdict; a null and "inconclusive" are allowed results. No EP-1 episode has been run; the
+canary call and instrument pilot 1 have (section 13, item 16).
 
-Status: DRAFT. Not frozen. Nothing in this file has been run. No EP-1 episode may run until the
+Status: DRAFT. Not frozen. No EP-1 episode has been run. Instrument pilot 1 ran on 2026-11-20 and
+stopped (section 13, item 16); pilot 2 is specified there, runs both task orders and was approved by the owner on 2026-11-20
+(pre-freeze change 18); it has not run. No EP-1 episode may run until the
 freeze is recorded in `docs/reports/prereg-freezes.md` (WORKPLAN-EP section 5) and the gate in
 section 13 has passed. Two paid steps come before the freeze, each under its own owner approval
 and sub-cap and neither producing EP-1 data: the one-call canary and the instrument pilot
@@ -91,10 +94,27 @@ against these lines.
 | 9 | An invalid log stops the batch as `stopped:invalid_log`, no longer `stopped:void_model`; the closed stop set has nine values, not eight; `void_model` keeps the model-identity voids and the malformed-reply stops; `refusal_loop` stays in the set, never written by the driver. Read in `spend.STOP_WHY`, `ep1._WHY` | Ruling 1 fix round | 12, 14 |
 | 10 | Settle rule stated: `Ledger.settle` refuses while a stop is recorded on the batch, a child (the canary) or a dependency; the same rule gates `pilot` (after the canary) and `ar1` (after `ep1`). Read in `spend.settle`, `_check_batch`, `_stops_in_scope` | Ruling 1 fix round | 12, 15 |
 | 11 | A valid task set is one where all three arms are non-void. Wording only: section 10 already said so and `analysis.summarise` counts that way | Orchestrator ruling 2 | 10 |
-| 12 | The "smaller than the 20-point effect of interest" label applies when the upper bound of the primary interval (cluster bootstrap, 95%) is below 0.20. The kill rule (section 12, both intervals) is unchanged. **Open: `analysis.py` still uses both intervals for the label and derives the kill read-off from the same flag; a code change is needed before the freeze** | Orchestrator ruling 3 | 11 |
+| 12 | The "smaller than the 20-point effect of interest" label applies when the upper bound of the primary interval (cluster bootstrap, 95%) is below 0.20. The kill rule (section 12, both intervals) is unchanged. **Code now matches (read in `analysis._contrast`, not run):** the label is `smaller_than_effect_of_interest` = bootstrap `hi` < 0.20; the kill read-off uses the separate flag `hi_below_soi_both` (both intervals) | Orchestrator ruling 3 | 11 |
+| 13 | **Thinking is turned off in every request:** `"thinking": {"type": "disabled"}`. `max_tokens` stays 300 and no cap or budget moves. Before, the request sent no thinking field, and Haiku 5.5 then thinks by default; the hidden thinking shared the 300 tokens with the JSON and cut replies short at rates that differed by card (pilot 1: 5 of 88 calls, 4 of them under one card). Checked against the Claude API documentation on 2026-11-20 (quoted in section 6). Not yet in the code | Pilot 1 (`docs/reports/pilot-1-diagnosis.md`, section 1); author decision | 6, 13, 14 |
+| 14 | **Task list order is drawn per agent.** Each agent sees the same 6 tasks in its own order, from `random.Random(f"ep1:view:{split}:{seed}:{agent}")`; the arm is not in the seed, so the three arms of a task set show each agent the same order. Before, all four agents saw one sorted list, and all four claimed the first task in all 11 pilot episodes, in every arm. **Superseded in part by change 18:** `per_agent` is now one of two candidate orders, not yet EP-1's order; pilot 2 decides | Pilot 1 (diagnosis, section 3); author decision | 6, 14 |
+| 15 | Note only, no rule change: refusals are reported per arm in two rows, enforcer denials (`A:*`) and board errors (`board_error:*`), never as one summed rate. The reason labels differ by arm by construction | Pilot 1 (diagnosis, section 2) | 6, 8 |
+| 16 | Pilot 1 result recorded and **pilot 2 specified**: batch `pilot2`, USD 0.25, 260 calls, 598,000 tokens, from the unallocated USD 1.50 (USD 1.25 then stays unallocated). **Approved by the owner on 2026-11-20, with both task orders: change 18** | Section 13.16 rule "any pilot-driven change is re-gated"; author decision | 13, 15 |
+| 17 | Record correction: the explicit temperature 1.0 was accepted on the canary and on 88 pilot calls, so "unchecked until the canary" is settled. 1.0 is the model default; the documentation says any other value returns a 400 on Haiku 5.5 | Pilot 1; Claude API documentation | 6 |
+| 18 | **Pilot 2 runs both task orders, and its result decides EP-1's order.** New factor `order`: `shared` (all four agents see the task set's one list; the herd is kept) or `per_agent` (change 14's seeded order per agent, no arm in the seed). In pilot 2 only, the 6 task sets are split 3 and 3 by a seeded assignment that does not depend on the arm; all conditions of a task set use that set's order, so every contrast is within one order. Caps unchanged: 240 scheduled calls, 260 calls, USD 0.25, 598,000 tokens. EP-1 and the canary are unchanged and stay on `shared` until the rule in section 13, item 16b, picks EP-1's order before the freeze. The rule is a design decision, not a confirmatory test. Owner, verbatim: "You got my approval", in reply to the ask "confirm both orders and pilot 2" (`ep-approvals.md`, addendum 6) | Owner approval 2026-11-20; author decision on the rule | 6, 13, 14, 15 |
 
 Changes 8 to 12 are also dated 2026-11-20 and were made after the orchestrator's rulings; I read
 `ep1.py`, `spend.py` and `analysis.py` for them and ran nothing.
+
+Changes 13 to 17 are dated 2026-11-20, after pilot 1 stopped. They are pilot-driven: they follow a
+look at real model behaviour on EP-1's own three arms (section 14), so each is re-gated and this
+file's diff against its pre-pilot text ships with the result. Changes 13, 14 and 16 are not in
+the code; the implementer's list is in the design notes ("After pilot 1"). I read the diagnosis,
+the pilot trace and the code named; I ran nothing and made no call.
+
+Change 18 is dated 2026-11-20, after the owner's approval of pilot 2. It replaces the open question
+under change 14 (keep the herd, or remove it) with a measurement of both. The switch is being
+built in parallel (`team_claude.CAPS["task_order"]`, default `shared`, read in the working tree,
+not run); the split of task sets across orders I did not see in the code. I ran nothing.
 
 ## 1. Hypothesis
 
@@ -259,6 +279,33 @@ predicate, the arm would measure instruction-following on a visible answer key, 
   arm the replies of a round are executed in that order. For each task claimed in the round, the
   claimant that the board's seeded draw picks executes first. Under `code` the claim lock
   therefore refuses exactly the agents the board would resolve against.
+- **Task list order: `shared` or `per_agent`, fixed by pilot 2 (pre-freeze changes 14 and 18,
+  design choice).** EP-1 runs one order, the same for all 60 episodes, chosen before the freeze
+  by the rule in section 13, item 16b. Until that rule is applied the order is `shared`: all
+  four agents see the task set's one list, as in the canary and pilot 1. The other candidate,
+  `per_agent`, is described in the rest of this item; its reasons are the case for it, not a
+  decision. Under `per_agent` the prompt lists the 6
+  tasks in an order drawn for that agent from `random.Random(f"ep1:view:{split}:{seed}:{agent}")`
+  over the task set's own split and seed. It is the same in both rounds and the same in all
+  three arms of a task set. No text is added; the same lines are permuted, so the request size
+  is unchanged. Task ids, the board, the scorer and the scripted floor and oracle are unchanged.
+  - **Why.** In pilot 1 all four agents saw one sorted list and an empty board, and all four
+    claimed the first task in round 1 of all 11 episodes; the three losers then all claimed the
+    second. `Y` took only 0.5 and 0.75 and followed the list, not the arm. Herding in `none` is
+    what the practice is for. The same herd under `play` and `code` is an instrument fault: with
+    four identical views, no card and no lock gives an agent any reason to pick a different
+    task from its neighbour, so no arm could differ by 20 points whatever the truth.
+  - **Why it favours no arm.** The order depends on the task set and the agent, never on the
+    arm, and each contrast is paired within a task set. It tells no agent what to do and names
+    no norm. Collisions still happen by chance: four first picks out of six are all distinct
+    with probability 360/1,296 = 0.28 if each agent takes the first task it sees.
+  - **Stated cost.** It raises `Y` in every arm, `none` included, so it can shrink the room
+    above `Y_none`. If `Y_none` sits above 0.80, a 20-point gain cannot fit under 1.0. Pilot 2
+    measures this in each order (section 13, item 16b).
+  - **The case for `shared`.** The four-way herd on one list is the natural failure a claim
+    practice is for, and removing it changes what EP-1 measures (section 14). Whether a card
+    or a lock can move `Y` at all under `shared` with thinking off is not known: pilot 1 had
+    thinking on. Pilot 2 runs both orders so that this is measured, not argued.
 - **Ordered round actions.** Round 1 accepts one `claim`, or `pass`. Round 2 accepts, in this
   order and each optional and at most once: one `claim`, one `work` (task, integer answer, a name
   for the result), one `release` (with a `done` flag); or `pass` alone. An agent has one work
@@ -287,6 +334,14 @@ predicate, the arm would measure instruction-following on a visible answer key, 
   - Enforcer refusals occur only under `code`. A board-error refusal (a `release` of a claim the
     agent did not win) can occur in any arm, at most once per agent, so it cannot stop an agent
     outside `code`.
+  - **The refusal label differs by arm for the same behaviour (note, pre-freeze change 15).** A
+    claim loser that goes on to work and release shows one `board_error` under `none` and `play`;
+    under `code` it shows `A:*` denials, plus a `board_error` if it sent the release. Seen in
+    pilot 1 and working as designed. The release reaches the board after the work event, so `Y`
+    and `valid` are not touched; under `code` the board error can be the third consecutive
+    refusal, but only after that agent's last action. The per-arm refusal read-off (section 8)
+    is therefore given in two rows, enforcer denials and board errors, and the summed rate is
+    not compared across arms.
 - **A rejected claim reaches the agent in the next round, never in the same turn.** There is one
   call per agent per round, so a refusal in round 1 appears in that agent's round-2 prompt twice:
   in the board view (the claims map names the holder) and in a one-line status of its own last
@@ -305,11 +360,44 @@ predicate, the arm would measure instruction-following on a visible answer key, 
   seed id, with a random script; G1b-R R-7.1, probe of 1,920 prompts over heldout seeds 0 to 19,
   4 scripts and 3 arms). An earlier draft said 1,386 bytes; that was the maximum on seeds 0 to
   14 only. **Headroom rechecked:** 2,000 - 1,476 = 524 bytes, 26.2% of the bound, so the bound
-  holds on every scheduled seed and is not changed. No tools, no cache control, no thinking
-  parameter.
+  holds on every scheduled seed and is not changed. No tools, no cache control.
+- **Thinking is off: every request carries `"thinking": {"type": "disabled"}` (pre-freeze
+  change 13).** No `output_config` is sent, so effort stays at the model default. An earlier
+  draft said "no thinking parameter" and took that to mean no thinking. It does not.
+  - **Documentation, read 2026-11-20** (`platform.claude.com/docs/en/build-with-claude/thinking`,
+    `thinking-troubleshooting`, `thinking-steering-and-cost`). The per-model table row reads:
+    "Claude Haiku 5.5 | [no thinking field] Adaptive thinking | [adaptive] Adaptive thinking |
+    [enabled with budget_tokens] 400 error | [between_tools] 400 error | [disabled] Thinking off
+    at high effort or below". Also: "Claude Opus 5 and Claude Haiku 5.5 ... accept
+    `thinking: {type: "disabled"}` only at effort `high` or below"; "medium (default on Claude
+    Opus 5.5 and Claude Haiku 5.5)"; "`max_tokens` is a hard cap on total output for the
+    request, thinking and response text combined". So the request is documented as accepted at
+    the default effort. It is not yet shown on a real call: the first call of pilot 2 shows it.
+  - **Why off, and not `max_tokens` 1,000.** In pilot 1 the depth of hidden thinking followed
+    the card (round-1 median output 21 tokens under card A, 97.5 under the twin), and a cut
+    reply costs the agent's only work slot. Off removes that arm-linked loss at its source and
+    keeps every pre-registered cap. A cap of 1,000 would keep the arm-linked thinking, would
+    rest on outputs that pilot 1 only saw cut at 300, and would move three caps (the `ep1`
+    token cap to 1,500,000, tokens per episode to 24,000, the per-call output cap to 1,000).
+  - **What moves.** `max_tokens` 300, the 2,000-byte bound, USD 5, 500 calls and 1,250,000
+    tokens: none. The field adds about 34 bytes to the request body, so the largest request is
+    about 1,510 bytes and the headroom about 490 (computed from the field's text, to be
+    re-measured by the probe).
+  - **What it costs.** The result holds for Haiku 5.5 with thinking off, which is not the
+    API default. The model may put reasoning in visible text, which the strict parser rejects,
+    possibly at rates that differ by arm; and sums may go wrong more often, which moves `Y`.
+    Pilot 2 counts both (section 13, item 16).
+  - **If the API refuses the field** (an HTTP 400, which stops the batch), the fallback is
+    `max_tokens` 1,000 with the three caps above. That is a cap change and needs a new owner
+    ask; it is not applied by this file.
 - Temperature 1.0, sent explicitly (design choice: at 0 the 20 task sets would be near-copies of
-  one draw). `ClaudeClient.call` defaults to 0.0 and must be overridden. Whether
-  `claude-haiku-5-5` accepts an explicit temperature is unchecked until the canary.
+  one draw). `ClaudeClient.call` defaults to 0.0 and must be overridden. **Settled (pre-freeze
+  change 17):** the canary and 88 pilot calls were accepted with the explicit 1.0. The
+  documentation says that on Claude Haiku 5.5 "non-default `temperature`, `top_p`, or `top_k`
+  values return a 400 error on every request", and that from API version 2026-10-21 any
+  `temperature` value returns a 400. So 1.0 is the only value this model takes, a run at 0 was
+  never possible, and the pinned `anthropic-version` must not be raised to 2026-10-21 or later
+  without dropping the field.
 - Budget matching: every arm has the same 8 calls and the same caps; a refused action is lost and
   buys no extra call. Card and neutral twin have equal byte length (237 bytes each), not equal
   token count; native tokens are reported per arm.
@@ -629,7 +717,7 @@ interval is built (`stats.paired_t`, called by `summarise`).
 |---|---|
 | `lo` > 0, or `hi` < 0, in both intervals | **Resolved** (positive or negative), with `d` and the interval |
 | otherwise | **Not resolved: inconclusive** |
-| in addition, `hi` < 0.20 in the primary interval (cluster bootstrap, 95%) | "Smaller than the 20-point effect of interest" (the "<20-point smallest effect" label; a null on size, SCIENCE section 5). Orchestrator ruling 3: the bootstrap upper bound alone decides this label. **Code not yet matching:** `analysis._contrast` requires `hi` < 0.20 in both intervals, and the kill read-off (section 12) reuses that flag; the label must follow this row and the kill rule must stay on both intervals before the freeze |
+| in addition, `hi` < 0.20 in the primary interval (cluster bootstrap, 95%) | "Smaller than the 20-point effect of interest" (the "<20-point smallest effect" label; a null on size, SCIENCE section 5). Orchestrator ruling 3: the bootstrap upper bound alone decides this label. **Code matches (read 2026-11-20, not run):** `analysis._contrast` sets `smaller_than_effect_of_interest` from the bootstrap `hi` alone, and the kill read-off (section 12) uses the separate flag `hi_below_soi_both`, true only when `hi` < 0.20 in both intervals |
 | fewer than 12 valid task sets per arm | **"incomplete: not shown"**, in place of every row above; no `d`, no interval |
 
 - No row says the card is adopted, and no row says an effect "is 20 points". Showing that an
@@ -813,7 +901,8 @@ tree:
    the 3-consecutive stop fires with 4 agents; the 20-total stop cannot fire with 4 agents (at
    most 15) and is shown with 6. `router.seal` must pass the agent list to the enforcer (D3
    limits).
-5. **Caps:** `max_tokens` 300; input above 2,000 request bytes not sent; call 501 refused; USD 5,
+5. **Caps:** `max_tokens` 300, with `thinking` disabled in the body (a test asserts the field in
+   both request builders); input above 2,000 request bytes not sent; call 501 refused; USD 5,
    1,250,000 tokens and the canary's USD 0.05 as nested batch sub-caps (`spend.BATCH_SPECS`); USD 9
    per ledger file and USD 10 across the pinned directory (section 15); an absolute ledger path;
    temperature override. A re-run needs a new `id_tag`.
@@ -874,6 +963,115 @@ tree:
       or a gross leak; it is a check on the instrument, not an estimate.
     - **Any pilot-driven change is re-gated**, and the diff of this file against its pre-pilot
       text is shipped with the EP-1 result, whether or not anything changed.
+    - **Pilot 1 result (2026-11-20).** Stopped `stopped:void_model`, detail
+      `malformed_states_check`, after 11 episodes, 88 calls and USD 0.0115. The stop was correct:
+      4 cut replies under the `states_check` card against a threshold of 3 (15% of 24). Read in
+      `docs/reports/pilot-1-diagnosis.md` and `runs/ep1-live/pilot/pilot_trace.txt`. It found the
+      hidden thinking (change 13) and the round-1 herd (change 14). It answered neither of its
+      own questions: `Y` was the same in every condition of a task set, so it shows nothing
+      about a leak. The `pilot` batch stays stopped; its unspent USD 0.4885 is not reused.
+16b. **Instrument pilot 2 (specified 2026-11-20; approved by the owner on 2026-11-20 with both
+    task orders, change 18; not yet run).** It has two purposes. (1) It checks the changed
+    request (change 13, thinking off) before the freeze. (2) It decides which task order EP-1
+    uses, `shared` or `per_agent`, by the rule below. It is a check and a design decision, not
+    an estimate and not a confirmatory test, and it is excluded from every EP-1 number like
+    pilot 1.
+    - **Approval.** Owner, verbatim: "You got my approval", in reply to the ask "confirm both
+      orders and pilot 2" (`ep-approvals.md`, addendum 6). It covers the order factor and one
+      `pilot2` run. The run still waits for the spend re-check, the verified order switch and
+      this text (same addendum).
+    - **Order factor (pilot 2 only).** `order` is `shared` or `per_agent` (section 6). The 6
+      task sets are split 3 and 3 by a seeded assignment that does not depend on the arm. All
+      5 conditions of a task set run in that set's order, so every contrast between conditions
+      is inside one order. Per order: 3 task sets, 15 episodes, 120 calls; on the three EP-1
+      conditions 9 episodes and 72 calls, of which 3 `none` episodes with 12 work slots.
+    - **Caps:** new batch `pilot2`, a sibling of `ep1`: **USD 0.25, 260 calls, 598,000 tokens**
+      (260 x 2,300), taken from the unallocated USD 1.50. Reserved worst case 260 x USD 0.00055 =
+      USD 0.143. It opens only after the canary settled `complete`; it does not depend on the
+      stopped `pilot` batch. Per-call caps as EP-1: 2,000 bytes in, `max_tokens` 300.
+    - **Schedule:** the same 5 conditions x 6 train-range task sets (train seeds 0 to 5) x 8
+      calls = 240 calls, 30 episodes, leaving 20 calls for retries and re-runs. Seeds 0 to 2
+      repeat pilot 1's sets, each in the order its assignment gives. No heldout set. The
+      order factor adds no call and moves no cap.
+    - **No second canary.** The canary proved the price and the old request shape. The first
+      call of pilot 2 is the test that the API takes the new field; a 400 stops the batch at
+      that call. The price path is unchanged.
+    - **Stop rules (in the driver, unchanged in form):** any HTTP 400; a third transport abort;
+      malformed replies above 10% of planned calls (more than 24 of 240) or above 15% in any
+      condition (more than 7 of 48); any cap. **One new stop:** a response that holds any
+      `thinking` block stops the batch, since the instrument is then not the one specified.
+    - **What it must show to clear EP-1. All seven, read on the three EP-1 conditions (`none`,
+      `play`, `code`: 18 episodes, 144 calls) unless stated. The numbers are fixed here, before
+      the run.** Criteria 1 to 4, 6 and 7 are read on the whole batch, both orders together,
+      with the thresholds unchanged; each is also printed per order as a description.
+      1. Request shape: 0 HTTP 400 in the batch; every response holds only `text` blocks (the
+         block types are recorded per call).
+      2. No truncation: 0 replies with `stop_reason` `max_tokens` in the batch, and the largest
+         `output_tokens` is at most 150, half the cap.
+      3. Reply format: at most 7 malformed of 144 (under 5%) and at most 4 of 48 in any one
+         arm.
+      4. Arithmetic: at most 3 wrong answers among the admitted work events (at most 72).
+      5. At least one order is **usable** under the order rule below. (Before change 18 this
+         was one room-to-move screen on 6 `none` episodes; it is now read per order, on 3.)
+      6. The scripted floor scores exactly 0.25 and the oracle exactly 1.0 in each arm.
+      7. The ledger equals the Console for the batch, and every episode's prompts, replies and
+         log are hand-read against the scores, with the reading recorded.
+    - **If a criterion fails,** EP-1 is not cleared and nothing is tuned on the result here.
+      Item 1 by a 400: the fallback in section 6 (`max_tokens` 1,000), a cap change for the
+      owner. Items 2 to 4: back to the author with the traces. Item 5 (no usable order): the
+      table of both orders goes to the owner; no order is picked by hand and no threshold is
+      moved. A third pilot needs a new owner ask.
+    - **The order rule (fixed here, before the run; a design decision, not a confirmatory
+      test).** For each order, on its own 3 task sets, an order is **usable** when all three
+      hold:
+      - (a) *Room.* Mean `Y_none` over the 3 `none` episodes is from 0.30 to 0.80 inclusive,
+        so 20 points fit on either side. The mean moves in steps of 1/12, so this is 4/12 to
+        9/12.
+      - (b) *The problem is there.* Under `none`, at least 2 of the admitted work events (at
+        most 12) are executed duplicate work (the section 8 read-off, as `analysis` counts
+        it). Under `code` the count is 0 by construction; a non-zero count is the stop of
+        section 12, not an input here. With fewer than 2 duplicates under `none` a claim
+        practice has almost nothing to remove: 20 points over 3 episodes is 2.4 slots of 12.
+      - (c) *The instrument is not locked.* `Y_code` differs from `Y_none` in at least one
+        of the 3 task sets, in either direction. In pilot 1 `Y` was equal in every condition
+        of every set; an order in which even the enforced rule cannot move `Y` gives
+        `Y_play - Y_none` no room to move either. This assumes a card moves `Y` no further
+        than the same rule in code; it is an assumption, not a result.
+
+      The `play` arm does not enter the rule. Its `Y` and the pilot cards' are printed per
+      order as a description only. The rule does use one difference between arms, `code`
+      against `none`: it picks an order in which the reference rule shows, which is a choice
+      of sensitivity and is stated as such in the result.
+      - Exactly one order usable: EP-1 uses it.
+      - Both usable: EP-1 uses `shared`. It is the instrument already built, gated and
+        covered by the canary, and it keeps the natural herd. The tie is not broken by the
+        size of any pilot difference.
+      - Neither usable: criterion 5 fails and EP-1 is not cleared.
+      - The owner may overrule the rule before the freeze. Then the order is the owner's
+        decision, recorded with the owner's words next to what the rule gave.
+    - **How the result feeds the freeze.** The pilot 2 report prints, per order: mean
+      `Y_none`, `Y` per task set and condition, executed duplicates under `none` and `code`,
+      and (a), (b), (c) as pass or fail. The chosen order is then written into section 6 as
+      one fixed value, as a dated pre-freeze change that carries that table for both orders.
+      EP-1 runs that one order only; `order` is not a factor of EP-1 and no EP-1 analysis is
+      split by it. If the rule gives `per_agent`, EP-1's default changes in the code; that is
+      a code change before the freeze and is re-gated. Either way the value is inside the
+      frozen tree and config hash, and the result names the order and says it was chosen on a
+      pilot of 3 task sets per order. Pilot 2 uses train-range sets and EP-1 heldout sets, so
+      no episode serves both the choice and the estimate.
+    - **Limits and power.** Thinking is off in both orders, so change 13 is seen under the
+      old order on 3 sets and change 14 is the only thing that differs between the orders.
+      The two orders run on different task sets, so a difference between orders is mixed
+      with a difference between task sets; only contrasts inside an order are paired. Each
+      order has 3 `none` episodes: mean `Y_none` moves in steps of 1/12, and a 20-point
+      effect is 2.4 slots of 12. At temperature 1.0 a rerun of the same 3 sets could move
+      (a), (b) or (c) across its line. So the rule can pick the less sensitive order, or
+      call a workable order unusable, and no power is claimed for it. It can show a gross
+      fault (the pilot 1 lock, a ceiling, no duplicates at all); it cannot estimate
+      `Y_none`, a duplicate rate or any contrast, and no such number from pilot 2 is
+      reported as a finding. Picking the order on `code` against `none` favours the order
+      where that gap happened to show in the pilot; EP-1's own estimates come from fresh
+      task sets and are not biased by that, but the pilot gap is not evidence of an effect.
 17. **Human baseline, about ten manual task sets, or its absence stated.** A person plays the
     agents' seats through the same prompts and parser on train-range sets. Zero API cost. Stamped
     `human`, never in an estimate. It shows whether the game measures coordination or plain
@@ -913,14 +1111,20 @@ canary no longer covers the changed code; a second canary is an owner decision, 
 the canary, the parent shows the owner the exact numbers (USD 10 ceiling resting on our ledger
 only, USD 5 and 500 calls for EP-1, USD 0.05 and one call for the canary, USD 0.50 and 150 calls
 for the pilot, the model ID) and waits for the one word "confirm". It covers the canary and the
-pilot. (2) After the freeze and `prereg-check`, immediately before EP-1, the parent shows the
+pilot. It does not cover pilot 2: that had its own owner ask (USD 0.25, 260 calls, 598,000
+tokens, the model ID, both task orders), answered on 2026-11-20 with "You got my approval"
+(`ep-approvals.md`, addendum 6). The owner's words were not the one word "confirm"; the parent
+recorded them as the approval of that ask. (2) After the freeze and `prereg-check`, immediately before EP-1, the parent shows the
 frozen hashes and the same caps and waits for "confirm" again. Each word is recorded verbatim in
 `ep-approvals.md`. Without it, no paid call; the driver's CLI refuses without the owner-confirm
 flag.
 
 **Order before EP-1.** Model-loop re-gate (G1b re-gate) and spend re-verification (G0-2R2); dry
-run on the fake server; owner "confirm"; canary (Console cost equals the ledger); pilot; any
-pilot-driven fix, with re-gate and prereg diff; human baseline, or its absence stated; commit;
+run on the fake server; owner "confirm"; canary (Console cost equals the ledger); pilot (done,
+stopped); the pilot-driven fixes (changes 13 to 16 and the order switch of change 18), with re-gate
+and prereg diff; owner approval of pilot 2 (given 2026-11-20); pilot 2 in both orders, cleared on
+all seven criteria; EP-1's order written into section 6 by the order rule, re-gated if it is
+`per_agent`; human baseline, or its absence stated; commit;
 `code_tree_hash`; `prereg-check`; owner "confirm"; EP-1. The steps are in the design notes,
 section 4.
 
@@ -958,6 +1162,21 @@ section 4.
   It uses train-range sets and is excluded from every estimate, but it can still steer choices
   made in this file. The guard is disclosure: every change after the pilot is re-gated and the
   prereg diff is shipped with the result.
+- **Thinking is off (pre-freeze change 13).** The result is about Haiku 5.5 answering in one
+  pass, which is not how the API runs it by default. A card might work differently on a model
+  that deliberates; pilot 1 suggests the cards changed how much it deliberated. EP-1 does not
+  measure that.
+- **The task order is chosen on pilot data (pre-freeze changes 14 and 18).** EP-1's order,
+  `shared` or `per_agent`, is picked by a rule stated before pilot 2 (section 13, item 16b),
+  on 3 task sets per order and on EP-1's own arms. The rule can pick wrongly at that size.
+  The two orders measure different things. Under `shared`, EP-1 measures the practice on a
+  forced four-way tie, which may leave no arm able to differ. Under `per_agent` the tie is
+  broken, `Y_none` rises, and EP-1 measures the practice on collisions that arise by chance
+  between agents with different views; the worst herd, one of the things a claim practice
+  might be asked to fix, is then removed by the instrument. The result states which order ran
+  and makes no claim about the other.
+- Change 13 is in both orders of pilot 2; the orders run on different task sets, so their
+  difference is not a paired estimate of change 14's effect.
 - `Y <= 1` rests on the loop admitting one work action per agent, checked per episode by the
   `valid` field, not on the scorer's arithmetic (section 7a).
 - The Lean scorer proves properties of its own definitions. That those definitions match the
@@ -980,7 +1199,12 @@ section 4.
   behind further preconditions (`docs/LEAN-AUTORESEARCH-PROPOSAL.md`). USD 2 was left as an
   unallocated reserve, untouched without a new owner ask. **Instrument pilot: USD 0.50 and 150
   calls, taken from that reserve with the owner's approval** (`ep-approvals.md`, addendum 2); USD 1.50 stays
-  unallocated. The sum is 5 + 3 + 0.50 + 1.50 = USD 10.
+  unallocated. The sum is 5 + 3 + 0.50 + 1.50 = USD 10. Pilot 1 spent USD 0.0115 of its 0.50 and
+  is stopped; the rest is not reused. **Approved by the owner on 2026-11-20: pilot 2, USD 0.25, 260 calls and
+  598,000 tokens from the unallocated USD 1.50** (section 13, item 16b; `ep-approvals.md`, addendum
+  6; one run, both task orders, no cap moved by the order factor). USD
+  1.25 stays unallocated and the sum is 5 + 3 + 0.50 + 0.25 + 1.25 = USD 10. Turning thinking off
+  moves no EP-1 cap.
 - Caps: EP-1 stops at USD 5 or 500 calls or 1,250,000 tokens. **USD 9.00 is the default ceiling of
   one ledger file. USD 10 is the hard cap across every `*.jsonl` in the pinned ledger directory**
   (`spend.HARD_CAP_USD`); no argument raises it. Owner ceiling USD 10 (`ep-approvals.md`,
@@ -1035,5 +1259,22 @@ section 4.
   about the practice.
 - One batch on one tier does not license a general claim. A second tier, a real task, or another
   group's run that misses the bar would overturn a positive reading.
+
+## 17. Pre-freeze change 19 (2026-11-20): Malformed-reply parser fix for Haiku 5.5 with thinking off
+
+**Cause:** With `thinking: {"type": "disabled"}`, Haiku 5.5 writes visible prose reasoning BEFORE the JSON array. The strict parser (`team_claude.parse`) requires the entire reply to be exactly one JSON array; prose before it is `not_json`, trailing text is `multiple_values` or `extra_text`. Pilot 2: 22 malformed of 88 calls (25%) — `states_check` 10, `play` 6, `keyword_stuffed` 3, `none` 2, `code` 1 — plus 1 `oversize` at 143 bytes.
+
+**Fix (arm-neutral, pre-registered):** Accept the **last top-level JSON array** in the reply. Prose before it is ignored and logged (`extra_text_bytes`), anything after it is `extra_text` and malformed. No prefill (Haiku 5.5 400s on any prefill even with thinking off). No prompt line change (does not favour an arm). Truncation at `max_tokens` 300 still counted per arm (criterion 2 unchanged). Malformed-stop thresholds (10% overall, 15% per arm) **unchanged**; the fix reduces the numerator.
+
+**Implementer changes** (file, function, behaviour, regression test):
+1. `src/murmuration/team_claude.py`, `parse`: after stripping, find the last `raw_decode` of a list; if none, `not_json`; if trailing non-whitespace after its `end`, `extra_text`; accept that list. `max_reply_bytes` counts whole reply; `extra_text_bytes` logged per turn.
+2. `src/murmuration/ep1.py`, `run_episodes` stop check: counts use the updated `malformed` totals; no threshold change.
+3. Test `tests/test_team_claude.py::ParseTests::test_trailing_prose_accepted`: reply `"Here is why:\n[{"type":"claim","item":"t0"}] trailing"` → parses, `extra_text_bytes=9`.
+4. Test `tests/test_team_claude.py::ParseTests::test_only_last_array_accepted`: reply `"[{"type":"pass"}] [{"type":"claim","item":"t0"}]"` → accepts second array, first ignored.
+5. Test `tests/test_team_claude.py::ParseTests::test_no_array_still_not_json`: reply `"no json here"` → `not_json` unchanged.
+
+**Pilot 2 order observations (exploratory, n=1 per cell):** `per_agent` showed 0 duplicates in 3 `none` episodes (pilot 1 had 2); `shared` showed 1. Per-arm counts too small to infer. The change-18 order rule **cannot be evaluated from pilot 2** — it stopped at 260 calls (11 episodes) before completing 6 task sets per order. Pilot 3 must show: 6 task sets per order (3 `none` episodes each), room/duplicate/instrument-gap pass/fail per the rule in 13.16b.
+
+**Pilot 3 specification:** Same both-orders design. Caps: new batch `pilot3` sibling of `ep1`, **USD 0.25, 260 calls, 598,000 tokens** from unallocated USD 1.25 (addendum 7, `ep-approvals.md`), per-call caps unchanged (2,000 bytes in, `max_tokens` 300). Run 5 arms × 6 train sets × 8 calls = 240 calls + 20 retry buffer. Same 7 clearance criteria as pilot 2. Owner approval required before run.
 
 ## 17. Deviations (filled in afterwards, never deleted)

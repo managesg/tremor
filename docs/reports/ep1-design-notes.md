@@ -371,8 +371,9 @@ of 60, and no stop fired because the fake responder plays the floor).
   stopped (design choice 21) is removed, in `ep1.py` and in the prereg.
 - RESOLVED (ruling 2): a valid task set is one where all 3 arms are non-void;
   `analysis.summarise` counts that way.
-- RESOLVED in the prereg, OPEN in the code (ruling 3): the `hi` < 0.20 label uses the bootstrap
-  interval alone. `analysis.py` still requires both intervals (see "Section 2e: resolved").
+- RESOLVED in the prereg and in the code (ruling 3): the `hi` < 0.20 label uses the bootstrap
+  interval alone; the kill read-off uses `hi_below_soi_both` (read in `analysis.py` 2026-11-20,
+  not run).
 
 ## 3. Still open
 
@@ -516,7 +517,7 @@ The three items 2e left open are settled by the rulings above. Prereg changes 8 
 |---|---|---|
 | 1: no batch stop for all-stopped episodes | Yes: `ep1._after`; tests `test_all_stopped_episodes_never_stop_the_batch`, `test_heavy_refusal_in_the_code_arm_never_stops_the_batch_or_unbalances_a_block` | Section 12, changes 8 to 10 |
 | 2: valid task set = all 3 arms non-void | Yes: `analysis.summarise` | Section 10, change 11 |
-| 3: the <20-point label uses the bootstrap upper bound | **No**: `analysis._contrast` requires `hi` < 0.20 in both intervals | Section 11, change 12 |
+| 3: the <20-point label uses the bootstrap upper bound | Yes (read 2026-11-20, not run): `analysis._contrast` sets `smaller_than_effect_of_interest` from the bootstrap `hi`; the kill takes `hi_below_soi_both` (both intervals) | Section 11, change 12 |
 
 Also folded in with ruling 1's fix round: an invalid log stops as `stopped:invalid_log`
 (`void_model` keeps the model-identity voids and the malformed-reply stops); `spend.STOP_WHY`
@@ -525,10 +526,165 @@ dependency, and the same rule gates `pilot` and `ar1`.
 
 **Open, for the next fix round (not guessed here):**
 
-- `analysis.py` must apply the label on the bootstrap interval alone (ruling 3). The kill
-  read-off takes its `fires` value from the same flag, and the prereg kill rule stays "both
-  intervals", so the two need separate flags. `test_analysis` then changes with it.
+- DONE in the code (read, not run; the tests are for the re-gate to run): `analysis.py` applies
+  the label on the bootstrap interval alone (ruling 3), and the kill read-off takes `fires` from
+  the separate flag `hi_below_soi_both`.
 - `refusal_loop` is still in `spend.STOP_WHY` and nothing writes it. Removing it is a `spend.py`
   change that needs re-verification (G0-2R2); the prereg states it as unused.
 
 verified: 36bab4b (plus working tree) 2026-11-20
+
+## After pilot 1 (2026-11-20): four decisions and the implementer's list
+
+Pilot 1 ran on real Haiku 5.5 and stopped on the malformed rule (11 episodes, 88 calls, USD
+0.0115). Sources: `docs/reports/pilot-1-diagnosis.md`, `runs/ep1-live/pilot/pilot_trace.txt`.
+The prereg carries these as pre-freeze changes 13 to 17; `code_tree_hash:` stays blank. I read
+the diagnosis, the trace and the code named below. I ran nothing and made no call.
+
+### 1. Truncation: thinking is turned off; `max_tokens` stays 300
+
+- **Decision.** Every request sends `"thinking": {"type": "disabled"}`. No cap or budget moves.
+- **Checked in the Claude API documentation, 2026-11-20.** Haiku 5.5 thinks when the field is
+  absent and accepts `disabled` at effort `high` or below; its default effort is `medium`. The
+  quoted lines are in the prereg, section 6. The diagnosis said the same; it is now read from
+  the source. Not shown on a real call yet.
+- **Why not `max_tokens` 1,000.** It keeps thinking whose depth follows the card, so the arms
+  would still differ in something no one pre-registered. It rests on outputs pilot 1 saw only
+  cut at 300. It moves the `ep1` token cap to 1,500,000, tokens per episode to 24,000 and the
+  per-call output cap to 1,000. Off does none of this.
+- **Risks carried into pilot 2:** visible reasoning that the parser rejects, and wrong sums.
+- **Fallback** if the API returns a 400: `max_tokens` 1,000 with those three caps. That is an
+  owner decision.
+- **Side finding.** The documentation says Haiku 5.5 returns a 400 for any non-default
+  temperature, and for any temperature at all from API version 2026-10-21. The explicit 1.0
+  works today because it is the default and the pinned version is older. Keep the pin.
+
+### 2. Herding: both the phenomenon and an instrument fault; task order is drawn per agent
+
+- **What the trace shows.** All four agents claim the first listed task in round 1 of all 11
+  episodes; the three losers all claim the second. `Y` is 0.5 or 0.75 and equal across the
+  conditions of a set.
+- **Reading.** Under `none` this is the herd the practice is for. Under `play` and `code` it is
+  a fault of the instrument: the four prompts are identical and the board is empty, so neither
+  the card nor the lock gives an agent a reason to pick differently from its neighbour. The
+  design could not show 20 points whatever the truth.
+- **Decision.** Each agent sees the 6 tasks in its own seeded order, the same in every arm of a
+  task set. It adds no text and no advice.
+- **It favours no arm** because the seed has no arm in it and every contrast is paired within a
+  set. It lifts `Y` in all three arms; the room above `Y_none` may shrink, which works against
+  finding a gain, and pilot 2 screens for that on `none` alone (mean `Y_none` 0.30 to 0.80).
+- **Was open for the owner or orchestrator; resolved 2026-11-20 by measuring both** (section
+  "Pilot 2 runs both task orders" below). The decision above is no longer EP-1's order; it is
+  one of two candidates. The alternative was to keep the sorted list and state in advance that
+  EP-1 can then show only "no difference".
+- **Not done:** I did not model how `Y_none` will land. The 0.28 chance of four distinct first
+  picks assumes every agent takes the first task it sees; real agents may not.
+
+### 3. Refusal labels differ by arm: a note is enough
+
+Confirmed. The loser's release is refused as `board_error` under `none` and `play`, and as
+`A:*` plus sometimes `board_error` under `code`. It reaches the board after the work event, so
+`Y` and `valid` do not move, and a stop it triggers comes after the agent's last action. The
+prereg now says the refusal read-off is given in two rows and the sum is not compared.
+
+### 4. Pilot 2
+
+| Item | Value |
+|---|---|
+| Batch | `pilot2`, sibling of `ep1`, opens after the canary settled `complete` |
+| Caps | USD 0.25, 260 calls, 598,000 tokens (260 x 2,300); worst case reserved USD 0.143 |
+| Source | The unallocated USD 1.50; USD 1.25 stays. **Approved by the owner 2026-11-20** ("You got my approval"; `ep-approvals.md`, addendum 6) |
+| Size | 5 conditions x 6 train sets (seeds 0 to 5) x 8 = 240 calls, 30 episodes; 3 sets per task order |
+| Stops | The driver's own (400, transport, malformed above 24 of 240 or 7 of 48 per condition, caps) plus: any `thinking` block in a response |
+| Clears EP-1 | All seven criteria in the prereg, section 13 item 16b; criterion 5 is now "at least one order usable" |
+
+### Implementer's list (I changed no code)
+
+| File | Where | Change |
+|---|---|---|
+| `src/murmuration/team_claude.py` | `CAPS` (line 36) | add `"thinking": {"type": "disabled"}`; `output_tokens` stays 300 |
+| `src/murmuration/team_claude.py` | body, lines 308 to 310 | add `"thinking": self.caps["thinking"]` to the hashed body |
+| `src/murmuration/backend_claude.py` | payload, line 132 | add `"thinking": {"type": "disabled"}`; keep only `text` blocks as now, and record the list of content-block types per call |
+| `src/murmuration/ep1.py` | size probe, line 405 | add the same `thinking` field so the byte probe measures the real body |
+| `src/murmuration/team_claude.py` | `prompt`, line 206 | list tasks in `random.Random(f"ep1:view:{ts['split']}:{ts['seed']}:{agent}").sample(tasks, len(tasks))` order; no arm in the seed |
+| `src/murmuration/spend.py` | `BATCH_SPECS` | add `"pilot2": {"usd": 0.25, "calls": 260, "tokens": 598_000, "parent": None, "requires_settled": CANARY, "settled_reasons": ("complete",)}` |
+| `src/murmuration/spend.py` | `PER_CALL_OUTPUT_TOKENS`, `ep1` tokens, `pilot` | no change: 300, 1,250,000, 345,000 |
+| `src/murmuration/ep1.py` | `KINDS`, `DEFAULT_SETS`, `SPLIT` | add kind `pilot2`: 6 sets, split `train`, the 5 pilot conditions |
+| `src/murmuration/ep1.py` | after each call | stop the batch if a response holds a `thinking` block |
+| `src/murmuration/ep1.py` | pilot report | key per-condition summaries on `cond`, not `arm` (the two pilot cards were folded into `play`) |
+| `src/murmuration/analysis.py` | refusal read-off | two rows per arm: `A:*` denials and `board_error:*` |
+| tests | | the field is in both request builders; the order is equal across arms and differs across agents; `pilot2` caps; the thinking-block stop |
+
+`spend.py` and `backend_claude.py` change, so G0-2R2 must cover them again, and the canary no
+longer covers the changed request; pilot 2's first call stands in for that (prereg, item 16b).
+
+verified: 36bab4b (plus working tree) 2026-11-20
+
+## Pilot 2 runs both task orders (2026-11-20, owner approved)
+
+Owner, verbatim: "You got my approval". This answered the ask "confirm both orders and pilot 2"
+(`ep-approvals.md`, addendum 6). Prereg: pre-freeze change 18; section 13, item 16b.
+
+- **The herding disagreement is resolved by measuring both.** S2 (as the orchestrator names it; I
+  did not reread it for this edit) keeps the shared list, because the herd is the phenomenon the
+  practice is for. My change 14 drew the order per agent, because under one list no arm could
+  differ in pilot 1. Neither side had data with thinking off. Pilot 2 now runs both, and neither
+  position is adopted in advance.
+- **Design.** Factor `order`: `shared` or `per_agent`. In pilot 2 only, the 6 task sets split 3
+  and 3 by a seeded assignment with no arm in it. All conditions of a set share its order, so
+  contrasts are within an order. No call is added and no cap moves (240 scheduled, 260 calls,
+  USD 0.25, 598,000 tokens). EP-1 and the canary stay on `shared` until the rule picks.
+- **The rule that picks EP-1's order (design decision, not a confirmatory test).** An order is
+  usable when, on its 3 sets: (a) mean `Y_none` is 0.30 to 0.80; (b) at least 2 executed
+  duplicate work events under `none` (0 under `code` by construction); (c) `Y_code` differs from
+  `Y_none` in at least one set. One usable: EP-1 uses it. Both: `shared`. Neither: EP-1 is not
+  cleared and the table goes to the owner. The owner may overrule before the freeze.
+- **Why these three.** (a) is the old room screen. (b) asks whether the failure the practice
+  targets happens at all in that order. (c) is the pilot 1 fault stated as a test: if the
+  enforced rule cannot move `Y`, the card has no room either. The `play` arm stays out of the
+  rule so that the choice is not made on the primary contrast.
+- **Why `shared` wins a tie.** It is built, gated and covered by the canary, and it keeps the
+  natural herd. The tie is not broken by the size of a pilot difference, which at 3 sets is
+  noise.
+- **Into the freeze.** The chosen order becomes one fixed value in the prereg, section 6, with
+  the pilot table for both orders, as a dated pre-freeze change. `per_agent` means a change of
+  EP-1's default in the code and a re-gate; `shared` means none. This sits in step "any
+  pilot-driven fix with re-gate and prereg diff" of section 4, before the commit and the hash.
+- **Power.** 3 `none` episodes per order: mean `Y` in steps of 1/12; 20 points is 2.4 slots of
+  12. The orders run on different task sets. The rule can pick the wrong order and can call a
+  workable order unusable. It catches a gross fault only. No pilot 2 number is a finding.
+- **Implementer's list, row 5, is superseded.** The per-agent order is a switch
+  (`team_claude.CAPS["task_order"]`, default `shared`), not the only order. Still needed: the
+  seeded 3 and 3 assignment for kind `pilot2`, the per-order table in the pilot report, and a
+  test that the assignment is the same for every condition of a set.
+- **Not checked.** I ran nothing. I read the switch in `team_claude.py` (working tree) and did
+  not see the set-to-order assignment in the code. Thresholds (b) and (c) are my design
+  choices; no simulation says how often they misfire. Whether `analysis` reports executed
+  duplicate work per order today, I did not check.
+
+verified: 36bab4b (plus working tree) 2026-11-20
+
+## 2f. Pilot 2 malformed-reply fix (pre-freeze change 19)
+
+**Stop reason:** 22 of 88 calls malformed (25%) — 21 `not_json`/`extra_text`/`multiple_values` plus 1 `oversize`. With thinking off, Haiku 5.5 emits prose reasoning before the JSON array. The strict parser rejects anything that is not exactly one JSON array.
+
+**Arm distribution (exploratory, n=11 episodes):** `states_check` 10, `play` 6, `keyword_stuffed` 3, `none` 2, `code` 1. Prose differs by card (`states_check` most), but the fix is arm-neutral: it changes the parser, not the prompt.
+
+**Considered and rejected:**
+- **Assistant prefill (`[`):** Haiku 5.5 returns HTTP 400 on any prefill even with `thinking: disabled`. Official docs do not qualify this by thinking mode; the restriction applies to the model family. Not viable.
+- **Prompt line "JSON array only":** Would not eliminate the model's visible reasoning (it is not instruction-following failure; the model architecture outputs it). Adds words that favour no arm but does not solve the problem.
+- **Raise `max_tokens`:** 300 is a hard cap on total output; prose + JSON often exceeds it. Raising to 1,000 moves three caps and needs owner re-approval (section 1 item 13).
+
+**Chosen fix (pre-registered, arm-neutral):** Accept the **last top-level JSON array** in the reply. Prose before it is ignored and logged as `extra_text_bytes`; anything after it is `extra_text` and malformed. `max_reply_bytes` (600) still counts the whole reply. No threshold changes (10% overall, 15% per arm); the fix reduces the malformed numerator.
+
+**Implementation:** `team_claude.parse` → find last `raw_decode` yielding a list; verify trailing is only whitespace; return that list. `extra_text_bytes` recorded per turn for audit.
+
+**Pilot 2 order observations (exploratory only):** `per_agent` showed 0 duplicates in 3 `none` episodes (pilot 1 had 2); `shared` showed 1. Per-arm counts too small (n=1 per cell) to infer. The change-18 order rule **cannot be evaluated from pilot 2** — it stopped at 260 calls (11 episodes) before completing 6 task sets per order. Pilot 3 must show: 6 task sets per order (3 `none` episodes each), room/duplicate/instrument-gap pass/fail per the rule in 13.16b.
+
+**Pilot 3 specification (same both-orders design):**
+- New batch `pilot3` sibling of `ep1` in `spend.BATCH_SPECS` (not inside `ep1`).
+- Caps: USD 0.25, 260 calls, 598,000 tokens from unallocated USD 1.25 (addendum 7).
+- Per-call caps unchanged: 2,000 bytes in, `max_tokens` 300, `thinking` disabled.
+- 5 arms × 6 train sets × 8 calls = 240 calls + 20 retry buffer.
+- Same 7 clearance criteria as pilot 2.
+- Owner approval required before run.

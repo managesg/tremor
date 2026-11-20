@@ -3,6 +3,8 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+THINKING_OFF = {"type": "disabled"}  # kept literal, not imported, so a change in the package cannot move the test
+
 
 def start(responder):
     """responder(path, headers, body_dict, n) -> (status, dict). Returns (server, base_url, seen list)."""
@@ -12,7 +14,11 @@ def start(responder):
         def do_POST(self):
             body = json.loads(self.rfile.read(int(self.headers["content-length"])))
             seen.append({"path": self.path, "headers": dict(self.headers), "body": body})
-            status, out, *extra = responder(self.path, self.headers, body, len(seen))
+            if body.get("thinking") != THINKING_OFF:  # prereg change 13: a request without thinking off is a 400 here
+                status, out, extra = 400, {"type": "error", "error": {"type": "invalid_request_error",
+                                                                      "message": "fake: thinking must be disabled"}}, ()
+            else:
+                status, out, *extra = responder(self.path, self.headers, body, len(seen))
             data = json.dumps(out).encode()  # NaN/Infinity are emitted as-is, like a misbehaving server
             self.send_response(status)
             for k, v in (extra[0] if extra else {}).items():

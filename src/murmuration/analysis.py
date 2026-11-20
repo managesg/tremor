@@ -123,7 +123,8 @@ def summarise(records, kind="model", seed=0, n_boot=10000, margin=0.10):
                     "truncations": sum((r.get("malformed_by_reason") or {}).get("truncated", 0) for r in rs),
                     "retries": sum(t.get("retries", 0) or 0 for t in turns) + sum(r.get("retries", 0) or 0 for r in rs),
                     "denials": sum(r.get("refused", 0) or 0 for r in rs), "censored_task_sets": len(cens),
-                    "refusal_stopped_agents": sum(len(r.get("stopped_agents") or ()) for r in rs)}
+                    "refusal_stopped_agents": sum(len(r.get("stopped_agents") or ()) for r in rs),
+                    "refusal_rows": _refusal_rows(rs)}
     ys = defaultdict(lambda: defaultdict(list))
     for r in records:
         if r.get("Y") is not None and r.get("ended") in SCORED_ENDS and not r.get("void"):
@@ -149,6 +150,17 @@ def summarise(records, kind="model", seed=0, n_boot=10000, margin=0.10):
             "contrasts": contrasts, "hdi_block": hb, "kill": kill,
             "exploratory": {"label": EXPLORATORY, "paired_t": pt, "release_note": RELEASE_NOTE,
                             "per_arm": {a: _readoffs(rs) for a, rs in sorted(arms.items())}}}
+
+
+def _refusal_rows(rs):
+    """Refusals of one arm in two rows, never one sum (prereg change 15): enforcer denials `A:*` and board errors
+    `board_error:*`; any other reason is shown on its own so none drops silently."""
+    out = {"A": 0, "board_error": 0, "other": 0}
+    for r in rs:
+        for x in r.get("refusals") or ():
+            why = str(x[1] if isinstance(x, (list, tuple)) and len(x) > 1 else x)
+            out["A" if why.startswith("A:") else "board_error" if why.startswith("board_error:") else "other"] += 1
+    return out
 
 
 def _readoffs(rs):
@@ -197,11 +209,15 @@ def render(summary):
     """Plain-text report built only from the structured summary fields (contrasts, hdi_block, kill, exploratory);
     no rule of its own."""
     L = [PRIOR_ART, "", summary["label"], "", f"n (task sets, all three arms): {summary['n_task_sets_all_arms']}", ""]
-    L.append("arm  task_sets episodes completion all_stopped trunc retries denials censored stopped")
+    L.append("arm  task_sets episodes completion all_stopped trunc retries censored stopped")
     for a, p in summary["arms"].items():
         L.append(f"{a:<4} {p['task_sets']:>9} {p['episodes']:>8} {p['completion']:>10.2f} {p['all_agents_stopped']:>11} "
-                 f"{p['truncations']:>5} {p['retries']:>7} {p['denials']:>7} {p['censored_task_sets']:>8} "
-                 f"{p['refusal_stopped_agents']:>7}")
+                 f"{p['truncations']:>5} {p['retries']:>7} {p['censored_task_sets']:>8} {p['refusal_stopped_agents']:>7}")
+    L += ["", "refusals per arm, two rows (labels differ by arm by construction; never summed)"]
+    for a, p in summary["arms"].items():
+        rr = p["refusal_rows"]
+        L.append(f"{a:<4} A:*          {rr['A']:>5}")
+        L.append(f"{a:<4} board_error:* {rr['board_error']:>4}" + (f"   other {rr['other']}" if rr["other"] else ""))
     L += ["", "contrast          d        lo       hi   t_lo      t_hi   (bootstrap | paired t)"]
     for c in summary["contrasts"].values():
         tag = f"  [{EXPLORATORY}]" if c["exploratory"] else ""

@@ -1,6 +1,6 @@
 """EP-1 batch driver: canary, pilot and the pre-registered EP-1 schedule (prereg/EP1.md sections 6, 10, 12). stdlib only.
 
-`run_batch(kind, client, ledger, schedule_seed, outdir, dry_run=False)` for kind in canary, pilot, ep1. One process, one
+`run_batch(kind, client, ledger, schedule_seed, outdir, dry_run=False)` for kind in canary, pilot, pilot2, pilot3, ep1. One process, one
 ledger file per batch, one episode at a time. Output directory: `schedule.json` (the plan), `episodes.jsonl` (append-only,
 one line per episode attempt), `events.jsonl` (interrupted attempts), `final.json` (stop reason and ledger report), and for
 the pilot `pilot_trace.txt` (compact per-episode trace for manual review).
@@ -49,12 +49,19 @@ KEY_ENV = "MURMURATION_EP1_KEY"
 REVIEW_FILE = os.path.join(ROOT, "docs", "reports", "card-A-review.md")  # non-author review; names the card sha256
 PRICE_SHEET = os.path.join(ROOT, "docs", "reports", "price-sheet.json")
 PILOT_DIR = os.path.join(ROOT, "practices", "pilot")
-KINDS = ("canary", "pilot", "ep1")
+KINDS = ("canary", "pilot", "pilot2", "pilot3", "ep1")
+PILOTS = ("pilot", "pilot2", "pilot3")  # pilots 2 and 3: same 5 conditions, own batch and ids (design notes, prereg change 19)
 BASE_CONDS = ("none", "play", "code")
 PILOT_CARDS = {"states_check": "states_the_check.md", "keyword_stuffed": "keyword_stuffed.md"}
 COND_TAG = {"states_check": "sc", "keyword_stuffed": "kw"}
-DEFAULT_SETS = {"ep1": 20, "pilot": 3}  # pilot: 3 train sets x 5 conditions x 8 = 120 of its 150 calls
-SPLIT = {"ep1": "heldout", "pilot": "train"}
+DEFAULT_SETS = {"ep1": 20, "pilot": 3, "pilot2": 6, "pilot3": 6}  # pilot: 3 x 5 x 8 = 120 of 150; pilot2/3: 6 x 5 x 8 = 240 of 260
+SPLIT = {"ep1": "heldout", "pilot": "train", "pilot2": "train", "pilot3": "train"}
+ID_PREFIX = {"pilot2": "p2", "pilot3": "p3"}  # pilots 2 and 3 rerun pilot 1's train sets: ids must not collide in the ledger directory
+# Owner 2026-11-20 (prereg 16b): pilot 2 runs both task orders (team_claude.TASK_ORDERS). Each task set gets one order,
+# balanced and seeded without the arm; every condition of a set runs with that order, so arm contrasts are within-order.
+# Other kinds carry no task_order in their plan and run the default shared order.
+ORDER_KINDS = ("pilot2", "pilot3")  # pilot 3 repeats the pilot 2 design (prereg change 19)
+ORDER_TAG = {"per_agent": "pa"}  # in the episode id after the kind prefix; shared adds nothing (ids as before)
 CALLS_PER_EPISODE = 8
 CANARY_BYTES = 90_000
 NBOOT = 10_000
@@ -80,13 +87,18 @@ def _lean(ts, log):  # tests patch this; INVALID stops the batch, REJECTED voids
 
 def plan(kind, schedule_seed, n_sets=None):
     """[{set, split, order}]: the task block s runs its conditions in an order seeded per block. schedule_seed 0 is the
-    prereg's random.Random(f"ep1:order:{s}"); another seed adds itself to the key."""
-    conds = BASE_CONDS + (tuple(PILOT_CARDS) if kind == "pilot" else ())
+    prereg's random.Random(f"ep1:order:{s}"); another seed adds itself to the key. pilot2 blocks also carry task_order."""
+    conds = BASE_CONDS + (tuple(PILOT_CARDS) if kind in PILOTS else ())
     out = []
     for s in range(n_sets or DEFAULT_SETS[kind]):
         order = list(conds)
         random.Random(f"ep1:order:{s}" if not schedule_seed else f"ep1:order:{schedule_seed}:{s}").shuffle(order)
         out.append({"set": s, "split": SPLIT[kind], "order": order})
+    if kind in ORDER_KINDS:
+        orders = (list(tc.TASK_ORDERS) * len(out))[:len(out)]  # half each (one more shared when the count is odd)
+        random.Random(f"ep1:task_order:{schedule_seed}").shuffle(orders)
+        for b, o in zip(out, orders):
+            b["task_order"] = o
     return out
 
 
@@ -202,6 +214,8 @@ def _scorer_void(gate):
 
 def _void_reason(v):
     v = str(v)
+    if "thinking block" in v:
+        return "void_thinking_block"
     if "returned model" in v:
         return "void_model_mismatch"
     return "void_no_model" if "no model" in v or "without a model" in v else "void_other"
@@ -209,7 +223,7 @@ def _void_reason(v):
 
 def _trace(rec):
     L = [f"== {rec['episode_id']} cond={rec['cond']} set={rec['taskset_id']} ended={rec['ended']} Y={rec['Y']} "
-         f"order={rec['block_order']}"]
+         f"order={rec['block_order']} task_order={rec['task_order']}"]
     for t in rec["turns"]:
         L.append(f"  r{t['round'] + 1} {t['agent']} {t.get('status')} {t.get('actions') or ''} "
                  f"{(t.get('reason') or '')[:60]} | {str(t.get('reply', ''))[:300]!r}")
@@ -287,7 +301,7 @@ class _Run:
         _finish(self.ledger, reason)
         out = {"kind": self.kind, "reason": reason, "detail": detail, "stamp": FAKE if self.dry else None, "episodes": len(self.recs),
                "aborts": self.aborts,
-               "voids": {a: sum(1 for r in self.recs if r["arm"] == a and r.get("void")) for a in sorted({r["arm"] for r in self.recs})},
+               "voids": {c: sum(1 for r in self.recs if r["cond"] == c and r.get("void")) for c in sorted({r["cond"] for r in self.recs})},
                "ledger": spend.batch_report(self.ledger.dir, self.kind)}
         with open(os.path.join(self.out, "final.json"), "w", encoding="utf-8") as f:
             json.dump(out, f, sort_keys=True, indent=1, default=str)
@@ -304,9 +318,11 @@ class _Run:
         i = len(self._have(s, cond))
         while i < MAX_ATTEMPTS:
             self._room()
-            tag = COND_TAG.get(cond, "") + ("" if i == 0 else "r1")
+            order = blk.get("task_order", tc.CAPS["task_order"])
+            tag = ID_PREFIX.get(self.kind, "") + ORDER_TAG.get(order, "") + COND_TAG.get(cond, "") + ("" if i == 0 else "r1")
             try:
-                rec = tc.run_episode_model(ts, arm, card, self.client, seed=s, batch=self.kind, caps={"id_tag": tag})
+                rec = tc.run_episode_model(ts, arm, card, self.client, seed=s, batch=self.kind,
+                                           caps={"id_tag": tag, "task_order": order})
             except ValueError as e:
                 if "already used" not in str(e):
                     raise
@@ -325,7 +341,7 @@ class _Run:
                 rec.update(Y=None, valid=False, status="void:invalid_log", void=rec.get("void") or "invalid_log")
             _append(self.epath, rec)
             self.recs.append(rec)
-            if self.kind == "pilot":
+            if self.kind in PILOTS:
                 with open(os.path.join(self.out, "pilot_trace.txt"), "a", encoding="utf-8") as f:
                     f.write(_trace(rec))
             if self._after(rec) != "abort":
@@ -402,7 +418,8 @@ def _summary(recs, fake):
 def _canary_body(n):
     head = "Reply with the single word OK. Ignore the filler text below.\n"
     msg = [{"role": "user", "content": head + ("lorem ipsum dolor sit amet " * (n // 27 + 1))[:n]}]
-    return json.dumps({"max_tokens": 300, "messages": msg, "model": MODEL, "temperature": 1.0}, sort_keys=True), msg
+    return json.dumps({"max_tokens": 300, "messages": msg, "model": MODEL, "temperature": 1.0, "thinking": bc.THINKING_OFF},
+                      sort_keys=True), msg
 
 
 def _canary(client, ledger, outdir, dry_run):
@@ -470,6 +487,60 @@ def _load(outdir):
     return sched, _read_jsonl(os.path.join(outdir, "episodes.jsonl"))
 
 
+GATE_LABEL = "design decision, not a confirmatory result"
+Y_NONE_ROOM = (0.30, 0.80)  # prereg 16b order rule (a), inclusive
+MIN_NONE_DUPLICATES = 2  # rule (b)
+
+
+def order_gate(sched, recs):
+    """Prereg 16b order rule, per task order on the sets the plan gave it: Y per set and condition, executed duplicates
+    (alloc's `duplicates`) under none and code, tests (a) room, (b) >= 2 duplicates under none, (c) Y_code != Y_none in
+    some set. Decidable only when every set of the order has a scored none and code episode; the pick needs both orders
+    decided (exactly one usable: it; both: shared; neither: criterion 5 fails)."""
+    ok = [r for r in recs if r["ended"] in analysis.SCORED_ENDS and not r.get("void") and r.get("Y") is not None]
+    out = {"label": GATE_LABEL, "orders": {}}
+    for o in tc.TASK_ORDERS:
+        sets = [b["set"] for b in sched["plan"] if b.get("task_order") == o]
+        y = {s: {r["cond"]: r["Y"] for r in ok if r["set"] == s} for s in sets}
+        full = [s for s in sets if "none" in y[s] and "code" in y[s]]
+        dup = {c: sum((r.get("scores") or {}).get("duplicates") or 0 for r in ok if r["set"] in sets and r["cond"] == c)
+               for c in ("none", "code")}
+        g = {"sets": sets, "complete_sets": len(full), "Y": y, "duplicates": dup, "mean_Y_none": None,
+             "a_room": None, "b_duplicates": None, "c_not_locked": None, "usable": None}
+        if sets and len(full) == len(sets):
+            g["mean_Y_none"] = sum(y[s]["none"] for s in sets) / len(sets)
+            g["a_room"] = Y_NONE_ROOM[0] <= g["mean_Y_none"] <= Y_NONE_ROOM[1]
+            g["b_duplicates"] = dup["none"] >= MIN_NONE_DUPLICATES
+            g["c_not_locked"] = any(y[s]["code"] != y[s]["none"] for s in sets)
+            g["usable"] = g["a_room"] and g["b_duplicates"] and g["c_not_locked"]
+        out["orders"][o] = g
+    use = {o: g["usable"] for o, g in out["orders"].items()}
+    if None in use.values():
+        out["picked"], out["why"] = None, "not decidable: an order is incomplete"
+    elif not any(use.values()):
+        out["picked"], out["why"] = None, "no usable order: criterion 5 fails, EP-1 not cleared"
+    else:
+        out["picked"] = "shared" if use["shared"] else "per_agent"
+        out["why"] = "both usable: tie goes to shared" if all(use.values()) else "the only usable order"
+    return out
+
+
+def _render_gate(g):
+    pf = {True: "pass", False: "fail", None: "n/a (incomplete)"}
+    L = [f"order rule (prereg 16b): {g['label']}"]
+    for o, x in g["orders"].items():
+        L.append(f"{o}: sets {x['sets']}, {x['complete_sets']}/{len(x['sets'])} with scored none and code; "
+                 f"duplicates none={x['duplicates']['none']} code={x['duplicates']['code']}; mean Y_none="
+                 + ("n/a" if x["mean_Y_none"] is None else f"{x['mean_Y_none']:.3f}"))
+        for s in x["sets"]:
+            L.append(f"  set {s}: " + (" ".join(f"{c}={x['Y'][s][c]}" for c in sorted(x["Y"][s])) or "no scored episode"))
+        L.append(f"  (a) Y_none {Y_NONE_ROOM[0]:.2f}-{Y_NONE_ROOM[1]:.2f}: {pf[x['a_room']]}; "
+                 f"(b) >= {MIN_NONE_DUPLICATES} duplicates under none: {pf[x['b_duplicates']]}; "
+                 f"(c) Y_code != Y_none in a set: {pf[x['c_not_locked']]}; usable: {pf[x['usable']]}")
+    L.append(f"picked order: {g['picked'] or 'none'} ({g['why']}; {g['label']})")
+    return L
+
+
 def analyse(outdir):
     """Report text for an EP-1 or pilot output directory. A model table refuses FAKE/scripted records; a dry run is
     analysed as scripted and stamped FAKE. The canary never enters an analysis."""
@@ -478,13 +549,22 @@ def analyse(outdir):
         raise analysis.AnalysisRefused("refused: canary data never enters an analysis")
     fake = bool(sched.get("dry_run"))
     _refuse_invalid(recs)
-    if sched["kind"] == "pilot":
+    if sched["kind"] in PILOTS:
         analysis._check([dict(r, episode_id="scripted:" + r["episode_id"]) if fake else r for r in recs],
                         "scripted" if fake else "model")
         L = [(FAKE if fake else "pilot: instrument check, not an estimate"), "cond  episodes  meanY"]
         for c in sorted({r["cond"] for r in recs}):
             ys = [r["Y"] for r in recs if r["cond"] == c and r["ended"] in analysis.SCORED_ENDS and not r.get("void")]
             L.append(f"{c:<16} {len(ys):>3}  " + (f"{sum(ys) / len(ys):.3f}" if ys else "n/a"))
+        if sched["kind"] in ORDER_KINDS:
+            L.append("exploratory, not a pre-registered contrast: mean Y by task order and arm (arms compared within an order)")
+            L.append("task_order  cond  episodes  meanY")
+            for o in sorted({r["task_order"] for r in recs}):
+                for c in sorted({r["cond"] for r in recs}):
+                    ys = [r["Y"] for r in recs if r["task_order"] == o and r["cond"] == c
+                          and r["ended"] in analysis.SCORED_ENDS and not r.get("void")]
+                    L.append(f"{o:<10} {c:<16} {len(ys):>3}  " + (f"{sum(ys) / len(ys):.3f}" if ys else "n/a"))
+            L += _render_gate(order_gate(sched, recs))
         return "\n".join(L) + "\n"
     return (FAKE + "\n\n" if fake else "") + analysis.render(_summary(recs, fake))
 
@@ -498,7 +578,7 @@ def worst_case_responder(path, headers, body, n):
     m = re.search(r"Round (\d) of 2\. You are (a\d)\.", user)
     text = "OK"
     if m:
-        tasks = re.findall(r"^(\w+): sum (\d+) (\d+)$", user, re.M)
+        tasks = sorted(re.findall(r"^(\w+): sum (\d+) (\d+)$", user, re.M))  # canonical order; prompts show it shuffled
         t = tasks[0]
         text = json.dumps({"type": "claim", "item": t[0]} if m.group(1) == "1" else
                           {"type": "work", "task": t[0], "answer": int(t[1]) + int(t[2]), "name": f"{m.group(2)}-{t[0]}"})
@@ -513,7 +593,8 @@ def oracle_responder(path, headers, body, n):
     m = re.search(r"Round (\d) of 2\. You are a(\d)\.", user)
     code, resp = worst_case_responder(path, headers, body, n)
     if m:
-        t = re.findall(r"^(\w+): sum (\d+) (\d+)$", user, re.M)[int(m.group(2))]
+        # shortcut: lexical id order equals task order only below 10 tasks per set; alloc sets have 6
+        t = sorted(re.findall(r"^(\w+): sum (\d+) (\d+)$", user, re.M))[int(m.group(2))]
         text = json.dumps({"type": "claim", "item": t[0]} if m.group(1) == "1" else
                           {"type": "work", "task": t[0], "answer": int(t[1]) + int(t[2]),
                            "name": alloc.NAME_RULE.format(agent=f"a{m.group(2)}", task=t[0])})
@@ -552,6 +633,8 @@ def dry_run_all(outdir, schedule_seed=0, review=None, third_scorer=None, n_sets=
     finally:
         srv.shutdown()
     out["ep1_report"] = analyse(os.path.join(outdir, "ep1"))
+    out["pilot2_report"] = analyse(os.path.join(outdir, "pilot2"))
+    out["pilot3_report"] = analyse(os.path.join(outdir, "pilot3"))
     out["bracket"] = _bracket(outdir, schedule_seed, review, third_scorer)
     out["verdict"] = "GREEN" if out["bracket"]["floor_fails"] and out["bracket"]["oracle_passes"] else "VOID"
     return out
@@ -599,7 +682,7 @@ def cli(a):
         raise ValueError("refused: --ledger-dir is a test hook that needs --base-url")
     if a.base_url and not a.ledger_dir:  # G0-2R3 N10: a fake run must never settle a batch in the real pinned ledger
         raise ValueError("refused: --base-url is a test hook that needs --ledger-dir")
-    kind = {"canary": "canary", "pilot": "pilot", "run": "ep1"}[c]
+    kind = {"canary": "canary", "pilot": "pilot", "pilot2": "pilot2", "pilot3": "pilot3", "run": "ep1"}[c]
     try:
         sheet = spend.PriceSheet.load(a.price_sheet or PRICE_SHEET)
         led = spend.Ledger(os.path.join(a.ledger_dir or spend.PILOT_LEDGER_DIR, f"{kind}.jsonl"), sheet, batch=kind)

@@ -358,5 +358,49 @@ class ClaudeBackendTests(unittest.TestCase):
         self.assertEqual(self.seen, [])
 
 
+class ThinkingOffTests(unittest.TestCase):
+    """Pre-freeze change 13: the wire body always carries thinking off; the fake server refuses a request without it."""
+    B = ClaudeBackendTests
+    setUp, tearDown, client, ep, msgs = B.setUp, B.tearDown, B.client, B.ep, B.msgs
+
+    def test_wire_body_carries_thinking_disabled_and_the_ledger_hash_covers_it(self):
+        c = self.client(lambda *a: fakeclaude.ok(M))
+        c.call(self.ep(), "t:0", M, self.msgs(), 300, 1.0, system="sys")
+        body = self.seen[0]["body"]
+        self.assertEqual(body["thinking"], {"type": "disabled"})
+        self.assertEqual(set(body), {"model", "max_tokens", "temperature", "messages", "system", "thinking"})
+        import hashlib
+        charge = [e for e in self.led._lines() if e["kind"] == "charge"][0]
+        self.assertEqual(charge["request_sha256"], hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest())
+
+    def test_fake_server_answers_400_to_a_request_without_thinking_off(self):
+        import urllib.error
+        import urllib.request
+        self.srv, url, seen = fakeclaude.start(lambda *a: fakeclaude.ok(M))
+        for extra in ({}, {"thinking": {"type": "adaptive"}}):
+            req = urllib.request.Request(url + "/v1/messages", method="POST", headers={"content-type": "application/json"},
+                                         data=json.dumps({"model": M, "max_tokens": 1, "messages": [], **extra}).encode())
+            with self.assertRaises(urllib.error.HTTPError) as e:
+                urllib.request.build_opener(urllib.request.ProxyHandler({})).open(req, timeout=5)
+            self.assertEqual(e.exception.code, 400)
+            self.assertEqual(json.loads(e.exception.read())["error"]["type"], "invalid_request_error")
+        self.assertEqual(len(seen), 2)  # recorded, then refused
+
+    def test_record_lists_response_block_types_and_keeps_only_text(self):
+        resp = fakeclaude.ok(M)[1]
+        resp["content"] = [{"type": "thinking", "thinking": "hidden"}, {"type": "text", "text": "OK"}]
+        c = self.client(lambda *a: (200, resp))
+        rec = c.call(self.ep(), "t:0", M, self.msgs(), 50)
+        self.assertEqual((rec["block_types"], rec["text"]), (["thinking", "text"], "OK"))
+
+    def test_block_types_are_scrubbed(self):  # G0-2R4: an echoed key in a block type must not reach episodes.jsonl
+        resp = fakeclaude.ok(M)[1]
+        resp["content"] = [{"type": KEY}, {"type": "x" + KEY[-12:]}, {"type": "text", "text": "OK"}]
+        rec = self.client(lambda *a: (200, resp)).call(self.ep(), "t:0", M, self.msgs(), 50)
+        joined = json.dumps(rec["block_types"])
+        for frag in (KEY, KEY[:10], KEY[-10:]):
+            self.assertNotIn(frag, joined)
+
+
 if __name__ == "__main__":
     unittest.main()

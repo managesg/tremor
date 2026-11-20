@@ -57,6 +57,10 @@ BATCH_SPECS = {  # nested sub-caps, never read from an argument; the canary coun
     # refuses to open until ep1 has settled
     # pilot: a sibling of ep1 (not inside it), refuses to open until the canary has run and completed
     "pilot": {"usd": 0.5, "calls": 150, "tokens": 345_000, "parent": None, "requires_settled": CANARY, "settled_reasons": ("complete",)},
+    # pilot2: the same gate as pilot and independent of it (a stopped pilot does not block it); from the unallocated USD 1.50
+    "pilot2": {"usd": 0.25, "calls": 260, "tokens": 598_000, "parent": None, "requires_settled": CANARY, "settled_reasons": ("complete",)},
+    # pilot3 (prereg change 19): the pilot2 gate, independent of the stopped pilot and pilot2; from the unallocated USD 1.25
+    "pilot3": {"usd": 0.25, "calls": 260, "tokens": 598_000, "parent": None, "requires_settled": CANARY, "settled_reasons": ("complete",)},
     "ar1": {"usd": 3.0, "calls": 400, "tokens": 800_000, "parent": None, "requires_settled": "ep1"},
     CANARY: {"usd": 0.05, "calls": 1, "tokens": 90_300, "parent": "ep1", "canary_input_tokens_max": 90_000},  # G0-2R: bytes bound tokens; 90,000 + 300 output
 }
