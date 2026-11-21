@@ -659,7 +659,14 @@ crossed plan or cap file, a relabeled stop, or a forged worker index.
 
 `bash runs/r3-l2-detached-pair.4WcqFV/verify.sh` exited 0.
 The five focused test modules passed 21 tests. The last completed and
-interrupted receipts are in `runs/r3-l2-detached-pair.4WcqFV/result.XXTM30`.
+interrupted receipts are in `runs/r3-l2-detached-pair.4WcqFV/result.ERKPZk`.
 They remain public CPU evidence. The plan for native acceptance must
 also bind separate exit and cleanup evidence to the same container,
 image, plan, and reservation on both the success and stop paths.
+
+Independent review found that the first detached verifier accepted
+changed renderer, adapter manifest, public capture scope, and output
+cap in a newly pinned summary. The revised CLI rejects each change
+and labels tokenizer observations as independently unverified in this
+check. Source manifest SHA-256
+`6f4a5708c8501ba1bcd8e280e775695ff3fdaf5bafa957672fda13e24ed7ac8c`.
