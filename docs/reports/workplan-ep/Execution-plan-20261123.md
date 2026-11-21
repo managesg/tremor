@@ -37,3 +37,30 @@ The retained receipt is
 `00bac2f31ff16ce6d519d768928a6a748178e12a9547b1dc7d761cd21035244b`.
 The [pinned source and earlier test evidence](R3-governed-cpu-readiness.md)
 remain independently reproducible.
+
+## Public fixture verification for milestones 6–8
+
+The matched-traversal audit reproduced **54 blocks, 432 arms, 240 budget
+stops and 156 charged handoffs** from the historical report. A replacement
+report omitted two handoffs, retained utility of three, and reconciled
+all event references and costs. The audit rejected it at its own new
+digest. This closes the public replay check for the tested omission.
+The audit and tests can run from the retained source closure at
+`runs/topology-matched-audit.Q9YIlg/source`, manifest SHA-256
+`a3b44c5010bfc277065f2d654e9d22cdcb5740088e013df78fca03b34023abe5`.
+Protected coordination and its independent assessment remain outstanding.
+
+The public TREMOR simulator at `062bb68` matched an independent
+rational per-state oracle and the transfer scorer on **76 public
+development cases and 344 trace points**, with 48 hits and 28 no-hits.
+Maximum probability error was `5.773159728050814e-15` at the
+`1e-12` comparison tolerance. The script and result are in
+`runs/grover-public-cli-scorer.X59Yn5`. Protected transfer remains
+gated on EP-1, independent custody, and admission.
+
+Replication inventory commit `009bb0b` rejects an exact weight-file
+copy even under different shard paths and reviewed family labels.
+Twenty-two inventory and pairing tests passed, and the retained valid
+inventory replay matched byte for byte. This check compares weight-file
+digest multisets. Model family qualification and comparisons across
+repackaged tensors still require independent evidence.
