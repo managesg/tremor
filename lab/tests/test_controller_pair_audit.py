@@ -314,6 +314,27 @@ class ControllerPairAuditTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "duplicate experimental task assignment"):
                     audit.verify(**self.freeze())
 
+    def test_renaming_every_task_cannot_duplicate_a_public_assignment(self):
+        f = self.fixture
+        alias = copy.deepcopy(self.block)
+        alias["block_id"] = "aliased-block"
+        names = {task["id"]: "alias-" + task["id"] for task in alias["taskset"]["tasks"]}
+        for task in alias["taskset"]["tasks"]:
+            task["id"] = names[task["id"]]
+        copies = copy.deepcopy(self.rows)
+        for row in copies:
+            row["block_id"] = alias["block_id"]
+            for attempt in row["attempts"]:
+                work = attempt["work"]
+                attempt["work"] = {**work, "task": names[work["task"]]}
+        self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block, alias]})
+        f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
+        self.rows.extend(copies)
+        for row in self.rows:
+            row["inputs"] = f.manifest["inputs"].copy()
+        with self.assertRaisesRegex(ValueError, "duplicate experimental task assignment"):
+            audit.verify(**self.freeze())
+
     def test_cli_checks_archival_pin_before_replay(self):
         fixture = self.freeze()
         command = [sys.executable, "-B", "-m", "lab.controller_pair_audit",

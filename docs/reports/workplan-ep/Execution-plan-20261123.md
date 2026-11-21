@@ -387,3 +387,28 @@ repinned duplicate was refused with exit 2. Reproduction and
 refusal evidence are in `runs/controller-pair-current.uWkSim`.
 Held-out repeated assignments need prospectively frozen replicate
 provenance and a cluster-aware analysis.
+
+## M9 prior exposure and held-out clusters
+
+Renaming every task as well as the block bypassed the first duplicate
+assignment check. The paired auditor now derives assignment identity
+from the prompts and expected answers when prompts are available.
+
+Run `python3 -B -m lab.controller_holdout --help` for the prospective
+exposure verifier. It joins the pinned selection and scheduled tasksets
+to an independently supplied inventory of prior exposure and held-out
+groups. It checks each constituent prompt, so one reused prompt cannot
+hide in a different taskset. Repeated prompts, lineages, seed groups
+and scheduled seeds must stay in a common analysis cluster. The witness
+names all enabled lines, and those rows bind their selected data digests.
+
+The public rehearsal accepted two conditions in one cluster. A fresh
+witness pin for a prompt reused from development was refused with exit 2.
+Thirty-seven focused tests passed, and the historical paired archive
+replayed byte for byte. Rehearsal evidence is in
+`runs/controller-holdout-current.IjlqqN`.
+
+The independent custodian still needs to supply the actual prior exposure
+inventory. This checker validates its metadata and pinned joins.
+Observed arm exposure and hidden-scorer isolation need independently
+captured request and state receipts from the held-out run.

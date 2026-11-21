@@ -215,9 +215,15 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
         selection._require(eligible and len(eligible) == len(set(eligible)) and type(slots) is int
                            and 0 < slots <= len(eligible) and block["taskset"]["seed"] == block["seed"],
                            "invalid eligible work inventory or seed")
-        tasks_by_id = sorted(block["taskset"]["tasks"], key=lambda task: task["id"])
-        task_content = [(task["id"], task.get("check"), task["expect"]) for task in tasks_by_id]
-        canonical_content = json.dumps(task_content, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        tasks = block["taskset"]["tasks"]
+        has_prompts = all(type(task.get("check")) is str and task["check"] for task in tasks)
+        canonical_content = tuple(sorted(
+            json.dumps(
+                (task["check"] if has_prompts else task["id"], task["expect"]),
+                sort_keys=True, separators=(",", ":"), allow_nan=False,
+            )
+            for task in tasks
+        ))
         assignment = (block["condition"], block["seed"], slots, canonical_content)
         selection._require(assignment not in assignments, "duplicate experimental task assignment")
         assignments.add(assignment)
