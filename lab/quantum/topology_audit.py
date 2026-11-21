@@ -7,13 +7,26 @@ from itertools import product
 import json
 from pathlib import Path
 
+from . import topology_transfer
 from .transfer_fixtures import WORKERS, development_fixture
 
 MODES = ("independent", "fixed_lead", "rotating_lead", "peers")
 ACCESS = ("own", "shared")
-PAID = frozenset(("read", "plan", "blocked", "assign", "claim", "claim_conflict",
-                  "handoff", "work", "verify", "merge"))
-PLAN_FIELDS = {"actor", "assignments", "cost", "event", "kind", "round"}
+EVENT_FIELDS = {"actor", "cost", "event", "kind", "round"}
+EVENT_PAYLOADS = {
+    "assign": {"task", "worker"},
+    "blocked": {"missing", "task"},
+    "budget_stop": {"attempted"},
+    "claim": {"task", "worker"},
+    "claim_conflict": {"holder", "task"},
+    "handoff": {"recipient"},
+    "merge": {"verified_union"},
+    "plan": {"assignments"},
+    "read": {"visible"},
+    "verify": {"accepted", "submission"},
+    "work": {"answer", "inputs", "task"},
+}
+STOPPABLE = EVENT_PAYLOADS.keys() - {"budget_stop", "merge", "verify"}
 
 
 def _check(ok, message):
@@ -101,9 +114,11 @@ def _arm(arm, stages, shards):
         if mode == "rotating_lead" and starts_round and not final and round_id > 0:
             _check(kind == "handoff" or (kind == "budget_stop" and row["attempted"] == "handoff"),
                    "missing rotating handoff")
+        _check(type(kind) is str and kind in EVENT_PAYLOADS, "unknown trace event")
+        _check(row.keys() == EVENT_FIELDS | EVENT_PAYLOADS[kind], f"unexpected {kind} event fields")
         if kind == "budget_stop":
             attempted = row["attempted"]
-            _check(index == len(trace) - 2 and attempted in PAID - {"merge", "verify"}
+            _check(index == len(trace) - 2 and type(attempted) is str and attempted in STOPPABLE
                    and sum(costs.values()) + 2 + (attempted == "work") > budget,
                    "invalid budget stop")
             if attempted == "handoff":
@@ -119,8 +134,6 @@ def _arm(arm, stages, shards):
                 _check(bool(read_order[round_id]) and actor == read_order[round_id][-1]
                        and (attempted not in ("claim", "claim_conflict") or mode == "peers"),
                        "invalid worker stop actor")
-        else:
-            _check(kind in PAID, "unknown trace event")
         cost = int(kind != "budget_stop")
         _check(type(row["cost"]) is int and row["cost"] == cost, "incorrect event cost")
         costs[kind] += cost
@@ -129,7 +142,6 @@ def _arm(arm, stages, shards):
             lead = WORKERS[0] if mode == "fixed_lead" else WORKERS[round_id]
             _check(mode in ("fixed_lead", "rotating_lead") and actor == lead and round_id not in plans,
                    "incorrect plan authority")
-            _check(row.keys() == PLAN_FIELDS, "unexpected plan event fields")
             expected = _expected_assignments(eligible, dependencies, receipts, round_id, access)
             _check(row["assignments"] == expected, "plan assignments differ from fixture readiness")
             plans[round_id] = expected
@@ -207,6 +219,7 @@ def _arm(arm, stages, shards):
             if row["accepted"]:
                 receipts[index] = work[index - 1]
 
+    _check(attempted is not None or prior_round == len(read_order), "non-stopped trace did not complete all planned rounds")
     full_rounds = prior_round - int(attempted is not None)
     _check(all(order == list(WORKERS[:len(order)]) for order in read_order)
            and all(order == list(WORKERS) for order in read_order[:full_rounds]), "wrong worker order")
@@ -233,7 +246,7 @@ def _arm(arm, stages, shards):
 
 
 def audit(raw, *, expected_sha256=None):
-    """Verify a serialized scripted trace. Actor names are fixture labels."""
+    """Verify public scripted mathematics and check the complete deterministic dispatch."""
     digest = hashlib.sha256(raw).hexdigest()
     _check(expected_sha256 is None or expected_sha256 == digest, "input digest mismatch")
     report = json.loads(raw, object_pairs_hook=_unique_object)
@@ -262,6 +275,12 @@ def audit(raw, *, expected_sha256=None):
                 "gain_over_independent_at_same_access": utility - len(cells["independent", access]["stage_union"]),
             }
             _check(_counts_match(arm, gains), "incorrect comparison baseline")
+        budget = next(iter(arms.values()))["budget"]
+        replay = topology_transfer.compare(((regime, seed),), budget=budget)["cases"][0]
+        for expected in replay["arms"]:
+            observed = arms[expected["mode"], expected["evidence_access"]]
+            _check(json.dumps(observed["trace"], sort_keys=True) == json.dumps(expected["trace"], sort_keys=True),
+                   "trace differs from the complete public scripted dispatch")
         cases.append({"regime": regime, "seed": seed, "cells": list(cells.values())})
     _check(bool(cases), "missing development case")
     return {"sha256": digest, "external_digest_checked": expected_sha256 is not None,

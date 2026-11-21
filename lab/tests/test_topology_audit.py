@@ -1,3 +1,4 @@
+from collections import Counter
 import hashlib
 import json
 import unittest
@@ -40,6 +41,80 @@ class TopologyAuditTests(unittest.TestCase):
             read["visible"] = [replacement]
             with self.assertRaisesRegex(ValueError, "unauthorized or premature"):
                 audit(json.dumps(report).encode())
+
+    def test_refuses_extra_projected_worker_metadata_at_fresh_digest(self):
+        for kind in ("read", "work"):
+            with self.subTest(kind=kind):
+                report = compare()
+                case = next(item for item in report["cases"]
+                            if item["regime"] == "complementary" and item["development_seed"] == 9)
+                arm = next(item for item in case["arms"]
+                           if item["mode"] == "fixed_lead" and item["evidence_access"] == "own")
+                row = next(event for event in arm["trace"] if event["kind"] == kind)
+                row["projected_input"] = {
+                    "full_marked_indices": [0, 1], "threshold_answer": [1, "1"], "development_seed": 9,
+                }
+                raw = json.dumps(report).encode()
+                with self.assertRaisesRegex(ValueError, f"unexpected {kind} event fields"):
+                    audit(raw, expected_sha256=hashlib.sha256(raw).hexdigest())
+
+    def test_refuses_premature_nonstopped_merge_at_fresh_digest(self):
+        report = compare()
+        case = next(item for item in report["cases"] if item["regime"] == "sequential")
+        arm = next(item for item in case["arms"] if item["mode"] == "peers" and item["evidence_access"] == "shared")
+        prefix = [event for event in arm["trace"] if event["round"] == 0]
+        union = ["scout"]
+        trace = prefix + [{"event": len(prefix), "round": 1, "kind": "merge", "actor": "verifier",
+                           "cost": 1, "verified_union": union}]
+        costs = Counter(event["kind"] for event in trace)
+        spent = sum(costs.values())
+        arm.update(trace=trace, verified_union=union, verified_stage_union=union, utility=1, stage_utility=1,
+                   costs=dict(costs), spent=spent, unused=arm["budget"] - spent, valid_integrations=0,
+                   blocked_dependencies=costs["blocked"], gain_over_independent_union=0,
+                   gain_over_independent_at_same_access=-2)
+        raw = json.dumps(report).encode()
+        with self.assertRaisesRegex(ValueError, "non-stopped trace did not complete all planned rounds"):
+            audit(raw, expected_sha256=hashlib.sha256(raw).hexdigest())
+
+    def test_refuses_omitted_scheduled_work_even_with_all_reads_and_fresh_digest(self):
+        report = compare()
+        case = next(item for item in report["cases"] if item["regime"] == "sequential")
+        arm = next(item for item in case["arms"] if item["mode"] == "peers" and item["evidence_access"] == "shared")
+        trace = arm["trace"]
+        removed_work = {event["event"] for event in trace if event["kind"] == "work"
+                        and event["task"] in {"confirm", "final"}}
+        removed = removed_work | {event["event"] for event in trace if
+                                  (event["kind"] == "claim" and event["task"] in {"confirm", "final"})
+                                  or (event["kind"] == "verify" and event["submission"] in removed_work)}
+        kept = [event for event in trace if event["event"] not in removed]
+        new_ordinals = {event["event"]: ordinal for ordinal, event in enumerate(kept)}
+        for event in kept:
+            event["event"] = new_ordinals[event["event"]]
+            for field in event.keys() & {"visible", "inputs"}:
+                event[field] = [new_ordinals[ref] for ref in event[field] if ref not in removed]
+            if "submission" in event:
+                event["submission"] = new_ordinals[event["submission"]]
+        union = ["scout"]
+        kept[-1]["verified_union"] = union
+        costs = Counter(event["kind"] for event in kept)
+        spent = sum(costs.values())
+        self.assertEqual(costs["read"], 9)
+        self.assertEqual(kept[-1]["round"], 3)
+        self.assertFalse(arm["budget_stopped"])
+        arm.update(trace=kept, verified_union=union, verified_stage_union=union, utility=1, stage_utility=1,
+                   costs=dict(costs), spent=spent, unused=arm["budget"] - spent, valid_integrations=0,
+                   blocked_dependencies=costs["blocked"], gain_over_independent_union=0,
+                   gain_over_independent_at_same_access=-2)
+        raw = json.dumps(report).encode()
+        with self.assertRaisesRegex(ValueError, "trace differs from the complete public scripted dispatch"):
+            audit(raw, expected_sha256=hashlib.sha256(raw).hexdigest())
+
+    def test_nondefault_public_case_subset_and_cap_replay(self):
+        report = compare((("complementary", 31), ("sequential", 11)), budget=21)
+        raw = json.dumps(report).encode()
+        result = audit(raw, expected_sha256=hashlib.sha256(raw).hexdigest())
+        self.assertEqual([(case["regime"], case["seed"]) for case in result["cases"]],
+                         [("complementary", 31), ("sequential", 11)])
 
     def test_redecodes_mathematics_and_receipt_ownership(self):
         report = compare()
