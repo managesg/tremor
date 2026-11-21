@@ -609,3 +609,34 @@ SHA-256 `fdc9071aa724e25dbabcf6baf33d4115e3bdef451eeda09ef5e4e2b94189e84c`.
 The host sample and historical balance use separate times. The
 actual native entry point, frozen renderer, current ledger and
 signed admission remain open.
+
+## R3-L2 dry adapter and budget replay
+
+The scheduler ran four public CPU pairs through the pinned Qwen3.5-4B
+tokenizer and generation adapter with a synthetic reply backend. The
+spaced renderer hit 57 input tokens and stopped before the reply
+backend. Compact rendering peaked at 45. At output cap 10, the adapter
+held the 11-token replies at the limit and the fixture contrast was
+zero. At illustrative cap 24, the fixture contrast was −1. This checks
+the output-limit behavior on predefined replies. Native inference,
+protected data, and a prospective cap decision remain outstanding.
+
+The early-stop test exposed a verifier that expected named reads even
+after the adapter had stopped. The verifier now binds interrupted runs
+to the valid read prefix and still requires every named read in completed
+runs. A host terminal binds both raw replays to the plan after verification.
+Both stops had one unresolved attempt and no completed index or contrast.
+A repinned renderer substitution failed the raw replay with exit 2.
+
+The detached budget check observed exactly 6 calls, 228 input tokens and
+54 output tokens in the completed cap-24 fixture. It retained 149 input
+and 38 output tokens as known subtotals on the injected stop and withheld
+the overall verdict. The ceilings in this check are public fixture values.
+
+Evidence in `runs/r3-l2-adapter-dry.U8vXmh`: `bash run-cpu.sh cpu-final`,
+`bash checked/verify.sh` and `bash checked/verify-budget.sh` each exited 0.
+The four focused modules passed 15 tests and the independent detached
+budget verifier passed six. Source manifest SHA-256
+`63931d5a2649ee17a9bbd545f15141e517888b0220af5238adeb990c46146608`.
+Host readback log SHA-256
+`e27842b177215ed973da340c00af1dce833d6c0fcb1d9ad4b409a150d0b33afc`.
