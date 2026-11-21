@@ -85,3 +85,18 @@ The exact source manifest SHA-256 is
 `20038a4f914ab2f2593db5fb56da0f88fdd304c2dc0f04e7152735bfba0ef731`.
 Eighteen focused tests passed. The CLI receipts and rerunnable wrapper
 are under `runs/r3-l2-runner-rehearsal.7ZhUDP`.
+
+The rehearsal now writes the archive ID and schedule digest before
+generation. In the interrupted case it checks those values and the
+planned block and arm position, and requires the actual recorded
+condition to match the scheduled treatment. A valid neutral arm
+substituted for warning and an arm with another archive ID both passed
+the previous rehearsal and are now refused.
+
+The replacement source and runtime receipts are in
+`runs/r3-l2-rehearsal-identity.p8VTTs`. The source manifest SHA-256 is
+`b8bbe09ff19e3dd74d4468c24ac4137ea30e010a46f9eeb2ede872f84dd7a1a0`.
+Twenty-six tests passed. Both actual isolated CPU containers were
+removed. The interrupted receipt keeps the paired score unset. The
+plan and scripted responses are still generated within the same
+public rehearsal process.
