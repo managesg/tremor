@@ -84,3 +84,22 @@ are retained in `runs/r3-l4-evidence-crosscheck.oyeeHp`. This verifies
 manifest identity. The actual settled L4-E adapter pair, matched
 context comparator, loader readback and held-out custody remain
 outstanding.
+
+## Pilot 4 driver and L8-D capture checkpoint
+
+The Pilot 4 preflight reproduced the archived review manifest with
+network sockets disabled. The installed CLI refused `pilot4` before
+execution. The four retained ledger files contain 417 unique reservations
+and 417 charges with no Pilot 4 namespace collision. The isolated
+spend candidate refuses ambiguous duplicate reserve or charge records
+and retains the exact historical totals. The spend owner must review
+the candidate and renewed pricing coverage after the preregistration
+author's prospective decision. The installed driver remains unchanged.
+
+The L8-D runtime join checks the frozen protocol and hook, approved
+before and after checkpoints and installed state, and the complete
+sample-by-stage inventory. For each sample it verifies the declared
+prompt and ordered token indices and hashes its distinct capture file.
+The synthetic CLI and regression tests passed with only tracked
+dependencies. A real capture still needs independent runtime custody,
+verification of the activation values, and the settled L4-E pair.
