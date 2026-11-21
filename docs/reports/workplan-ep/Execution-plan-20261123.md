@@ -412,3 +412,25 @@ The independent custodian still needs to supply the actual prior exposure
 inventory. This checker validates its metadata and pinned joins.
 Observed arm exposure and hidden-scorer isolation need independently
 captured request and state receipts from the held-out run.
+
+## R3-L2 host transport identity
+
+Legacy neutral host tapes from a completed archive and an interrupted
+archive were byte-identical. The governed replay accepted the foreign
+tape alongside the completed arm's own Board and journal.
+
+The isolated prospective capture binds the admission, plan, archive,
+schedule, block, arm position, condition and transport ID before
+the first request. Each response also binds the header. The verifier
+checks these against separate pinned expectations and replays the
+existing decisions and resource readouts.
+
+The independent run passed 45 tests, reproduced the legacy archive
+byte for byte and refused an independently repinned foreign tape
+with exit 2. The public completed arm retained two adoptions. The
+interrupted arm retained an unavailable adoption count. See
+`runs/r3-l2-bound-host-tape.mB3hDF/verify.sh`.
+
+The native runner still needs to issue these bindings at the host
+boundary and retain authenticated request and terminal evidence.
+Protocol, protected cohort and resource admission remain open.
