@@ -681,3 +681,29 @@ passed. The source and evidence are in
 `runs/r3-cpu-success-sidecars.vRIVqJ`. These receipts demonstrate CPU
 cleanup. Native settlement still requires the matching admission and
 reservation bindings.
+
+## R3 admission inventory and SmolLM3 containment checks
+
+The version-two R3 inventory joins the real CPU success export to its
+separately pinned plan, terminal, exit, and cleanup. It checks the
+embedded worker plan and replay, preserves the two earlier stop
+receipts, and reproduces the version-one report byte for byte. The
+inventory continues to return `awaiting_inputs`. A review found that
+an altered descriptor claiming UID 0 could pass the first draft.
+The revised verifier rejects it along with crossed container IDs,
+boolean status codes, and a repinned plan inconsistent with the worker
+journal. Seven existing tests and eight repinned rejection checks
+passed. Reproduce with `bash runs/r3-l2-admission-v2.LdNDs0/verify.sh`.
+The V2 report SHA-256 is
+`b0fd6af2e5d20edcb8fe5ae163065e74b80cb55164d66a6fe3cccda5033263a6`.
+
+The replication verifier checked the **synthetic** SmolLM3 containment
+proposal against the stock launch recipe. For the illustrative 40 GiB
+container cap, retaining the 10 GiB host floor gave a threshold of
+52,428,800 KiB. The boundary and the adjacent KiB values replayed
+exactly. A review found that synthetic mount records accepted extra
+contradictory fields. The revised verifier requires the four expected
+mount fields and refuses the altered records. Eight tests and all
+three pinned CLI cases passed with
+`bash runs/smol-envelope-dry.7eHFOM/verify.sh`. Live fit and the capped
+replication reservation still need independent review.
