@@ -185,3 +185,22 @@ passed 40 focused tests and reproduced the two public instrument
 reports byte for byte. Integration requires the runner owner's review.
 Scientific use still requires the frozen roster, windows, and labels,
 independent runtime custody, and exact admission.
+
+## L3 equal-call and operating-point verification
+
+The public Boolean fixture reproduced 100 scripted call units per arm,
+one clean flag in 20 rows per arm, and one additional catch out of
+four failures in the positive control. The copied-view null had zero
+gain. The fixture reuses scripted flag patterns across separately
+named splits. It checks the calculation and supplies no independent
+cohort or underlying false-positive rate estimate.
+
+The original evaluator accepted altered cutoffs, swapped arms, a
+duplicate selected view, and inflated fit counts under new plan
+digests. A separate verifier rebuilds the plan from independent
+failure-calibration and clean-fit pins before reading either held-out
+split. It rejected all four alterations. Nine tests passed, with
+byte-identical legacy replay. The isolated source and script are at
+`runs/l3-governed-refit.PPSejK`. Protected source-family custody,
+an author decision on the primary and fallback, and matched actual
+call evidence remain open.
