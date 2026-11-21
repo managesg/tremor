@@ -891,3 +891,25 @@ the original output and state hashes. The probe used one CPU and a
 
 This establishes the isolated projection control. The trained and
 settled L4-E adapter pair and held-out L8-D forward remain open.
+
+## L4 relay diagnostics and L7 stop attribution
+
+The adaptive L4 replay now checks the Board anchor and completed
+window even when a relay receipt declares zero opening roots. A
+repinned empty list against the retained two-root Board is flagged
+as an invalid claim and contributes no diagnostic. The existing
+conservative hold stays in force. A genuinely rootless completed
+Board still yields an unavailable diagnostic. Missing or incomplete
+Board evidence is refused. All 18 tests passed in
+`runs/l4-empty-root-proof.gQx6x0`, and the genuine adaptive report
+reproduced byte for byte.
+
+The isolated L7 replay now requires a work stop to name the worker's
+active turn before that worker has performed work on the turn. It
+rejects a repinned attribution to a worker who never received a
+turn and another attribution after completed work. A genuine work
+stop still passes. All 31 tests passed. The activity, coupled blocks,
+parallel selection, and size-matched reports reproduced byte for byte
+in `runs/l7-work-stop-turn.Q1Cmgk`. Both isolated fixes are ready for
+their respective source owners' review. Protected measurements,
+protocol choices, and independent scoring remain open.
