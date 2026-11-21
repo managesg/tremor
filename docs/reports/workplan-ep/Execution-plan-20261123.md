@@ -640,3 +640,26 @@ budget verifier passed six. Source manifest SHA-256
 `63931d5a2649ee17a9bbd545f15141e517888b0220af5238adeb990c46146608`.
 Host readback log SHA-256
 `e27842b177215ed973da340c00af1dce833d6c0fcb1d9ad4b409a150d0b33afc`.
+
+## R3-L2 detached pair and budget check
+
+The detached verifier starts from four explicitly pinned inputs: host
+plan, pair terminal, run summary, and cumulative caps. It reconstructs
+the scheduled arm and transport bindings, replays the worker journals
+against the separate host tapes, and reconciles the completed worker
+index and contrast. The verified replay supplies the budget counts.
+Interrupted runs retain the host-observed error and known subtotals.
+
+The completed fixture replayed two arms and accounted for 228 input
+and 54 output tokens across six attempts. The interrupted fixture
+replayed its observed prefix and withheld the verdict with one unknown
+attempt. A ceiling of 227 input tokens reported an exceedance from
+known usage. Fresh digests did not admit a reduced usage summary, a
+crossed plan or cap file, a relabeled stop, or a forged worker index.
+
+`bash runs/r3-l2-detached-pair.4WcqFV/verify.sh` exited 0.
+The five focused test modules passed 21 tests. The last completed and
+interrupted receipts are in `runs/r3-l2-detached-pair.4WcqFV/result.XXTM30`.
+They remain public CPU evidence. The plan for native acceptance must
+also bind separate exit and cleanup evidence to the same container,
+image, plan, and reservation on both the success and stop paths.
