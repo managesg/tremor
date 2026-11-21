@@ -268,3 +268,12 @@ The combined isolated candidate in `runs/l8b-current.flbaVE` passed
 27 tests. L8-B remains separate from L8-D and its settled L4-E
 dependency. Scientific acceptance still needs independently captured
 native inputs, blinded labels and a frozen comparison protocol.
+
+## Current portfolio and resource readback
+
+Independent reviews reconciled all ten milestone acceptance rows.
+The calibration remains the sole accepted milestone. The local
+readback verified 21 pinned receipts and the R2 settlement and
+hosted API ledger. The final report remains open pending protected
+outcomes, claims verification and provider resource reconciliation.
+[Internal checkpoint](Portfolio-evidence-and-resource-reconciliation-20261121.md)
