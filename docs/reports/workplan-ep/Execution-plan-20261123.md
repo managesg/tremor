@@ -707,3 +707,31 @@ mount fields and refuses the altered records. Eight tests and all
 three pinned CLI cases passed with
 `bash runs/smol-envelope-dry.7eHFOM/verify.sh`. Live fit and the capped
 replication reservation still need independent review.
+
+## Pricing rollover and public coordination delivery
+
+The current ledger could accept a new paid reservation using a price
+sheet loaded before the UTC age cutoff. The isolated candidate checks
+the price date under the reservation lock before writing and checks
+again after the first batch-opening records. A test crossing midnight
+during that write retained the batch-opening record and never reserved
+or dispatched the call. A separate test prevented a 503 retry from
+reaching transport after midnight. Reserved attempts could still
+record known or unknown charges and settle after the cutoff.
+
+Seven focused tests and all 130 tests in the expanded spend and backend
+suite passed. The expanded suite uses existing loopback fixtures and
+reported socket cleanup warnings. The focused tests blocked all socket
+creation. Reproduce with `bash runs/pilot4-price-rollover.m72NpI/verify.sh`.
+The candidate remains in the review closure because the shared spend
+source has concurrent edits. Pilot 4 still awaits the preregistration
+author, renewed pricing coverage, and exact driver review.
+
+The coordination team compared 72 synthetic receiver slots with a
+separate public schedule. Three tests passed. The verifier rejects
+altered context, token counts, and delivery identities. An independent
+review reconstructed the capture from the fixture without calling the
+receiver. These receipts establish the synthetic equality check.
+The protected comparison still requires separately witnessed delivery
+and the independently graded sealed-worker union. Evidence in
+`runs/topology-delivery-review.RX6rzP`.
