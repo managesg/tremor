@@ -670,3 +670,14 @@ cap in a newly pinned summary. The revised CLI rejects each change
 and labels tokenizer observations as independently unverified in this
 check. Source manifest SHA-256
 `6f4a5708c8501ba1bcd8e280e775695ff3fdaf5bafa957672fda13e24ed7ac8c`.
+
+An opt-in isolated CPU success path now retains distinct exit and
+cleanup receipts. In the retained run, both the Docker attachment and
+the inspected container exited zero. Removal was unforced, and a
+separate Docker listing found no remaining container with that ID.
+The terminal and receipts bind the same container, image, and manifest.
+Default mode retains the earlier format. All 15 focused guard tests
+passed. The source and evidence are in
+`runs/r3-cpu-success-sidecars.vRIVqJ`. These receipts demonstrate CPU
+cleanup. Native settlement still requires the matching admission and
+reservation bindings.
