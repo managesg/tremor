@@ -138,6 +138,35 @@ class T(unittest.TestCase):
         p = an.summarise([r])["exploratory"]["per_arm"]["none"]["agent_pairs"][("a", "b")]
         self.assertEqual((p["items"], p["agree"], p["identical_wrong"]), (3, 2, 1))
 
+    def test_slot_phi_withheld_and_shared_answers_exclude_unscored_records(self):
+        wrong = [{"agent": agent, "task": 1, "answer": 0, "pass": False} for agent in ("a0", "a1")]
+        right = [{"agent": agent, "task": 1, "answer": 1, "pass": True} for agent in ("a0", "a1")]
+        good = [
+            rec("none", "stopped", 0, ended="episode_stopped", agent_answers=wrong),
+            rec("none", "complete", .25, agent_answers=right),
+        ]
+        exclusions = [
+            {"void": "action_boundary"},
+            {"ended": "infrastructure_abort"},
+            {"valid": False},
+            {"scores": {"valid": False}},
+            {"status": "void:invalid_log"},
+            {"abort_reason": "infrastructure_abort"},
+            {"Y": None},
+        ]
+        bad = [
+            rec("none", f"excluded{i}", .25, agent_answers=[right[0], wrong[1]], **fields)
+            for i, fields in enumerate(exclusions)
+        ]
+        summary = an.summarise(good + bad)
+        none = summary["exploratory"]["per_arm"]["none"]
+        self.assertEqual(none["agent_pairs"][("a0", "a1")]["items"], 2)
+        self.assertAlmostEqual(none["agent_pairs"][("a0", "a1")]["phi"], 1)
+        self.assertIsNone(none["slot_miss_phi"]["mean"])
+        rendered = an.render(summary)
+        self.assertIn("slot-miss phi withheld", rendered)
+        self.assertNotIn("mean pairwise error phi", rendered)
+
     def test_determinism_by_seed(self):
         rs = [rec(a, f"s{i}", min(1, max(0, v + 0.05 * ((i * 7) % 5 - 2))))
               for i in range(12) for a, v in (("none", .2), ("play", .5), ("code", .8))]

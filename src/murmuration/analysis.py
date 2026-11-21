@@ -27,6 +27,7 @@ INCONCLUSIVE_LABEL = "not resolved: inconclusive"
 SCORED_ENDS = ("complete", "episode_stopped")
 RELEASE_NOTE = ("Only card A tells the agent to release, and the code arm has no release rule: a play difference in "
                 "false-done is not a card-against-code result (prereg sections 6 and 8).")
+SLOT_PHI_PENDING = "pending preregistration ruling on duplicate passing task credit"
 KILL = ("Kill read-off: Y_play - Y_none has hi < 0.20 in both intervals; the card is dropped on this task and tier "
         "(prereg section 12).")
 
@@ -168,14 +169,19 @@ def _refusal_rows(rs):
 
 def _readoffs(rs):
     """Secondary read-offs of one arm (prereg section 8), all exploratory: false-done from alloc2's executed in-set
-    releases, name and claim collisions, and the pairwise agent error read-off."""
+    releases, name and claim collisions, and shared-answer diagnostics."""
     ok = [r for r in rs if r.get("ended") in SCORED_ENDS and not r.get("void")]
     a2 = [((r.get("scorers") or {}).get("alloc2") or {}) for r in ok]
     done, fd = sum(s.get("done_releases") or 0 for s in a2), sum(s.get("false_done") or 0 for s in a2)
     cc = [x for x in ((r.get("orders") or {}).get("claim_collision_rate") for r in ok) if x is not None]
+    scored = [r for r in ok if r.get("Y") is not None and not r.get("abort_reason")
+              and r.get("valid") is not False and (r.get("scores") or {}).get("valid") is not False
+              and not str(r.get("status", "")).startswith("void")]
     return {"done_releases": done, "false_done": fd, "false_done_rate": fd / done if done else None,
             "name_collisions": sum((r.get("scores") or {}).get("name_collisions") or 0 for r in ok),
-            "claim_collision_rate": sum(cc) / len(cc) if cc else None, "agent_pairs": _agents(rs)}
+            "claim_collision_rate": sum(cc) / len(cc) if cc else None,
+            "slot_miss_phi": {"mean": None, "reason": SLOT_PHI_PENDING},
+            "agent_pairs": _agents(scored)}
 
 
 def resolve(boot, t):
@@ -250,9 +256,8 @@ def render(summary):
             L.append(f"paired t {name}: mean {t['mean_diff']:+.3f} [{t['ci95_lo']:+.3f}, {t['ci95_hi']:+.3f}] "
                      f"df {t['df']}  [{EXPLORATORY}]")
     for a, r in x["per_arm"].items():
-        phis = [p["phi"] for p in r["agent_pairs"].values() if p["phi"] is not None]
         L.append(f"{a:<4} false-done {r['false_done']}/{r['done_releases']} = {_f(r['false_done_rate'])}; "
                  f"name collisions {r['name_collisions']}; claim-collision rate {_f(r['claim_collision_rate'])}; "
-                 f"mean pairwise error phi {_f(sum(phis) / len(phis) if phis else None)}  [{EXPLORATORY}]")
+                 f"slot-miss phi withheld ({r['slot_miss_phi']['reason']})  [{EXPLORATORY}]")
     L.append(x["release_note"])
     return "\n".join(L) + "\n"
