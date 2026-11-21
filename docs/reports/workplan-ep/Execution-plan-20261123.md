@@ -828,3 +828,31 @@ overages and a longest response of 263 tokens. The three core conditions
 accounted for 13 of the 25 overages. The local release commit is
 `a99cddd`. The replay and seven tests passed in
 `runs/pilot3-release-claims.K315er`.
+
+## Controller assignment identity and attempt accounting
+
+The paired verifier now requires one prompt-coverage format throughout
+the schedule. It accepts a fully prompt-bearing schedule or a fully
+legacy schedule that uses task IDs. An earlier replay counted a renamed
+assignment twice after its prompt field was removed. The new checks
+reject partial and complete prompt omission from a prompt-bearing
+schedule, including when every task ID changes. The check compares
+exact frozen strings. Protected work still needs independent task
+lineage to detect differently worded copies.
+
+The audit also refuses a recorded non-cleanup call when the arm's
+integer call allowance is exhausted. The rule applies within and
+across blocks. Zero-call work at equality, cleanup charges, unknown
+usage and measured cost overruns remain observable. The combined suite
+passed 44 tests, and the original paired report reproduced byte for
+byte. Evidence is in `runs/controller-prompt-assignment.nM8nLI`.
+
+A detached replay binds each of the 15 attempts in the retained
+scripted trace to one charge ID, role, arm and exact usage. Reallocating
+charges without changing the total is refused. One verification charge
+remains unknown, so the combined and program totals are unavailable.
+Synthetic common setup remains separate. The isolated verifier in
+`runs/controller-cost-join.oEjuPk` passed two tests with nine mutation
+cases and produced the same report against the updated paired verifier.
+Actual charge observation, custody and the confirmatory estimator
+remain open.
