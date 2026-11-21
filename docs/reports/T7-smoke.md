@@ -94,6 +94,25 @@ hold. The local replay receipt is
 `runs/t7-historical-power-replay.sSRAJS/audit.json`, SHA-256
 `ab70339fce3a510515a6053c8aecca9d8a97cbb393ef35cd0a86252634bcc2a6`.
 
+
+The two retained timing probes add 123.703841 generation seconds. Their
+timestamp intervals are disjoint from one another and from the three
+completed arms. Together, the five archived intervals account for
+8,659.338586 generation seconds (2.405372 hours). The 8,655-second
+subtotal above has a different scope: it includes startup for the three
+completed containers and excludes probes. The diagnostics estimate in
+the table already includes the probes. Complete GPU occupancy remains
+unavailable because failed and diagnostic attempts lack complete
+terminal records. Keep the provisional 4.0 GPU-hour program hold.
+
+From the repository root, verify the five metadata files and replay
+their interval arithmetic.
+
+```bash
+sha256sum -c runs/t7-retained-intervals.4ngNvU/evidence.sha256
+python3 -B runs/t7-retained-intervals.4ngNvU/replay.py | cmp - runs/t7-retained-intervals.4ngNvU/report.json
+```
+
 ## 7. Arm C: repetition-penalty proposal (text only)
 
 The published sampling already has `presence_penalty` 1.5, so C must be a different mechanism. Proposal: keep presence 1.5 and add a multiplicative `repetition_penalty` (transformers semantics, over prompt and output) from {1.05, 1.10, 1.15}, chosen on practice problems only (40 problems from the clone's `practice/math_train.jsonl`, never MATH-500), picking the smallest value that minimises the verbatim-loop rate (`loop_signals`) without lowering accuracy at 8k; default 1.10 if the practice run is not done. One value, fixed before any benchmark run, recorded in the prereg. Risk: a penalty over the prompt also discourages copying numbers from the problem; the practice run must report that.
