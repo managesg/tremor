@@ -179,3 +179,13 @@ byte. Cap 27 remains the first cap with the exact full-cap stage unions
 in this public fixture. It is measured in abstract scripted cost units.
 All 27 focused quantum tests passed. Red and green logs and the
 reproduced report are in `runs/grover-cap-label.ntHuTI`.
+
+An independent integer gate calculation checked 645 normalized trace
+points up to 10 qubits and the full 128-iteration bound. The scorer
+matched all 11 rational threshold decisions. In three fixtures,
+thresholds (2^{-120}) above and below the exact maximum had the same
+float representation, while the exact decisions distinguished hit from
+no-hit. The maximum floating gate deviation was (4.44 \times 10^{-13}).
+The verifying command and receipt are under
+`runs/grover-exact-boundary.s0ClQc`. These are public mathematical
+fixtures for the transfer scorer.
