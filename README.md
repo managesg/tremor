@@ -27,6 +27,7 @@ memory. TREMOR is my independent research project.
 
 [AI Engineer Code Summit 2026](https://ai.engineer/code/2026) ·
 [Lance Martin’s talk on coordination and memory](https://ai.engineer/code/2026/talks/lance-martin) ·
+[Related research on memory and multi-agent teams](RESEARCH.md#agent-memory-and-multi-agent-coordination) ·
 [Anthropic Residency research directions](https://alignment.anthropic.com/2026/anthropic-residency/)
 
 ## From scaling models to scaling teams

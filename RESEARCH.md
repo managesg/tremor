@@ -41,6 +41,40 @@ the board's rules, scoring, and information access fixed. A separate comparison 
 each worker sees while holding authority fixed. This helps diagnose whether an observed change
 comes from the decision structure or from access to evidence. [Ostrom, *Beyond Markets and States* (2010)](https://www.aeaweb.org/articles?id=10.1257/aer.100.3.641)
 
+## Agent memory and multi-agent coordination
+
+Martin's CODE 2026 talk connects two engineering problems: maintaining shared project state
+while agents work in parallel, and maintaining useful knowledge across sessions. The first half
+shows agents building task-management structures from shared Git and SQL. The second shows how
+offline consolidation, or dreaming, can revisit session records and revise what future agents read.
+[Lance Martin, *Exploring Claude’s Frontier* (2026)](https://ai.engineer/code/2026/talks/lance-martin)
+
+**L4 · Memory consolidation.** Anthropic describes four layers: searchable transcripts, notes,
+organized representations such as wikis, and a small set of context loaded at session start.
+In one Pokémon case study, an offline pass checked a wrong location note against the transcript
+and corrected it. The resulting run reached Cerulean City. The raw-memory and no-memory runs
+did not. In a separate 25-question company-document evaluation, the best wiki-plus-search score
+was 61% of graded criteria, compared with 53% for search alone and 48% for wiki alone. The
+Pokémon case study illustrates a recovery mechanism, while the corpus result tests one setting.
+TREMOR will compare verified replay with placebo consolidation and equal-token search. Charge
+both consolidation and retrieval, then track whether an incorrect note survives, spreads, or is
+corrected and how quickly verified work recovers.
+[Anthropic Engineering, *The Components of Agent Memory* (2026)](https://www.anthropic.com/research/components-of-agent-memory)
+
+**L5 and L7 · Coordination and team size.** Zhang and colleagues report that one lead and 999
+helpers using an early Fable 5.2 reproduced a Lean formalization of Fermat's Last Theorem in
+28.7 hours. They supplied 60 target statements and 47 previously proved lemmas. Agents used
+shared Git and a database for task claims, assignments, notes, and completed work. Helpers
+increasingly created their own subtasks as the run progressed, while the lead continued to
+assign people to priorities. Sandboxing,
+real-time checks, and offline review were separate from those coordination mechanisms. The
+case shows what this harness supported on one task. It leaves the effects of leadership,
+shared state, and team size to controlled comparisons. TREMOR will vary where assignment
+authority sits in L5 and how team size interacts with task dependencies in L7. Compare
+verified work against the deduplicated independent union at matched total cost, including
+coordination and verification.
+[Zhang et al., *Safely Scaling Multi-Agent Teams with Claude Fable 5.2* (2026)](https://claude.dev/blog/safely-scaling-multi-agent-teams-with-fable-5-2/)
+
 ## Delegation, oversight, and trust
 
 Jensen and Meckling describe costs that arise when a principal delegates decisions and cannot
