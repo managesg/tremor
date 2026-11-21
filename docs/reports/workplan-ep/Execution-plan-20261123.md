@@ -913,3 +913,29 @@ parallel selection, and size-matched reports reproduced byte for byte
 in `runs/l7-work-stop-turn.Q1Cmgk`. Both isolated fixes are ready for
 their respective source owners' review. Protected measurements,
 protocol choices, and independent scoring remain open.
+
+## L1 advanced dispatch and L6 time-box accounting
+
+The proportional comparison now resolves tied scores by canonical
+stratum order and preserves the planned claim order within each
+stratum. Reversing tied calibration entries previously changed a
+decision despite identical calibration digests. The original tests and
+the retained non-tied report reproduced byte for byte.
+
+The advanced dispatch verifier reconstructed all five public plans
+from separately pinned features, calibration and pilot inputs, and
+then checked the dispatch and scoring receipts against those plans.
+It rejected four validly rehashed journals that dispatched reordered
+policies. The stopped length control still records one unknown attempt
+and preserves its planned charge. Thirty-three focused tests passed in
+`runs/l1-advanced-governed-dispatch.lAU27H`, including the isolated
+tie-break tests. These results establish public policy reproduction.
+The scientific comparison still needs its frozen truth-blind sampling
+rule, protected labels and measured trial receipts.
+
+The L6 time-box recount now binds the declared expiry to the opening
+round and the two-round allowance. It rejects shortened, early and
+late expiry records and unsolicited renewal. A witnessed violation
+can still close a lease early. All 21 tests passed, and the matched
+and sequential outputs reproduced byte for byte in
+`runs/l6-timebox-deadline.yi4i2Z`. This is a public fixture check.
