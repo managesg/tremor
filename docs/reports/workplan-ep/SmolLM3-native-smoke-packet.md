@@ -116,3 +116,42 @@ The rerunnable check and receipt are in
 receipt binds the two sets of tokenizer files and all four rendered
 prompt and token-ID digests. Its SHA-256 is
 `345845705557b0f454b1fd8fab321bda3a7ecce1d2c999405523f09cfef9eeb9`.
+
+## Adversarial verification and current operator bundle
+
+Two synthetic reproducers found preflight-to-start input drift and an
+unverified Docker inspection sidecar. The launcher now revalidates the
+exact admission, reservation, worker and snapshot after Docker inspection
+and before attachment. The host capture binds the inspection bytes to
+the exact created container. Independent metric verification replays
+the image, device, worker command and read-only mount checks against the
+expected paths. The staging owner retains custody of those paths during
+execution because Docker's read-only mount does not prevent host writes.
+
+Use `runs/replication-smollm3-staging.out5A0/native-launch-reviewed.tl0ZlD`
+for operator review. Its source manifest SHA-256 is
+`a923295dd72b0ea195ba09da505495437955bd38890354cce87a081dab1a652b`.
+Run `sha256sum -c source.sha256` before using the bundle. Sixty focused
+tests passed in that isolated tree. `python3 -B replay.py` exercised fake
+Docker creation, attachment, inspection, metric verification and settlement.
+The resulting `mocked-chain.json` SHA-256 is
+`593af8ad31622cdee3a2d9d12bc6ad453db96682828eced66274ffb2da6e9b7b`.
+The replay preserves the full reserve until a separate synthetic settlement.
+It contains simulated CUDA measurements.
+
+The metric verifier takes `guard.jsonl`, the reviewed snapshot path and
+the reviewed worker mount path as positional arguments. It requires
+`--host-capture-sha256`, `--worker-log-sha256` and `--admission-id`.
+
+The paired L1–L3 design has a separate prospective metadata check. It
+compares pinned task and replicate IDs, block and scoring context across
+unchanged transfer, local recalibration and the common reference holdout.
+It rejects group overlap across splits and exact trial relabeling. Without
+a matched reference schedule it withholds the cross-family comparison.
+The pairing and inventory suite passed all 20 tests in the model checkout.
+The isolated pairing bundle
+`runs/replication-smollm3-staging.out5A0/prospective-pairing-reviewed.ZxUw9g`
+has manifest SHA-256
+`3932da8d2ea4bf50ba1f7a708f70daa572134940c120540b8f77174360c27f93`.
+Its 20-test suite skipped the check that needs the staged Qwen fixture.
+Actual held-out manifests and outcomes still need independent custody.
