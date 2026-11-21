@@ -64,3 +64,23 @@ Twenty-two inventory and pairing tests passed, and the retained valid
 inventory replay matched byte for byte. This check compares weight-file
 digest multisets. Model family qualification and comparisons across
 repackaged tensors still require independent evidence.
+
+## R3 and L4-E to L8-D receipt checks
+
+The strict R3 host verifier reproduced both archived public arms and
+refused ambiguous JSON members and Boolean attempt IDs at separate
+matching digests. The pinned candidate is
+`runs/r3-l2-strict-host-tape.d6MhKd/source`, manifest SHA-256
+`495a75de5da20f81ad9c4f74d7904cef89bd95fef94b48b3959e963bda0c670b`.
+The shared integration source is still pending runner-owner adoption.
+The separate R3 admission inventory replayed byte for byte and still
+records a missing native entry point and outstanding protected inputs.
+
+The L8-D base-manifest preflight requires an independent digest, model
+repository and revision. It accepted the exact staged Qwen manifest
+in a synthetic lineage bundle and refused that same manifest when the
+declared revision changed. The command, fixtures and source closure
+are retained in `runs/r3-l4-evidence-crosscheck.oyeeHp`. This verifies
+manifest identity. The actual settled L4-E adapter pair, matched
+context comparator, loader readback and held-out custody remain
+outstanding.
