@@ -228,12 +228,13 @@ class ControllerPairAuditTests(unittest.TestCase):
 
     def test_unresolved_attempt_blocks_later_noncleanup_across_blocks(self):
         f = self.fixture
-        second = self.block | {"block_id": "paired-second"}
+        second = self.block | {"block_id": "paired-second", "condition": "disrupted"}
         self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block, second]})
         f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
         for row in self.rows:
             row["inputs"] = f.manifest["inputs"].copy()
-        self.rows.extend(copy.deepcopy(row) | {"block_id": second["block_id"]} for row in self.rows[:2])
+        self.rows.extend(copy.deepcopy(row) | {"block_id": second["block_id"], "condition": second["condition"]}
+                         for row in self.rows[:2])
         self.rows[1]["terminal"] = "stopped"
         self.rows[1]["attempts"].append(self.attempt(3, "verification", status="failed") | {"usage": None})
         with self.assertRaisesRegex(ValueError, "only cleanup can follow unresolved usage"):
@@ -273,14 +274,16 @@ class ControllerPairAuditTests(unittest.TestCase):
 
     def test_completed_block_cannot_hide_an_aggregate_cap_breach(self):
         f = self.fixture
-        second = self.block | {"block_id": "paired-second", "order": ["combined", "plain"]}
+        second = self.block | {"block_id": "paired-second", "condition": "disrupted",
+                               "order": ["combined", "plain"]}
         self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block, second]})
         f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
         for arm in f.manifest["arms"].values():
             arm["budget"]["cpu_wall_ns"] = 10
         for row in self.rows:
             row["inputs"] = f.manifest["inputs"].copy()
-        self.rows.extend(copy.deepcopy(row) | {"block_id": second["block_id"]} for row in reversed(self.rows[:2]))
+        self.rows.extend(copy.deepcopy(row) | {"block_id": second["block_id"], "condition": second["condition"]}
+                         for row in reversed(self.rows[:2]))
         with self.assertRaisesRegex(ValueError, "cap across matched blocks"):
             audit.verify(**self.freeze())
         for row in self.rows[2:]:
@@ -288,6 +291,28 @@ class ControllerPairAuditTests(unittest.TestCase):
         result = audit.verify(**self.freeze())
         self.assertEqual(result["complete_pairs"], 1)
         self.assertEqual(result["arm_resource_receipts"]["combined"]["exceeded_caps"], ["cpu_wall_ns"])
+
+    def test_renamed_assignment_is_refused_at_its_fresh_pins_even_when_reordered(self):
+        original_arms = copy.deepcopy(self.rows)
+        f = self.fixture
+        for reorder in (False, True):
+            with self.subTest(reorder=reorder):
+                alias = copy.deepcopy(self.block)
+                alias["block_id"] = "renamed"
+                alias_arms = copy.deepcopy(original_arms)
+                if reorder:
+                    alias["order"].reverse()
+                    alias["taskset"]["tasks"].reverse()
+                    alias_arms.reverse()
+                for row in alias_arms:
+                    row["block_id"] = alias["block_id"]
+                self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block, alias]})
+                f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
+                self.rows = original_arms + alias_arms
+                for row in self.rows:
+                    row["inputs"] = f.manifest["inputs"].copy()
+                with self.assertRaisesRegex(ValueError, "duplicate experimental task assignment"):
+                    audit.verify(**self.freeze())
 
     def test_cli_checks_archival_pin_before_replay(self):
         fixture = self.freeze()

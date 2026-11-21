@@ -369,3 +369,21 @@ SHA-256 is
 The resource owner and operator still need to reconcile the current
 head, place the actual reserve and pin the live admission. The stock
 launcher also needs a suitable window for the reviewed memory envelope.
+
+## M9 controller assignment identity
+
+A renamed copy of a complete public block increased the count from
+one to two and repeated the +1/6 effect. The copied block reused the
+same condition, seed, taskset, outcomes and usage. Fresh manifest
+and trace digests still passed the old auditor.
+
+The auditor now compares the condition, seed, agent slots and
+ordered-by-ID task content. A display name or the serialization
+order of tasks and arms cannot create another assignment. The
+original clean and disrupted conditions remain separate.
+
+The legacy archive replayed byte for byte and the independently
+repinned duplicate was refused with exit 2. Reproduction and
+refusal evidence are in `runs/controller-pair-current.uWkSim`.
+Held-out repeated assignments need prospectively frozen replicate
+provenance and a cluster-aware analysis.

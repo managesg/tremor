@@ -201,7 +201,7 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
             selection._require(type(arm_witness) is dict, "expected one release witness record per arm")
     resources = {arm: {"known_usage": dict.fromkeys(selection.BUDGET, 0),
                        "unknown_usage_attempts": 0, "exceeded_caps": []} for arm in ARMS}
-    seen, pairs = set(), []
+    seen, assignments, pairs = set(), set(), []
     for block_index, block in enumerate(blocks):
         selection._object(block, ("block_id", "condition", "seed", "order", "taskset"), "matched block")
         identifier = selection._text(block["block_id"], "block ID")
@@ -215,6 +215,12 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
         selection._require(eligible and len(eligible) == len(set(eligible)) and type(slots) is int
                            and 0 < slots <= len(eligible) and block["taskset"]["seed"] == block["seed"],
                            "invalid eligible work inventory or seed")
+        tasks_by_id = sorted(block["taskset"]["tasks"], key=lambda task: task["id"])
+        task_content = [(task["id"], task.get("check"), task["expect"]) for task in tasks_by_id]
+        canonical_content = json.dumps(task_content, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        assignment = (block["condition"], block["seed"], slots, canonical_content)
+        selection._require(assignment not in assignments, "duplicate experimental task assignment")
+        assignments.add(assignment)
         rows = []
         for ordinal, arm in enumerate(block["order"], start=2 * block_index):
             arm_witness = witness_arms[ordinal] if witness_arms is not None else None
