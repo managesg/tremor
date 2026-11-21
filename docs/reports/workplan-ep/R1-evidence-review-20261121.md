@@ -133,3 +133,31 @@ The exact path evidence is in
 `runs/r1-worktree-acceptance-review.Eq9fui/result.json`. The
 coordinator and reviewers still need to nominate the exact candidate
 and review the pinned module scope.
+
+The inspection captured container IDs and timestamps. A separate
+command captured container names and timestamps. A fresh test digest
+with two inspection IDs exchanged still validates their time
+windows. A future capture needs both ID and name in the same
+inspection record to verify that pairing. The original pinned
+samples retain their original IDs.
+
+## Public Board work receipts
+
+The direct projection of committed Board posts trusted the
+embedded actor and read pointer. On a synthetic Board with no
+read or claim, a fabricated receipt earned one passing task when
+passed directly to the scorer.
+
+The isolated adjudicator checks the pinned plan and Board chain,
+the earlier same-worker read, committed source, held claim, and
+exact observed operand before scoring. It rejected freshly
+rehashed fabricated reads, crossed actors, absent claims, late
+receipts, and answers that ignored a perturbed operand.
+
+`bash runs/r1-board-work-audit.Aj13es/verify.sh` passed 14 tests.
+First and final scores were 0 and 3 for the early error, and 1
+and 3 for the late error. The one-round prefix kept its first
+score of 1 and left the final score unavailable. The setup-only
+prefix left both unavailable. The historical public archive
+reproduced byte for byte. This replay covers deterministic public
+Board evidence. Protected actor and observer custody are separate.
