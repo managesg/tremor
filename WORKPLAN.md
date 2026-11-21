@@ -8,7 +8,7 @@ model as an instrument check, no estimate) and **EVIDENCED** (a pre-registered r
 The [research background and references](RESEARCH.md) connect the experiment designs to model
 scaling, collective behavior, principal–agent theory, and prior auditing and interpretability work.
 
-## Where we are (2026-11-20)
+## Where we are (2026-11-21)
 
 Read the [preliminary instrument results](README.md#preliminary-results) for the completed checks and
 what they mean for the first experiment.
@@ -22,7 +22,9 @@ what they mean for the first experiment.
 | Spend ledger with hard caps in code | INSTRUMENTED, checked by independent reviews |
 | First calibrated measurement: an instruction card against the same rule enforced in code | Pre-registration drafted, **not frozen** |
 | Instrument pilots on a small Claude model | PILOTED. The third pilot completed and the output-length clearance criterion failed. |
-| Research lines 1 to 8 | NOT STARTED |
+| Spark short calibration with Qwen3.5-4B | PILOTED. Two short prompts completed in a guarded run. Experimental batch sizes still need a duration and memory bound. |
+| L2 direct-relay measurement | INSTRUMENTED. Scripted controls distinguish zero direct relays, two direct relays, and an incomplete observation window. Independent replay of the generation records and the frozen live protocol are pending. |
+| Confirmatory runs across research lines 1 to 8 | NOT STARTED |
 
 What the three pilots taught us about the instrument:
 
@@ -90,7 +92,8 @@ What the three pilots taught us about the instrument:
 
 ### Phase 2. Measure the machine and freeze the plans (week 2)
 
-- [ ] Speed and memory of the local open model measured
+- [x] Short local calibration completed under the Spark guard
+- [ ] Bound runtime and memory for the actual local experiment workload
 - [ ] Variance pilot: sets the sample size each kill criterion needs
 - [ ] One pre-registration per line, frozen and published before any run
 

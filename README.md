@@ -70,11 +70,13 @@ experiment’s output limit.** EP-1, the confirmatory experiment, remains in dra
 | First two pilots | Both stopped under predefined rules. The first exposed reply-budget pressure from hidden reasoning. The second exposed parsing failures when replies included prose before JSON. |
 | Pilot 3 | Completed 30 episodes and 240 calls with zero voids or transport aborts. Shared task order was the only order that passed the predefined selection rule. |
 | Reply-length clearance | 13 of 144 replies in the three EP-1 conditions exceeded the 150-token ceiling. All 13 came in round two and had prose before the JSON action array. The longest reply used 263 tokens. |
+| Spark instrument calibration | Qwen3.5-4B completed two short local prompts. From container start through confirmed cleanup, the run took 83.24 seconds and used 0.023123 GPU-hours. This establishes the short calibration envelope. |
+| L2 direct-relay controls | Two scripted CPU windows kept the same number of scheduled turns and decisions. Across two planted roots, the controls produced direct-relay counts of `[2, 0]` and `[0, 0]`. An interrupted window retained known usage and yielded no relay estimate. |
 
 **What EP-1 will test.** How much of the benefit of enforcing *claim before work* in code can a short
 instruction card recover? Pilot 3 selected a task order for that comparison. It did not estimate the
 card’s effect. A revised second-round instruction has passed scripted checks and still needs
-prospective review and live clearance. [Current workplan](WORKPLAN.md#where-we-are-2026-11-20)
+prospective review and live clearance. [Current workplan](WORKPLAN.md#where-we-are-2026-11-21)
 
 ## See it in 60 seconds
 
@@ -199,7 +201,7 @@ All eight lines run on one bench, so their results can be compared and combined.
 | Three agreeing scorers, one proved in Lean 4 | Built; 0 disagreements on 10,000 seeded logs |
 | Spend ledger with hard caps | Built; independent reviews plus tests that break it on purpose |
 | First calibrated measurement: an instruction card against the same rule enforced in code | Preregistration drafted, awaiting clearance and freeze |
-| Research lines 1 to 8 | Designed; not started |
+| Research lines 1 to 8 | Designed. L2 has scripted relay controls. Confirmatory runs are pending. |
 
 ### Can leadership move with the work?
 
