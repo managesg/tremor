@@ -783,3 +783,22 @@ checks all three in one result. The final replay rejected both an
 undercounted candidate and an omitted candidate. This run used the
 pinned checkout spend code. The isolated UTC rollover candidate still
 needs to be integrated and reviewed with the eventual driver.
+
+## Combined Pilot 4 spend candidate
+
+The UTC rollover and duplicate-attempt fixes were combined in a
+separate source closure. The exact combined module backed the stock
+driver and backend during the baseline and both unselected drafts.
+The rehearsal fixed its clock to the retained price-sheet date. Its
+report reproduced the stock-source report byte for byte. All 133
+spend, backend, rollover and duplicate-attempt tests passed. The
+read-only comparison of four historic ledgers reproduced all 417
+reservation and charge pairs at USD 0.0413027 in recorded local spend.
+
+Evidence is in `runs/pilot4-combined-spend-dry.TOx9q0`. The verified
+patch applies to the current shared base in a dry patch check. The
+spend owner still needs to review and integrate it. A batch opened at
+the cutoff can retain its old price pin even when the stale reservation
+is refused. A new price sheet cannot replace that pin without the
+existing continuity decision. The preregistration, pricing, exact
+driver and provider gates remain open.
