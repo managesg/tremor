@@ -58,13 +58,16 @@ def reproduction_number(notes, planted):
     for n in notes:
         for p in n["parents"]:
             kids.setdefault(p, []).append(n["id"])
-    seen, todo = set(planted), list(planted)
+    roots = set(planted)
+    if not roots:
+        return 0.0, 0
+    seen, todo = roots.copy(), list(roots)
     while todo:
         for c in kids.get(todo.pop(), []):
             if c not in seen:
                 seen.add(c)
                 todo.append(c)
-    return (len(seen) - len(set(planted))) / len(seen), len(seen)
+    return (len(seen) - len(roots)) / len(seen), len(seen)
 
 
 def pairwise_miss(misses):
