@@ -856,3 +856,17 @@ Synthetic common setup remains separate. The isolated verifier in
 cases and produced the same report against the updated paired verifier.
 Actual charge observation, custody and the confirmatory estimator
 remain open.
+
+## L4-E to L8-D split identity
+
+The upstream lineage checker previously accepted canonically equivalent
+Unicode spellings as different sample or family IDs across training and
+holdout. The isolated candidate requires NFC spelling before checking
+disjointness, matching the existing timeline and probe identifiers.
+Both regressions failed before the fix. All 12 tests passed after it,
+and the retained valid lineage output reproduced byte for byte.
+
+The source, test logs, and dry-apply patch for the shared lineage owner
+are in `runs/l8-canonical-splits.KKJqyV`. A canonical ID rules out this
+encoding alias. Protected task-family identity still requires an
+independently governed split and the actual settled L4-E artifact pair.
