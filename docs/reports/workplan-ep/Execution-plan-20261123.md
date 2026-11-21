@@ -163,3 +163,25 @@ candidates passed 15 and 16 tests respectively. The sources and receipts
 are in `runs/l1-advanced-baseline-audit.jYGGXy` and
 `runs/l1-governed-dispatch.RW5X3U`. Protected labels, metering and
 prospective freeze remain required for the primary comparison.
+
+## L2 opening-root and exposure-window verification
+
+The generated public relay archive reproduced R = 1 for counts
+`[2, 0]`, R = 0 for the completed abstention control, and no R for
+the clean and interrupted controls. The strict reproduction scorer
+rejects omission of the childless opening root from the unchanged
+15-event positive archive. L2-C ranking retains its separate
+active-subset evaluation.
+
+The host decision replay now scores adoption within the Board
+window. The controlled late submission retains both named exposures
+and counts zero eligible decisions. An interrupted window retains
+observed named reads and withholds the aggregate. Both archived
+healthy arms preserved their previous fields and gained a separate
+decision-window record.
+
+The combined isolated source in `runs/l2-opportunity-current.FudwcO`
+passed 40 focused tests and reproduced the two public instrument
+reports byte for byte. Integration requires the runner owner's review.
+Scientific use still requires the frozen roster, windows, and labels,
+independent runtime custody, and exact admission.
