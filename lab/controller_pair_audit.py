@@ -88,6 +88,10 @@ def _outcome(block, arm, row, manifest, prior, witness=None):
             unknown.append(ordinal)
         else:
             charged = _meter(usage)
+            # A call requires an available slot at dispatch. Other measured costs may overrun on return.
+            selection._require(attempt["role"] == "cleanup"
+                               or cumulative["calls"] + charged["calls"] <= settings["budget"]["calls"],
+                               "recorded call after the dispatch cap was exhausted")
             _accumulate(totals, charged)
             _accumulate(cumulative, charged)
         action = attempt["work"]
@@ -202,6 +206,7 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
     resources = {arm: {"known_usage": dict.fromkeys(selection.BUDGET, 0),
                        "unknown_usage_attempts": 0, "exceeded_caps": []} for arm in ARMS}
     seen, assignments, pairs = set(), set(), []
+    prompt_coverage = None
     for block_index, block in enumerate(blocks):
         selection._object(block, ("block_id", "condition", "seed", "order", "taskset"), "matched block")
         identifier = selection._text(block["block_id"], "block ID")
@@ -216,12 +221,16 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
                            and 0 < slots <= len(eligible) and block["taskset"]["seed"] == block["seed"],
                            "invalid eligible work inventory or seed")
         tasks = block["taskset"]["tasks"]
-        has_prompts = all(type(task.get("check")) is str and task["check"] for task in tasks)
+        has_prompts = any("check" in task for task in tasks)
+        selection._require(not has_prompts or all(type(task.get("check")) is str and task["check"]
+                                                  for task in tasks),
+                           "mixed or invalid assignment prompt coverage")
+        if prompt_coverage is None:
+            prompt_coverage = has_prompts
+        selection._require(has_prompts is prompt_coverage, "assignment prompt coverage differs across blocks")
+        identity_field = "check" if has_prompts else "id"
         canonical_content = tuple(sorted(
-            json.dumps(
-                (task["check"] if has_prompts else task["id"], task["expect"]),
-                sort_keys=True, separators=(",", ":"), allow_nan=False,
-            )
+            json.dumps((task[identity_field], task["expect"]), sort_keys=True, separators=(",", ":"), allow_nan=False)
             for task in tasks
         ))
         assignment = (block["condition"], block["seed"], slots, canonical_content)

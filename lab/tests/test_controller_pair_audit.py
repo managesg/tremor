@@ -335,6 +335,61 @@ class ControllerPairAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate experimental task assignment"):
             audit.verify(**self.freeze())
 
+    def test_missing_prompt_fields_cannot_duplicate_a_public_assignment(self):
+        original_arms = copy.deepcopy(self.rows)
+        f = self.fixture
+        for omit_all, rename_ids, message in (
+            (False, False, "mixed or invalid assignment prompt coverage"),
+            (True, False, "assignment prompt coverage differs across blocks"),
+            (True, True, "assignment prompt coverage differs across blocks"),
+        ):
+            with self.subTest(omit_all=omit_all, rename_ids=rename_ids):
+                alias = copy.deepcopy(self.block)
+                alias["block_id"] = "same-assignment-with-missing-checks"
+                tasks = alias["taskset"]["tasks"]
+                for task in tasks if omit_all else tasks[-1:]:
+                    del task["check"]
+                if rename_ids:
+                    for task in tasks:
+                        task["id"] = "alias-" + task["id"]
+                self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block, alias]})
+                f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
+                alias_arms = [copy.deepcopy(row) | {"block_id": alias["block_id"]} for row in original_arms]
+                if rename_ids:
+                    for row in alias_arms:
+                        for attempt in row["attempts"]:
+                            attempt["work"]["task"] = "alias-" + attempt["work"]["task"]
+                self.rows = original_arms + alias_arms
+                for row in self.rows:
+                    row["inputs"] = f.manifest["inputs"].copy()
+                with self.assertRaisesRegex(ValueError, message):
+                    audit.verify(**self.freeze())
+
+    def test_single_legacy_assignment_without_prompt_fields_still_replays(self):
+        f = self.fixture
+        for task in self.block["taskset"]["tasks"]:
+            del task["check"]
+        self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block]})
+        f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
+        for row in self.rows:
+            row["inputs"] = f.manifest["inputs"].copy()
+        result = audit.verify(**self.freeze())
+        self.assertEqual(result["complete_pairs"], 1)
+        self.assertEqual(result["pairs"][0]["paired_delta"], "1/6")
+
+    def test_distinct_complete_prompts_may_reuse_the_same_task_ids(self):
+        f = self.fixture
+        other = copy.deepcopy(self.block)
+        other["block_id"] = "another-prompt-inventory"
+        for task in other["taskset"]["tasks"]:
+            task["check"] += " (separate frozen wording)"
+        self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": [self.block, other]})
+        f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
+        self.rows.extend(copy.deepcopy(row) | {"block_id": other["block_id"]} for row in self.rows[:2])
+        for row in self.rows:
+            row["inputs"] = f.manifest["inputs"].copy()
+        self.assertEqual(audit.verify(**self.freeze())["complete_pairs"], 2)
+
     def test_cli_checks_archival_pin_before_replay(self):
         fixture = self.freeze()
         command = [sys.executable, "-B", "-m", "lab.controller_pair_audit",
