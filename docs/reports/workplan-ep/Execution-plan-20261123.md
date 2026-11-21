@@ -870,3 +870,24 @@ The source, test logs, and dry-apply patch for the shared lineage owner
 are in `runs/l8-canonical-splits.KKJqyV`. A canonical ID rules out this
 encoding alias. Protected task-family identity still requires an
 independently governed split and the actual settled L4-E artifact pair.
+
+The isolated numeric receipt verifier decoded the retained F32 toy
+checkpoints independently and recomputed hook values of 4 and 8.
+It refused malformed tensors and newly pinned false hook values.
+A second coherent weight change preserved the output at 4 and was
+reported as zero effect. Five tests passed in
+`runs/l8-numeric-receipt.fJVDEZ`.
+
+A separate CPU probe read two real Qwen3.5-4B projection weights from
+one independently pinned 3,990,429,408-byte model shard. It applied
+synthetic rank-one factors to those isolated projections. Loading
+the factors at zero scale changed installed state and preserved
+exact baseline output bytes. At scale one, each projection changed
+four output elements by the predicted values. Crossed checkpoint
+pins were refused before state changed. Restoration reproduced
+the original output and state hashes. The probe used one CPU and a
+2 GiB container, with separate exit and exact-removal evidence in
+`runs/qwen-lowrank-public.4V3F40`.
+
+This establishes the isolated projection control. The trained and
+settled L4-E adapter pair and held-out L8-D forward remain open.
