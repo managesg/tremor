@@ -93,6 +93,44 @@ class Night(unittest.TestCase):
         self.assertEqual(p["tokens_read"], N.consolidate(s, 1.0, 1)["tokens_read"])
         self.assertEqual((p["written"], p["dropped"]), ([], []))
 
+    def test_rewrite_and_verifier_cannot_mutate_input_or_accepted_store(self):
+        original = N.add_note([], "a", "three original words", "w", 1, ["source"])
+        proposed_sources = ["source"]
+
+        def rewrite(note, _rng):
+            note["sources"].append("rewrite mutation")
+            note["text"] = "mutation"
+            return {"text": "two words", "sources": proposed_sources}
+
+        def verify(note):
+            note["sources"].append("verifier mutation")
+            note["parents"].clear()
+            return True
+
+        for mode in ("direct", "gated"):
+            with self.subTest(mode=mode):
+                result = N.consolidate(original, 1, 2, verifier=verify, rewrite=rewrite, mode=mode)
+                self.assertEqual(result["tokens_read"], 3)
+                self.assertEqual(original[0]["text"], "three original words")
+                self.assertEqual(original[0]["sources"], ["source"])
+                self.assertEqual(result["store"][0]["text"], "two words")
+                self.assertEqual(result["store"][0]["parents"], ["a"])
+                self.assertEqual(result["store"][0]["sources"], ["source"])
+                result["store"][0]["sources"].append("consumer mutation")
+                self.assertEqual(proposed_sources, ["source"])
+
+    def test_fresh_outputs_isolate_nested_state(self):
+        original = N.add_note([], "a", "text", "w", 1, ["source"], extra={"tags": ["stable"]})
+        for output in (
+            N.add_note(original, "b", "other", "w", 1),
+            N.placebo(original)["store"],
+            N.consolidate(original, 0, 2)["store"],
+            N.consolidate(original, 1, 2, mode="gated", verifier=lambda _note: False)["store"],
+        ):
+            output[0]["sources"].append("consumer mutation")
+            output[0]["extra"]["tags"].append("external")
+            self.assertEqual(original[0]["sources"], ["source"])
+            self.assertEqual(original[0]["extra"]["tags"], ["stable"])
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,7 @@ Note: {"id","text","author","episode","sources":[evidence ids],"parents":[note i
 A store is a list of notes and is never mutated: every function returns a new list.
 shortcut: tokens are whitespace words; upgrade if a real tokenizer budget is needed.
 """
+from copy import deepcopy
 import random
 
 
@@ -15,7 +16,7 @@ def add_note(store, id, text, author, episode, sources=(), **extra):
         raise ValueError(f"duplicate note id {id!r}")
     note = {"id": id, "text": text, "author": author, "episode": episode,
             "sources": list(sources), "parents": [], **extra}
-    return list(store) + [note]
+    return deepcopy([*store, note])
 
 
 def tokens(store):
@@ -37,32 +38,35 @@ def consolidate(store, s, night, verifier=None, mode="direct", rewrite=None, see
         raise ValueError(f"unknown mode {mode!r}")
     if mode == "gated" and verifier is None:
         raise ValueError("gated mode needs a verifier")
+    tokens_read = tokens(store)
     rng = random.Random(seed)
     out, written, blocked, dropped = [], [], [], []
-    for n in store:
+    for source in store:
+        n = deepcopy(source)
         if rng.random() >= s:
-            out.append(dict(n))
+            out.append(n)
             continue
-        new = {**n, **(rewrite(n, rng) if rewrite else {}), "id": f"n{night}-{n['id']}", "parents": [n["id"]]}
+        fields = deepcopy(rewrite(deepcopy(n), rng)) if rewrite else {}
+        new = {**n, **fields, "id": f"n{night}-{n['id']}", "parents": [n["id"]]}
         if mode == "gated":
-            ok = verifier(new)
-            out.append(new if ok else dict(n))
+            ok = verifier(deepcopy(new))
+            out.append(new if ok else n)
             (written if ok else blocked).append(n["id"])
-        elif verifier is not None and not verifier(n):
+        elif verifier is not None and not verifier(deepcopy(n)):
             dropped.append(n["id"])
-        elif verifier is not None and not verifier(new):
-            out.append(dict(n))
+        elif verifier is not None and not verifier(deepcopy(new)):
+            out.append(n)
             blocked.append(n["id"])
         else:
             out.append(new)
             written.append(n["id"])
-    return {"store": out, "tokens_read": tokens(store), "written": written, "blocked": blocked,
+    return {"store": out, "tokens_read": tokens_read, "written": written, "blocked": blocked,
             "dropped": dropped}
 
 
 def placebo(store, night=0):
     """Placebo dream: reads the same tokens as a real pass, changes no content."""
-    return {"store": [dict(n) for n in store], "tokens_read": tokens(store), "written": [], "blocked": [],
+    return {"store": deepcopy(list(store)), "tokens_read": tokens(store), "written": [], "blocked": [],
             "dropped": []}
 
 
