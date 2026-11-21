@@ -547,3 +547,35 @@ found 29 different paths against that source and 27 against the later
 one-pass patch. Formal quiet-host disposition and the independent
 module and bench reviews remain open. See
 [the exact archive join](R1-evidence-review-20261121.md#host-window-and-candidate-join).
+
+## R3-L2 paired runner and token preflight
+
+The review packet replays the historical completed and interrupted
+CPU pairs, checks the scheduled plan, Board, journals and cleanup,
+and refuses a completed result crossed with the interrupted plan.
+The old native inventory reproduces its awaiting-inputs status.
+
+The isolated runner now gives the host tape the actual scheduled
+arm identity and a distinct transport token before generation. Two
+real isolated Spark CPU rehearsals produced the same four Board
+logs as the historical cases. The completed public pair retained
+2 neutral and 0 warning adoptions. The interrupted warning arm
+retained one unknown attempt and no comparison or completed index.
+The direct verifier refused a neutral tape from the other run even
+with its correct digest. Both exact containers were removed.
+
+The staged raw Qwen tokenizer and the offline Transformers tokenizer
+agreed on the exact prompt digests from those four bound arms.
+The completed neutral prompts were 43 and 43 tokens. The completed
+warning prompts were 42, 57, 42 and 57. The warning prefix was 42,
+57 and 42. The real adapter's input check refused the three 57-token
+requests at the archived cap of 50 before device transfer. No model
+weights or GPU were used. The protocol author must freeze the actual
+renderer and common cap using the protected input inventory.
+
+The retained review and reproduction are in
+`runs/r3-l2-review-current.bOJKST`, with joined report SHA-256
+`0c6442e6e3fcbf4568cff56177108f4bd8e483e49df3dfa04a53a3c8917461b3`.
+The isolated preflight and runner suites passed 13 and 15 tests.
+Protected custody, exact native entry, admission and settlement
+remain open.
