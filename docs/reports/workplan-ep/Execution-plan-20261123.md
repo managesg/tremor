@@ -246,3 +246,25 @@ focused tests passed from the combined isolated source in
 `runs/l7-scaling-current.bvwouQ`. The protected scaling comparison
 still needs independent selector terminal and charge records, matched
 actual token expenditure, and admitted workloads and cohorts.
+
+## L8-B matched threshold and capture binding
+
+The four public L8-B reports replayed exactly. At the matched scripted
+operating point, the complementary, copied, and negative controls
+yielded +24, zero, and −20 percentage points. A change to the clean
+rows alone moved combined false positives to 6.25% while text stayed
+at 5%. The corrected evaluator preserves the descriptive catch gap
+and withholds the matched gain. Explicit legacy replay preserves the
+archived output.
+
+The capture verifier binds all 46 public sample rows to the recorded
+split, prompt digest and observations under separate capture,
+extractor and protocol pins. It rejects a substituted prompt even
+when the lineage manifest is repinned. The capture was reconstructed
+from the synthetic archive for this check. It establishes the join
+without native extraction or independent outcome custody.
+
+The combined isolated candidate in `runs/l8b-current.flbaVE` passed
+27 tests. L8-B remains separate from L8-D and its settled L4-E
+dependency. Scientific acceptance still needs independently captured
+native inputs, blinded labels and a frozen comparison protocol.
