@@ -1,0 +1,46 @@
+# Grover coordination replay
+
+The CPU development replay runs the three Grover regimes through the existing coordinator.
+It crosses four policies with own or shared evidence, fixes worker traversal order in all arms,
+and charges the same per-event prices and 32-unit ceiling. A rotating lead still pays for its
+handoffs. The proposer receives the local question and payloads of exactly the required earlier
+receipts. The private verifier separately checks stage answers and source-shard content. The
+coordinator checks the receipt event IDs, visibility, and round order before scoring. A verified
+no-hit predecessor is a present receipt and can release its registered fallback.
+
+## Observed development cases
+
+All four policies had the same distinct verified stage count at a given access setting. The
+independent-plus-own union is the emergence baseline. The independent-plus-shared arm controls
+for evidence access when comparing assignment policies. Shard work, verification, and other
+operations are charged and retained in the trace. Only verified Grover stages count as utility.
+
+| Public development case | Own stage count across policies | Shared stage count across policies | Realized cost across the eight cells |
+| --- | ---: | ---: | ---: |
+| Complementary, seed 0 | 0 | 1 | 17–25 |
+| Complementary, seed 9 | 0 | 1 | 17–25 |
+| Redundant, seed 0 | 2 | 2 | 16–24 |
+| Sequential, seed 0 | 1 | 3 | 18–27 |
+
+The two complementary cases include a verified no-hit and a verified hit. Shared evidence
+allows stages with cross-worker requirements in both that regime and the sequential case.
+At this budget, changing assignment policy within either access setting gave no additional
+verified stages on these inputs. The results concern scripted fixtures. The post-EP-1 model
+transfer still needs its protected seeds, approved allocation, and frozen science protocol.
+The fixed and rotating leads used the same deterministic planner and made identical assignments.
+Rotation therefore added two handoff units per cell and supplies no comparison of lead-specific
+decision quality. An independent reconstruction checked all 665 trace events, 77 verified work
+items, and the per-state amplitude recurrence used to validate stage answers. A sweep of 992
+lower-budget cells verified the spending ceiling, charged work and verification, and final merge.
+
+## Reproduce
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m lab.quantum.topology_transfer
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:lab:tests python3 -m unittest -v \
+    lab.tests.test_topology_transfer lab.tests.test_topology lab.tests.test_advisor_controls
+```
+
+The 32-cell JSON replay reproduced SHA-256
+`6ce893d3c05d06df563dde15086bc3764e1e1b0efdcceebb650b303210115bdc`. Both historical arithmetic
+topology traces reproduced byte for byte. [Coordinator](../../../lab/topology.py) · [Adapter](../../../lab/quantum/topology_transfer.py) · [Tests](../../../lab/tests/test_topology_transfer.py)
