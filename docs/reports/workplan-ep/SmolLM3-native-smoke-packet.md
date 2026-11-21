@@ -155,3 +155,30 @@ has manifest SHA-256
 `3932da8d2ea4bf50ba1f7a708f70daa572134940c120540b8f77174360c27f93`.
 Its 20-test suite skipped the check that needs the staged Qwen fixture.
 Actual held-out manifests and outcomes still need independent custody.
+
+## Unused reservation after a verified pre-attachment stop
+
+An input change after Docker create can stop the launcher before attach.
+The host receipt must show the exact inspected container in created state,
+confirmed removal, zero elapsed attachment time, and empty worker output.
+The verifier checks the inspection bytes against the host capture and
+requires an independent worker-output pin. Incomplete inspection or
+uncertain attachment or cleanup keeps the full reservation held.
+
+With that evidence, a separately pinned `cancel` receipt can return the
+unused reservation with a zero charge. It names the same admission,
+reserve and host capture as a settlement. The verifier returns
+`verified_unused_reservation_return`, which records a cancellation and
+carries no CUDA result. The tool leaves the ledger unchanged.
+
+The finalized verification bundle is
+`runs/replication-smollm3-staging.out5A0/native-launch-cancellation-final.v022iV`.
+Its source manifest SHA-256 is
+`c8164f59f8b637fa56efcdca02c9bdc26cce92e58676e796f914d66bf450a05c`.
+Sixty-four tests passed in the isolated closure. The successful mocked
+launch and settlement replay was byte-identical. The new
+`python3 -B replay_cancellation.py` drove a synthetic input-drift stop
+through the launcher. The 0.1 GPU-hour hold survived the stopped attempt
+and cleared only when an exact synthetic cancellation was supplied.
+Its SHA-256 is
+`923ea122e151dc96ac0cd1c29bf74e12e189cf9331961871c87e2baf9eb114ad`.
