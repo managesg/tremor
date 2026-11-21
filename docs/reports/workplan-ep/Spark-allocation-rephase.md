@@ -47,3 +47,30 @@ resource checks. This draft changes no allocations and authorizes no jobs.
 [Nominal phase allocations](../../WORKPLAN-RESIDENCY-V3.md#phase-r4-line-runs-under-the-owner-budget-stops-from-docsworkplan-currentmd-phase-8) ·
 [T7 estimates](../T7-smoke.md) ·
 [Adapter and activation handoff](L4-L8-adapter-lineage.md)
+
+## First proposed replication placement
+
+Under the owner's November 21 delegation, the lane selected the public
+SmolLM3 technical smoke as the first proposed incremental replication
+charge. Place 0.1 GPU-hour in `spark-replication` from the 9.5 GPU-hour
+shared residual. This would leave 9.4 GPU-hours there for the adapter,
+Grover, controller, and further replication work. The R2/R3 and L1–L8
+amounts and provisional T7 hold stay in the accounting.
+
+The retained settlement replay verified a historical program balance of
+65.976877 GPU-hours. A 0.1 GPU-hour hold against that balance would yield
+65.876877 GPU-hours. That is a proposal based on the historical ledger,
+and no reservation was written. The resource owner must reconcile
+current balances and record the placement. The independent admission
+reviewer must provide the exact one-use pin for the reviewed bundle.
+
+The exact smoke launcher refused its existing memory check in the
+November 21 sample. Host `MemAvailable` was 57,997,260 KiB against the
+existing 73,400,320 KiB requirement. The resource and runner reviewers
+can use a suitable window or review a revised bounded envelope. Spark
+service ownership and the existing guard remain in place.
+
+The replay evidence is
+`runs/smollm3-placement-review.oqs7DV/historical-audit.json`,
+SHA-256 `643ea2e89a5561ea4583648d4a519b5555d4827321c9345e59e49b6359c47154`.
+[Exact smoke bundle and receipt requirements](SmolLM3-native-smoke-packet.md)
