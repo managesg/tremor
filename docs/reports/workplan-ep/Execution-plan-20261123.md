@@ -348,3 +348,24 @@ The scripted selection reproduction is in
 `runs/l4-render-scope-recount.QITnsl`. Protected comparison needs
 the selected note order, rendered prompt/input-ID receipt and
 metering per dispatch, including preparation and retries.
+
+## M8 SmolLM3 opening balance
+
+The standalone reserve checker accepted internally balanced pinned
+proposals with 66 program hours at the opening, or 70 hours with
+the T7 hold removed. The first-smoke checker now replays the pinned
+R2 settlement and guard log, then binds the replication placement,
+admission and proposed reserve to the same declared cut.
+
+The independent local rerun passed 24 tests and reproduced the R2
+archive. The recorded opening was 65.976877 GPU-hours with a 4-hour
+T7 hold. The synthetic 0.1-hour reserve projects 65.876877 program
+hours and 9.4 replication hours. Fresh digests do not make a balance
+rollback, erased hold, or crossed admission acceptable.
+
+The verifier is in `runs/smollm3-opening-balance.Me0P5v`. Its result
+SHA-256 is
+`962824f457d67a403c4e0b1ca6587f7cdf471c291cf6603a0d2a09e715718f95`.
+The resource owner and operator still need to reconcile the current
+head, place the actual reserve and pin the live admission. The stock
+launcher also needs a suitable window for the reviewed memory envelope.
