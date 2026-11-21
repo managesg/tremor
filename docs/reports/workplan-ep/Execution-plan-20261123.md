@@ -141,3 +141,25 @@ The source, archive, and missing-outcome recount are in
 `runs/l6-current-accounting.toX4pV`. The scientific comparison still
 requires independent outcome custody, disjoint baseline tuning, the
 frozen sequential assumptions, and exact run admission.
+
+## L1 budget, comparator order, and measured dispatch
+
+Three retained L1 reports reproduced byte for byte. At the same
+56-unit cap the measured arms charge 40 units for preparation
+and select four checks. The unmeasured check baselines select
+14. The current uniform development arm checks the first 14 supplied
+claims. Keeping the budget and labels fixed while moving the four
+false claims to the end changed its false-completion count from
+zero to four in an all-checks-returned control. The scientific
+protocol still needs a fixed, truth-blind sampling or ordering rule.
+
+The advanced-baseline replay refused reordered plans and plans that
+reduced a 40-unit charge to one unit, even with fresh digests. The
+separate measured-dispatch verifier rederives the plan from independently
+pinned calibration data and carries observed and unresolved costs through
+scoring. Its retained positive case used 40 scripted calibration units
+and seven known dispatch units against a cap of 48. The isolated
+candidates passed 15 and 16 tests respectively. The sources and receipts
+are in `runs/l1-advanced-baseline-audit.jYGGXy` and
+`runs/l1-governed-dispatch.RW5X3U`. Protected labels, metering and
+prospective freeze remain required for the primary comparison.
