@@ -85,3 +85,25 @@ Its manifest digest is
 Stopped runs still leave phase scores unavailable. Legacy Board records
 omit admitted work events, so the check establishes deterministic
 scripted chronology. Protected N2 needs its own authenticated evidence.
+
+## Independent public scorer mutation check
+
+The retained R1 candidate and the current checkout have identical
+`alloc.py` and `alloc2.py` bytes. An independent reviewer compiled twelve
+behavioral mutations of `alloc.score`, one at a time, in memory. The
+public arithmetic corpus detected all twelve and matched all fourteen
+cases with the unmodified scorer. Clean and reordered work both scored
+1.0. The audit stores each mutation and its expected and observed
+outputs. It runs with the tracked scorer and corpus files.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:. python3 -B -m lab.r1_independent_verifier_mutation_audit
+```
+
+The result reproduced byte for byte from a clean source closure.
+Result SHA-256
+`fdfd02889d437f2d1c71a26457561ab1dfcf580c2a9dbffc07a74cb2bed950dc`.
+The one case skipped in the archived suites ran separately from the
+same pinned source on Spark without Torch and passed. The historical
+suite summaries retain their original skip counts. Protected N2
+verification, per-module review, and quiet-host disposition remain open.

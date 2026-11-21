@@ -103,3 +103,20 @@ prompt and ordered token indices and hashes its distinct capture file.
 The synthetic CLI and regression tests passed with only tracked
 dependencies. A real capture still needs independent runtime custody,
 verification of the activation values, and the settled L4-E pair.
+
+## R1 and L4-B independent checks
+
+The archived three R1 CPU suite receipts reproduced exactly. A separate
+Spark run without Torch exercised the optional-backend failure case
+that those suites skipped. The independent public arithmetic harness
+detected all twelve source mutations and preserved the unmodified
+results. Protected N2 and formal bench acceptance remain outstanding.
+[Exact R1 evidence](R1-evidence-review-20261121.md)
+
+An L4-B role swap reversed the scripted mean ratio from 7/6 to 6/7
+without modifying either arm's design or observations. A candidate
+verifier requires both independently frozen comparator design pins
+and rejects this swapped match before scoring. The historical
+development replay remained byte-identical. Candidate and patch are
+in `runs/l4b-governed-role.zo431i` pending integration and protected
+protocol freeze.
