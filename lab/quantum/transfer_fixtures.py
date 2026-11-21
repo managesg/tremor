@@ -24,6 +24,12 @@ class Stage:
     solvers: tuple[str, ...]
     prerequisite: str | None = None
 
+    def needs_shards(self):
+        """Use relay tasks when any solver lacks the complete marked set."""
+        source_marks = {worker: set(indices) for worker, indices in self.marks}
+        marked = set().union(*source_marks.values())
+        return any(worker not in source_marks or source_marks[worker] != marked for worker in self.solvers)
+
     def task(self, verified):
         """Build the private verifier task from an already-scored predecessor."""
         previous = verified[self.prerequisite] if self.prerequisite else None
@@ -45,21 +51,22 @@ class Fixture:
         for stage in self.stages:
             local_marks = dict(stage.marks).get(worker)
             solve = worker in stage.solvers
-            if local_marks is None and not solve:
+            relay = stage.needs_shards()
+            base = {"task": stage.name, "qubits": stage.qubits}
+            if relay and local_marks is not None:
+                questions.append({**base, "marked_indices": list(local_marks)})
+            if not solve:
                 continue
-            question = {"task": stage.name, "qubits": stage.qubits}
-            if local_marks is not None:
+            question = {**base, "iteration_cap": stage.cap}
+            if relay:
+                question["mark_sources"] = [source for source, _ in stage.marks]
+            else:
                 question["marked_indices"] = list(local_marks)
-            if solve:
-                question["iteration_cap"] = stage.cap
-                sources = [source for source, _ in stage.marks]
-                if worker not in sources:
-                    question["mark_sources"] = sources
-                if stage.prerequisite is None:
-                    question["target"] = str(stage.target)
-                else:
-                    question["target_from_verified_task"] = stage.prerequisite
-                    question["target_if_predecessor_has_no_hit"] = str(stage.target)
+            if stage.prerequisite is None:
+                question["target"] = str(stage.target)
+            else:
+                question["target_from_verified_task"] = stage.prerequisite
+                question["target_if_predecessor_has_no_hit"] = str(stage.target)
             questions.append(question)
         return {
             "regime": self.regime,

@@ -1,10 +1,11 @@
 from dataclasses import replace
+from fractions import Fraction
 import unittest
 from unittest.mock import Mock
 
 from lab import topology
 from lab.quantum.topology_transfer import adapt, compare
-from lab.quantum.transfer_fixtures import development_fixture
+from lab.quantum.transfer_fixtures import Fixture, Stage, development_fixture
 
 
 class TopologyTransferTests(unittest.TestCase):
@@ -49,6 +50,35 @@ class TopologyTransferTests(unittest.TestCase):
         self.assertFalse(accepted([dict(row, round=work["round"]) for row in receipts]))
         self.assertFalse(accepted([dict(receipts[0], answer=[99]), receipts[1]]))
         self.assertFalse(protocol.verify(work, {}))
+
+    def test_partial_mark_sources_can_publish_and_solve_in_separate_roles(self):
+        for solvers in (("a", "b"), ("a", "c")):
+            with self.subTest(solvers=solvers):
+                stage = Stage("join", 3, 1, Fraction(1), (("a", (0,)), ("b", (1,))), solvers)
+                fixture, protocol = adapt(Fixture("complementary", (stage,)))
+                self.assertEqual(fixture.observations["a"]["shard/join/a"]["marked_indices"], [0])
+                self.assertNotIn("marked_indices", fixture.observations["a"]["join"])
+                self.assertNotIn("shard/join/b", fixture.observations["a"])
+                for solver in solvers:
+                    self.assertEqual(fixture.observations[solver]["join"]["mark_sources"], ["a", "b"])
+
+                shared = topology.run(fixture, "independent", evidence_access="shared", work_protocol=protocol)
+                own = topology.run(fixture, "independent", evidence_access="own", work_protocol=protocol)
+                self.assertEqual(shared["verified_union"], ["join", "shard/join/a", "shard/join/b"])
+                self.assertEqual(own["verified_union"], ["shard/join/a", "shard/join/b"])
+                work = next(event for event in shared["trace"] if event.get("task") == "join"
+                            and event["kind"] == "work")
+                self.assertEqual(work["answer"], [1, "1"])
+                self.assertEqual(len(work["inputs"]), 2)
+
+    def test_complete_redundant_mark_sources_keep_direct_questions(self):
+        stage = Stage("join", 3, 1, Fraction(1), (("a", (0, 1)), ("b", (1, 0))), ("a", "b"))
+        fixture, protocol = adapt(Fixture("redundant", (stage,)))
+        self.assertEqual(set(fixture.tasks), {"join"})
+        self.assertEqual(fixture.observations["a"]["join"]["marked_indices"], [0, 1])
+        self.assertNotIn("mark_sources", fixture.observations["a"]["join"])
+        result = topology.run(fixture, "independent", evidence_access="own", work_protocol=protocol)
+        self.assertEqual(result["verified_union"], ["join"])
 
     def test_sequential_verified_no_hit_releases_fallback(self):
         fixture, protocol = adapt(development_fixture("sequential", 0))

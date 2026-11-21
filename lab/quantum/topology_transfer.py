@@ -47,9 +47,8 @@ def adapt(fixture):
     """Bind the private verifier and the separate worker observation projection."""
     tasks, shards = {}, {}
     for stage in fixture.stages:
-        sources = dict(stage.marks)
         dependencies = []
-        if any(solver not in sources for solver in stage.solvers):
+        if stage.needs_shards():
             for source, marks in stage.marks:
                 shard = _shard(stage.name, source)
                 tasks[shard] = topology.Task(None)
