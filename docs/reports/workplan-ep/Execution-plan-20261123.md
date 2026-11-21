@@ -226,3 +226,23 @@ matched the archive apart from the expanded evaluator source digest.
 The sources and receipts are in `runs/l5-parity-current.3fZo4P`.
 Protected N2 predicate, blind custody, formal review, and exact native
 admission remain open.
+
+## L7 participation and lower-result evidence
+
+All four L7 public reports reproduced byte for byte. At 16 workers,
+two attempted work in each layout and all 48 opportunities were
+observed. The cap was 193 synthetic units. Flat spent 59. Parallel
+subteams spent 73 with cross-subteam dependencies and 74 with work
+within subteams, including nine review and selection units. Verified
+utility was 3 for flat and 1 or 3 for parallel. The 17-unit stopped
+control keeps the full-window participation score undefined.
+
+The activity verifier now binds each work event to its current read
+turn and checks the next reader at a budget stop when the plan has a
+fixed roster order. The public integration check rederives lower proofs
+from pinned traces and verifies prerequisite answers separately before
+summing, so compensating wrong answers cannot pass. Twenty-nine
+focused tests passed from the combined isolated source in
+`runs/l7-scaling-current.bvwouQ`. The protected scaling comparison
+still needs independent selector terminal and charge records, matched
+actual token expenditure, and admitted workloads and cohorts.
