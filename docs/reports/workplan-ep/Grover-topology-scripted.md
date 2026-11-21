@@ -142,3 +142,27 @@ one stage each in the hit, no-hit and equality branches. The report
 contains aggregate counts and the commitment. The independently
 appointed custodian, protected split rules and authenticated
 pre-execution receipt are still required for protected assessment.
+
+## Observed release rehearsal
+
+Run `bash runs/grover-release-current.AYSM67/rehearse.sh` from the
+repository root. The verifier takes the audited public trace and
+two separate pins for the scheduled scope and the observer tape. It
+checks qualified receipt identity, result type, next-round
+availability, allowed visibility, and the exact receipts used by
+each work attempt.
+
+The no-hit control used the fallback once. The hit control used
+two exact predecessor probabilities and zero fallbacks. The
+own-access control verified only the first stage and issued no
+no-hit receipt. At cap 21, the no-hit control issued the receipt
+and stopped before the final work slot. The prefix's actual
+fallback count is zero and its complete-schedule count is
+unavailable. A late release failed the CLI with exit 2.
+
+One independent check counted 40 distinct verified stages and
+77 verified work receipts across the public archive. The full
+readback joined the same 32 arms to distinct synthetic observer
+scopes and retained 288 reads and four fallback uses. The synthetic
+tapes exercise the evidence contract. Actual actor deliveries and
+observer identity still need a protected independent capture.

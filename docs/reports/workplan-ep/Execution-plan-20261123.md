@@ -516,3 +516,20 @@ combined tests passed. See [reproduction and scope](Grover-topology-scripted.md#
 Independent receipt authentication, the frozen protected split,
 runtime readiness and delivery witnesses, and native admission
 remain outstanding.
+
+## M7 verified no-hit release and fallback
+
+The public release verifier binds a receipt to its run, block,
+scheduled arm, source, verified result and availability round. A
+consuming work event must name the exact permitted receipt. The
+rehearsal distinguished a released no-hit, a released hit, and a
+missing predecessor under own access. A budget-stopped prefix
+preserves observed counts and leaves the complete-schedule fallback
+count unavailable.
+
+Sixty tests passed. Across the 32 historical public arms, the
+readback verified 32 shard, 29 hit and 16 no-hit receipts. Four
+successor attempts used a verified no-hit fallback. A late receipt
+was refused at its correct fresh digest. [Release evidence](Grover-topology-scripted.md#observed-release-rehearsal).
+The rehearsal uses generated observer tapes. Protected execution
+still needs an independent observer recording actual delivery.
