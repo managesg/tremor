@@ -735,3 +735,12 @@ receiver. These receipts establish the synthetic equality check.
 The protected comparison still requires separately witnessed delivery
 and the independently graded sealed-worker union. Evidence in
 `runs/topology-delivery-review.RX6rzP`.
+
+A separate Python child then received the same public schedule over
+pipes. The parent checked 72 acknowledgments against the exact frames
+and payload digests. The interrupted case confirmed one delivery, kept
+one unacknowledged send unknown, and recorded 70 unattempted slots.
+The parent reaped the exact child in both cases. Two executable tests
+passed in `runs/topology-child-delivery.u1pPNT`. This exercises actual
+local transport with public byte counts. The protected study requires
+independent delivery custody and model-token measurements.
