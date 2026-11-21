@@ -83,6 +83,17 @@ Why this is not a "shrink n" case: the cost is per-step latency times length, an
 | **Total so far** | **about 3.8** (completed runs exact, the rest estimated within about 0.2) |
 | **Remaining under the 12 h cap** | **about 8.2**, which is less than one full-length thinking arm at batch 100 (about 8.8 h, section 6) |
 
+The November 21 CPU replay integrated the retained arm power CSVs and
+reproduced their recorded gross and net board energy. It recovered the
+arm-specific idle baselines, 5.05 W for arms 0 and B and 4.90 W for arm A.
+The sum of exact generation timestamps is 2.371010 GPU-hours. The
+8,655-second container subtotal above includes startup and is reported
+to the documented precision. Failed and diagnostic intervals remain
+estimated, so the program ledger retains its provisional 4.0 GPU-hour
+hold. The local replay receipt is
+`runs/t7-historical-power-replay.sSRAJS/audit.json`, SHA-256
+`ab70339fce3a510515a6053c8aecca9d8a97cbb393ef35cd0a86252634bcc2a6`.
+
 ## 7. Arm C: repetition-penalty proposal (text only)
 
 The published sampling already has `presence_penalty` 1.5, so C must be a different mechanism. Proposal: keep presence 1.5 and add a multiplicative `repetition_penalty` (transformers semantics, over prompt and output) from {1.05, 1.10, 1.15}, chosen on practice problems only (40 problems from the clone's `practice/math_train.jsonl`, never MATH-500), picking the smallest value that minimises the verbatim-loop rate (`loop_signals`) without lowering accuracy at 8k; default 1.10 if the practice run is not done. One value, fixed before any benchmark run, recorded in the prereg. Risk: a penalty over the prompt also discourages copying numbers from the problem; the practice run must report that.

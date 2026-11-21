@@ -7,11 +7,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import t7_arms  # noqa: E402
 
 D = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runs", "t7-smoke")
-idle = json.load(open(os.path.join(D, "idle.json")))
 for arm in ("0", "A", "B"):
     r = t7_arms.read_results(os.path.join(D, "arm%s.jsonl" % arm))
     s = json.load(open(os.path.join(D, "arm%s.summary.json" % arm)))
     e, k = s["energy"], s["step_marks"]
+    # Gross and net energy encode the idle baseline for this arm.
+    idle_w = (e["joules_gpu"] - e["joules_gpu_net"]) / e["seconds"]
     toks = sorted(x["tokens"] for x in r)
     mid = [m for m in k if m[0] >= 64]
     print(json.dumps({
@@ -23,4 +24,4 @@ for arm in ("0", "A", "B"):
         "s_per_step_last_1k": round((k[-1][1] - k[-33][1]) / (k[-1][0] - k[-33][0]), 3),
         "J_gross": round(e["joules_gpu"]), "J_net": round(e["joules_gpu_net"]), "J_per_tok": round(s["joules_per_token"], 4),
         "mean_W": round(e["joules_gpu"] / e["seconds"], 2), "idle_fraction": e["idle_fraction"],
-        "idle_W": round(idle["mean_w"], 2), "peak_cuda_gib": round(s["peak_cuda_mem_gib"], 2)}))
+        "idle_W": round(idle_w, 2), "peak_cuda_gib": round(s["peak_cuda_mem_gib"], 2)}))
