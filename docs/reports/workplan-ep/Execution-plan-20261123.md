@@ -298,3 +298,25 @@ The combined candidate passed 34 tests and reproduced the legacy
 report byte for byte. The source is in
 `runs/l7-selector-terminal.GdEMM7`. Protected execution needs
 independently observed runtime and cost receipts.
+
+## L4-C detached label verification
+
+The public scripted comparison replayed with its archived digest
+`8db703232273f5179b65fb0fed97d506bb92490a444b72a85516df6f24d4cbfb`.
+For the revised fixture, replay, write-only, and search spent 12, 7,
+and 6 operation units and passed 3, 3, and 4 checks respectively.
+Reusing the day-one valve label on day two left the 25-unit ledger
+intact and changed write-only and search passes to 4 and 3, reversing
+their cost per pass ranking.
+
+The isolated checker binds each detached label to its scheduled day
+and active source version, with independent execution, plan, and label
+digests. It rejects the stale label with a fresh label digest and
+reports explicitly missing labels. The archive remains reproducible.
+`bash runs/l4c-governed-labels.ZoKA92/verify.sh` exited 0 with 13 tests.
+The independent cost recount and label drift example are in
+`runs/l4c-current.ezL0qG`.
+
+The L4-C author and outcome custodian still need to freeze the matched
+settings and provide captured independent labels. Meter review remains
+necessary before generalizing operation-unit results to provider cost.
