@@ -579,3 +579,33 @@ The retained review and reproduction are in
 The isolated preflight and runner suites passed 13 and 15 tests.
 Protected custody, exact native entry, admission and settlement
 remain open.
+
+## R3-L2 dry renderer, containment and reservation
+
+An offline Spark CPU tokenizer rehearsal tested compact JSON on
+the same 11 public prompts. It preserved the decoded objects and
+changed the prompt bytes. The longest input fell from 57 to 45
+tokens. All 11 fit at the public cap of 50. A prospective renderer
+freeze still needs the protected inventory and a model behavior
+review of the formatting change.
+
+The dry launch plan binds the paired review, public source,
+renderer and exact model and tokenizer manifest. The verifier
+refuses a scripted worker labeled native, a foreign model,
+a writable root, and extra container swap. The retained host
+sample showed 54,986,152 KiB available against 73,400,320 KiB
+for the illustrative 60 GiB container and 10 GiB floor. This
+is a point-in-time check of that envelope.
+
+A separate exact decimal replay binds the same dry plan to the
+historical R2 close. A proposed 0.1 GPU-hour covers the illustrative
+300 seconds plus 60 seconds for cleanup and would leave 65.876877
+program hours and 7.376877 shared R2/R3 hours at that historical
+balance. Eleven tests passed, and repinned crossed-allocation
+and rollback receipts were refused. No reservation was placed.
+
+The joined dry receipt is in `runs/r3-l2-dry-preflight.vsJt1D`,
+SHA-256 `fdc9071aa724e25dbabcf6baf33d4115e3bdef451eeda09ef5e4e2b94189e84c`.
+The host sample and historical balance use separate times. The
+actual native entry point, frozen renderer, current ledger and
+signed admission remain open.
