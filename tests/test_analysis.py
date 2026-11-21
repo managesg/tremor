@@ -157,11 +157,20 @@ class T(unittest.TestCase):
         for k, _ in an.CONTRASTS:
             c = small["contrasts"][k]
             self.assertEqual((c["label"], c["point"], c["ci_boot"], c["resolved"]), (an.NOT_SHOWN, None, None, "unresolved"))
+            self.assertIsNone(c["ci_t"])
+            self.assertEqual(small["hdi"]["contrasts"][k], {"d": None, "lo": None, "hi": None})
+            self.assertIsNone(small["exploratory"]["paired_t"][k])
             self.assertNotEqual(ok["contrasts"][k]["label"], an.NOT_SHOWN)
         self.assertEqual((small["hdi_block"]["interpretable"], small["hdi_block"]["reason"]), (False, an.NOT_SHOWN))
+        self.assertEqual(small["hdi"]["reason"], an.NOT_SHOWN)
+        for key in ("point", "lo", "hi", "denom_ci", "recovered", "degenerate_resamples"):
+            self.assertIsNone(small["hdi"][key])
         text = an.render(small)
         self.assertEqual(text.count(an.NOT_SHOWN), 4)  # three contrasts and the HDI line
-        self.assertNotIn("+0.300", text.split("Secondary")[0])  # no contrast number before the exploratory block
+        self.assertNotIn("+0.300", text)
+        self.assertNotIn("+0.600", text)
+        self.assertFalse(any(line.startswith("paired t") for line in text.splitlines()))
+        self.assertIn("paired t Y_play - Y_none: mean +0.300", an.render(ok))
 
     def test_smaller_than_the_effect_of_interest_label_and_kill(self):
         """prereg sections 11 and 12: hi < 0.20 in both intervals labels the contrast; on the primary it is the kill."""

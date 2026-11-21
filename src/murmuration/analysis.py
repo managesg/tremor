@@ -106,6 +106,7 @@ def summarise(records, kind="model", seed=0, n_boot=10000, margin=0.10):
 
     n counts TASK SETS, never agent-turns. Contrasts and HDI come from stats.hdi, clustered by task set,
     over the task sets present in all three arms (play, code, none), Y averaged within set.
+    Contrast statistics are withheld below the preregistered complete-set floor.
     """
     records = list(records)
     _check(records, kind)
@@ -132,9 +133,11 @@ def summarise(records, kind="model", seed=0, n_boot=10000, margin=0.10):
     rows = [{"set": s, **{a: sum(v[a]) / len(v[a]) for a in ("none", "play", "code")}}
             for s, v in sorted(ys.items()) if all(v.get(a) for a in ("none", "play", "code"))]
     shown = len(rows) >= MIN_TASK_SETS
-    h = stats.hdi(rows, "set", n=n_boot, seed=seed, margin=margin)
+    h = stats.hdi(rows if shown else [], "set", n=n_boot, seed=seed, margin=margin)
+    if not shown:
+        h.update(reason=NOT_SHOWN, degenerate_resamples=None)
     # secondary pre-registered few-cluster guard: paired t on per-set differences, beside the bootstrap
-    pt = {k: stats.paired_t([(r[a], r[b]) for r in rows]) if len(rows) > 1 else None
+    pt = {k: stats.paired_t([(r[a], r[b]) for r in rows]) if shown else None
           for k, (a, b) in {"play_none": ("play", "none"), "code_none": ("code", "none"),
                             "code_play": ("code", "play")}.items()}
     contrasts = {k: _contrast(name, h["contrasts"][k], pt.get(k), k != CONTRASTS[0][0], shown) for k, name in CONTRASTS}

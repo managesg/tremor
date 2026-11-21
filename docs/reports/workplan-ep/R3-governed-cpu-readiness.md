@@ -65,3 +65,23 @@ These closures exercise the public CPU instruments. Native R3 still
 requires frozen cohorts, separate custody and review, exact native
 runner and resource admission, and measured scoring and cleanup.
 [First slices protocol and admission](R3-first-slices-admission.md)
+
+## Paired runner rehearsal
+
+The public rehearsal CLI ran both a warning/neutral pair and a pair stopped
+during the second arm. The completed case used independently prepared
+fixture terms and verified both arms and the captured responses. The stopped
+case retained both arm records, including the failed second-arm attempt,
+and omitted the paired score and completed index.
+
+Both ran in real isolated CPU containers using the same executable and
+read-only source mount. Runtime inspection confirmed no network or GPU
+device requests, one CPU, and a 128 MiB memory limit. Both full container
+IDs were absent after cleanup. The captured responses in this public
+rehearsal are scripted and retained within the same process. Native
+host/worker custody, protected inputs, and launch admission remain open.
+
+The exact source manifest SHA-256 is
+`20038a4f914ab2f2593db5fb56da0f88fdd304c2dc0f04e7152735bfba0ef731`.
+Eighteen focused tests passed. The CLI receipts and rerunnable wrapper
+are under `runs/r3-l2-runner-rehearsal.7ZhUDP`.
