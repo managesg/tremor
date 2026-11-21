@@ -118,3 +118,27 @@ used a network-disabled, read-only CPU container and found zero
 disagreements across 329 statevectors from 65 cases. These are
 public instrument results. Protected fixtures and a host-observed
 delivery and scoring record require independent custody and admission.
+
+## Synthetic custody opening
+
+Run `bash runs/grover-custody-current.JX6TFI/rehearse.sh` from
+the checkout. The script uses invented inventory, opening and
+receipt material. It reproduced the aggregate report byte for byte
+and refused a crossed planner field with CLI exit 2.
+
+The commitment binds canonical bytes under a Grover-specific domain
+and a 32-byte opening. The verifier checks the caller's independent
+receipt digest, protocol and split digests, and custodian ID. It
+rebuilds worker projections and verifier-side task eligibility.
+Static eligibility records which worker may perform each task.
+Runtime readiness still depends on observed receipt release.
+
+The rehearsal checks exact rational branches and rejects relabeled
+duplicate blocks using ordered prerequisites, source incidence,
+solver slots, thresholds and probability traces. Equal traces can
+remain distinct when their source or dependency structure differs.
+The synthetic inventory has one block with eight planned arms and
+one stage each in the hit, no-hit and equality branches. The report
+contains aggregate counts and the commitment. The independently
+appointed custodian, protected split rules and authenticated
+pre-execution receipt are still required for protected assessment.

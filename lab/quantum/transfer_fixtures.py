@@ -43,6 +43,18 @@ class Fixture:
     regime: str
     stages: tuple[Stage, ...]
 
+    def __post_init__(self):
+        earlier = set()
+        for stage in self.stages:
+            if stage.name in earlier or (stage.prerequisite is not None and stage.prerequisite not in earlier):
+                raise ValueError("stage identities must be unique and prerequisites must precede their use")
+            sources = [worker for worker, _ in stage.marks]
+            if (len(set(sources)) != len(sources) or set(sources) - set(WORKERS)
+                    or len(set(stage.solvers)) != len(stage.solvers) or set(stage.solvers) - set(WORKERS)
+                    or not stage.solvers):
+                raise ValueError("stage source and solver roles must have unique known workers")
+            earlier.add(stage.name)
+
     def question_for(self, worker):
         """Expose a worker's local input, including how released evidence is used."""
         if worker not in WORKERS:

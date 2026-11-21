@@ -498,3 +498,21 @@ read-only Spark CPU run compared 329 statevectors with QGrid across
 [Detailed public evidence](Grover-topology-scripted.md#mixed-roles-and-complete-dispatch).
 Protected acceptance still depends on completed EP-1, authenticated
 custody and projected delivery, separate admission and settlement.
+
+## M7 synthetic custody opening
+
+The custody rehearsal opens canonical private bytes against a
+separately pinned receipt, bound protocol, split rule and custodian
+ID. It reconstructs worker questions, verifier-side static task
+eligibility, stage dependencies and the complete eight-arm schedule.
+Exact rational scoring produced one hit, one no-hit and one equality
+boundary in the synthetic inventory.
+
+The verifier refuses a wrong opening, a changed freeze, an extra
+private field in either projection, and duplicate equivalent block
+content with fresh labels. A private shard mutation changed only
+the source worker's projection before any release. Fifty-three
+combined tests passed. See [reproduction and scope](Grover-topology-scripted.md#synthetic-custody-opening).
+Independent receipt authentication, the frozen protected split,
+runtime readiness and delivery witnesses, and native admission
+remain outstanding.
