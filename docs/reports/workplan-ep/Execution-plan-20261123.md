@@ -320,3 +320,31 @@ The independent cost recount and label drift example are in
 The L4-C author and outcome custodian still need to freeze the matched
 settings and provide captured independent labels. Meter review remains
 necessary before generalizing operation-unit results to provider cost.
+
+## L4 memory size, selection and rendered prompt
+
+The legacy `loaded_bytes` field measures resident note text. An
+independent replay pruned one duplicate and cut resident text from
+24 to 12 bytes while the scripted task still selected the same
+12-byte note. At cap 2, pruning left enough budget for a lookup
+that had been skipped. The replay keeps the skipped selection
+unavailable.
+
+The archived planted replay's first night removed a false stored
+note. Resident text fell from 26 to 12 bytes and isolated Qwen note
+tokens fell from 8 to 4. Rendering the entire store with a fixed pH
+question and the pinned Qwen3.5-4B chat template yielded 45 to 40
+tokens with newline-joined notes and 48 to 42 with a JSON list. The
+other eleven nights had identical before and after measures. The
+two rendering policies were chosen for this public comparison.
+The archived replay captured no prompt dispatch or usage.
+
+`bash runs/l4-rendered-archive.8Yl9ox/run.sh` reproduced the report
+byte for byte in a network-disabled CPU container. Direct template
+tokenization matched encoding of the rendered text in every case.
+Report SHA-256
+`8b0f14994c83f16d1a1ed33fe9aa28c568646c45fb29a2b8339ef66d37f9eb20`.
+The scripted selection reproduction is in
+`runs/l4-render-scope-recount.QITnsl`. Protected comparison needs
+the selected note order, rendered prompt/input-ID receipt and
+metering per dispatch, including preparation and retries.
