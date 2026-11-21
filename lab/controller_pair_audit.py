@@ -124,8 +124,9 @@ def _outcome(block, arm, row, manifest, prior, witness=None):
             base["completion_safeguard"] = _completion_safeguard("unavailable_noncompleted_arm")
         return {**base, "distinct_passing": None}
     selection._require(not unknown and not overruns, "completed arm has unaccounted usage or exceeded a cap")
-    selection._require(any(attempt["role"] == "worker" for attempt in row["attempts"]),
-                       "completed arm lacks any worker observation")
+    selection._require(any(attempt["role"] == "worker" and attempt["status"] == "completed"
+                           for attempt in row["attempts"]),
+                       "completed arm lacks a completed worker observation")
     primary, score = alloc.score(work, taskset), alloc2.score(work, taskset)
     selection._require(score["valid"] and not alloc2.compare(primary, score),
                        "completed arm failed independent work scoring")

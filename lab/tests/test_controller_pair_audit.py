@@ -90,6 +90,28 @@ class ControllerPairAuditTests(unittest.TestCase):
         self.assertNotIn("release_witness_sha256", result)
         self.assertNotIn("completion_safeguard", pair["arms"][0])
 
+    def test_failed_workers_do_not_turn_a_missing_observation_into_zero_work(self):
+        self.rows[1]["attempts"] = [
+            self.attempt(0, "worker", status="failed", cpu=3),
+            self.attempt(1, "worker", status="failed", cpu=4),
+            self.attempt(2, "observation"),
+        ]
+        with self.assertRaisesRegex(ValueError, "completed arm lacks a completed worker observation"):
+            audit.verify(**self.freeze())
+
+        self.rows[1]["terminal"] = "stopped"
+        stopped = audit.verify(**self.freeze())
+        self.assertEqual(stopped["complete_pairs"], 0)
+        self.assertIsNone(stopped["pairs"][0]["paired_delta"])
+        self.assertEqual(stopped["arm_resource_receipts"]["combined"]["known_usage"]["cpu_wall_ns"], 9)
+
+        self.rows[1]["terminal"] = "completed"
+        self.rows[1]["attempts"][1]["status"] = "completed"
+        completed = audit.verify(**self.freeze())
+        self.assertEqual(completed["complete_pairs"], 1)
+        self.assertEqual(completed["pairs"][0]["arms"][1]["distinct_passing"], 0)
+        self.assertEqual(completed["pairs"][0]["paired_delta"], "-1/3")
+
     def test_v2_independent_scorer_counts_false_done_and_preserves_primary(self):
         combined = self.rows[1]["attempts"]
         correct = combined[0]["work"]
