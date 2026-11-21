@@ -92,3 +92,27 @@ They establish technical CUDA behavior and accounting, respectively.
 
 [Checkpoint and CPU evidence](Second-family-candidate-Smollm3.md) ·
 [Spark guard and resource evidence](Spark-readiness.md)
+
+## Cross-family tokenizer check
+
+The pinned CPU container rendered `Return exactly [1].` with the staged
+Qwen3.5-4B and SmolLM3-3B tokenizers. The native template's direct token IDs
+matched rendering followed by encoding with `add_special_tokens=False`
+in all four cases. The default encoder also matched on these fixtures.
+
+| Model | Thinking disabled | Thinking enabled |
+| --- | ---: | ---: |
+| Qwen3.5-4B | 17 input tokens | 15 input tokens |
+| SmolLM3-3B | 73 input tokens | 253 input tokens |
+
+The SmolLM3 disabled-mode token digest matched the frozen smoke worker.
+The paired replication should pin thinking mode alongside the renderer
+and account for actual tokens in each family's tokenizer. These counts
+describe one public prompt. The replication cohort, effective scoring and
+GPU performance remain unmeasured.
+
+The rerunnable check and receipt are in
+`runs/replication-smollm3-staging.out5A0/render-parity.Ehwtrv`. The
+receipt binds the two sets of tokenizer files and all four rendered
+prompt and token-ID digests. Its SHA-256 is
+`345845705557b0f454b1fd8fab321bda3a7ecce1d2c999405523f09cfef9eeb9`.
