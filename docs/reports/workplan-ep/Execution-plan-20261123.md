@@ -434,3 +434,29 @@ interrupted arm retained an unavailable adoption count. See
 The native runner still needs to issue these bindings at the host
 boundary and retain authenticated request and terminal evidence.
 Protocol, protected cohort and resource admission remain open.
+
+## R3-L5 dispatch and stop identity
+
+The completed archive has 96 delivery records and eight distinct
+worker acknowledgment bodies. The old auditor accepted a sidecar
+that swapped two container IDs between the clean and disrupted
+conditions. The partial-matrix archive also accepted a recycled
+stop under a different seed and condition after the index was repinned.
+
+The isolated delivery path binds the plan, run, scheduled frame,
+container ID and transport token to the worker's named requests and
+acknowledgment. The separate stop verifier joins a structured barrier
+to its schedule, open attempt, Board prefix and observed child exit.
+Twenty delivery tests and three stop tests passed. The legacy replay
+remained byte-identical. The completed wire test joined all 96
+synthetic attempts.
+
+A bounded Spark run used two real isolated CPU containers. The first
+returned a bound acknowledgment. The second was interrupted after
+its first bound request. Exact-ID removal was confirmed for both.
+A separate CPU child emitted a structured `code:clean` barrier and
+was reaped with one open attempt and no comparison. Evidence and
+reproduction scripts are in `runs/l5-condition-current.Pjhcxc`.
+
+These checks used public fixtures. Protected L5 still needs a frozen
+cohort, independent host custody and an admitted native runner.
