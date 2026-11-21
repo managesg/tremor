@@ -161,3 +161,30 @@ score of 1 and left the final score unavailable. The setup-only
 prefix left both unavailable. The historical public archive
 reproduced byte for byte. This replay covers deterministic public
 Board evidence. Protected actor and observer custody are separate.
+
+## Fresh joined CPU container identity
+
+Two serial CPU fixture runs used the pinned night-loop patch source.
+Both passed the same ten focused tests. Each retained the scheduled
+container name, full create ID, and a single Docker inspection with
+both name and ID. The verifier joins those records to the attachment
+exit, exact removal, independent absence query, and UTC host window.
+Both containers used the pinned image, one CPU, 1 GiB RAM, a read-only
+root, disabled networking, and no GPU devices.
+
+A copy with only the two inspection IDs exchanged was independently
+rehashable and retained the original names and time windows. The
+detached verifier refused it with exit 2. Reproduce the retained replay
+from `runs/r1-joined-container-proof.Ytq6pf` with:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -B verify.py capture index.json \
+  --index-sha256 5350c445219d83174ab76ba65deab72fd753f41c2d0c8ad694a1b11c6cab7194
+```
+
+The replay report SHA-256 is
+`fba1b3618fefcf462f8a7290957e55ca30e6b8674faeb7d462cdc39f9df7bfb4`.
+These fixture captures establish the new identity join. The earlier
+full-suite receipts retain their original captured fields. Candidate
+nomination, quiet-host qualification, fresh per-module Opus review,
+and the independent bench verdict remain open.
