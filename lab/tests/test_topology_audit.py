@@ -21,7 +21,7 @@ class TopologyAuditTests(unittest.TestCase):
             audit(raw + b" ", expected_sha256=report["sha256"])
 
     def test_budget_boundaries_and_stage_utility(self):
-        for budget in (1, 3, 13, 22):
+        for budget in range(1, 32):
             with self.subTest(budget=budget):
                 result = audit(json.dumps(compare(budget=budget)).encode())
                 self.assertTrue(all(0 < c["spent"] <= budget for case in result["cases"] for c in case["cells"]))
@@ -66,6 +66,24 @@ class TopologyAuditTests(unittest.TestCase):
         plan["cost"] = 0
         with self.assertRaisesRegex(ValueError, "event cost"):
             audit(json.dumps(report).encode())
+
+    def test_rejects_extra_plan_fields_and_assignments_even_with_fresh_digests(self):
+        for method, field, value, message in (
+            ("row", "raw_answers", {"a": [0]}, "unexpected plan event fields"),
+            ("assignments", "outsider", "shard/join/a", "plan assignments differ"),
+            ("assignments", "c", "join", "plan assignments differ"),
+        ):
+            with self.subTest(method=method, field=field):
+                report = compare()
+                arm = next(arm for arm in report["cases"][0]["arms"]
+                           if arm["mode"] == "fixed_lead" and arm["evidence_access"] == "own")
+                plan = next(row for row in arm["trace"] if row["kind"] == "plan")
+                self.assertEqual(plan["assignments"], {"a": "shard/join/a", "b": "shard/join/b"})
+                target = plan if method == "row" else plan["assignments"]
+                target[field] = value
+                raw = json.dumps(report).encode()
+                with self.assertRaisesRegex(ValueError, message):
+                    audit(raw, expected_sha256=hashlib.sha256(raw).hexdigest())
 
 
     def test_rejects_unknown_actors_for_worker_metadata(self):

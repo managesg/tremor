@@ -57,3 +57,31 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m lab.quantum.topology_audit \
   /path/to/grover-topology-scripted-trace.json \
   --expected-sha256 6ce893d3c05d06df563dde15086bc3764e1e1b0efdcceebb650b303210115bdc
 ```
+
+## Planner input and serialized assignment verification
+
+The scripted coordinator now computes readiness before calling the
+planner. The planner receives ordered task IDs and immutable per-worker
+sets of ready task IDs. The coordinator retains the worker observations
+and full receipt payloads. A spy test confirms that the planner receives
+no shard contents, answer payloads, or worker views under either access
+condition.
+
+The serialized auditor reconstructs expected assignments independently
+from public task order, eligible workers, and earlier visible receipt
+IDs. It rejects extra planner fields, unknown workers in assignments,
+and assignments with missing prerequisites even when the supplied
+digest matches the modified trace.
+
+The pinned local source closure is
+`runs/grover-planner-projection.XwHcCX/source`, manifest SHA-256
+`22e3ed56113cfc8c430055560a8d71bb4a50fcc8d1d3fffaafff358ac5b49295`.
+Twenty-six isolated tests passed. Across caps 1 through 32, the auditor
+replayed 1,024 public arms and 1,038 planner events. Sweep receipt
+`ab5dd8a1f6b371ca1994b3f3411bb0b1e44d883bdd34ca74a918aa8ddf2f59d1`.
+The default arithmetic, crossed arithmetic, Grover trace and Grover audit
+all matched their archived bytes.
+
+The evidence covers public scripted tasks and in-process information
+flow. Protected transfer still requires the frozen protocol, independent
+custody, EP-1 dependency and exact native admission.

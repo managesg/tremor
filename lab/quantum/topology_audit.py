@@ -13,6 +13,7 @@ MODES = ("independent", "fixed_lead", "rotating_lead", "peers")
 ACCESS = ("own", "shared")
 PAID = frozenset(("read", "plan", "blocked", "assign", "claim", "claim_conflict",
                   "handoff", "work", "verify", "merge"))
+PLAN_FIELDS = {"actor", "assignments", "cost", "event", "kind", "round"}
 
 
 def _check(ok, message):
@@ -49,6 +50,21 @@ def _expected(stage, target):
     return None
 
 
+def _expected_assignments(eligible, dependencies, receipts, round_id, access):
+    visible = {worker: {task for task, owner, issued, _ in receipts.values()
+                        if issued < round_id and (access == "shared" or owner == worker)}
+               for worker in WORKERS}
+    assignments = {}
+    for task, solvers in eligible.items():
+        for worker in WORKERS:
+            ready = visible[worker]
+            if (worker in solvers and worker not in assignments and task not in ready
+                    and all(dependency in ready for dependency in dependencies[task])):
+                assignments[worker] = task
+                break
+    return assignments
+
+
 def _arm(arm, stages, shards):
     mode, access, budget = (arm[key] for key in ("mode", "evidence_access", "budget"))
     _check(type(budget) is int and budget >= 1, "invalid budget")
@@ -59,13 +75,16 @@ def _arm(arm, stages, shards):
     work = {}
     view_reads = {}
     plans, authorized, claims = {}, set(), {}
-    eligible = {name: stage.solvers for name, stage in stages.items()}
-    eligible.update({name: (owner,) for name, (owner, _) in shards.items()})
-    dependencies = {name: [] for name in eligible}
-    for name in stages:
-        dependencies[name].extend(shard for shard in shards if shard.startswith(f"shard/{name}/"))
-        if stages[name].prerequisite:
-            dependencies[name].append(stages[name].prerequisite)
+    eligible, dependencies = {}, {}
+    for name, stage in stages.items():
+        stage_shards = [shard for shard in shards if shard.startswith(f"shard/{name}/")]
+        for shard in stage_shards:
+            eligible[shard] = (shards[shard][0],)
+            dependencies[shard] = []
+        eligible[name] = stage.solvers
+        dependencies[name] = stage_shards
+        if stage.prerequisite:
+            dependencies[name].append(stage.prerequisite)
     read_order = [[], [], []]
     prior_round = 0
     attempted = None
@@ -110,7 +129,10 @@ def _arm(arm, stages, shards):
             lead = WORKERS[0] if mode == "fixed_lead" else WORKERS[round_id]
             _check(mode in ("fixed_lead", "rotating_lead") and actor == lead and round_id not in plans,
                    "incorrect plan authority")
-            plans[round_id] = row["assignments"]
+            _check(row.keys() == PLAN_FIELDS, "unexpected plan event fields")
+            expected = _expected_assignments(eligible, dependencies, receipts, round_id, access)
+            _check(row["assignments"] == expected, "plan assignments differ from fixture readiness")
+            plans[round_id] = expected
         elif kind == "assign":
             lead = WORKERS[0] if mode == "fixed_lead" else WORKERS[round_id]
             worker, task = row["worker"], row["task"]
