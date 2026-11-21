@@ -120,3 +120,24 @@ and rejects this swapped match before scoring. The historical
 development replay remained byte-identical. Candidate and patch are
 in `runs/l4b-governed-role.zo431i` pending integration and protected
 protocol freeze.
+
+## L6 matched comparison verification
+
+The matched and sequential public reports reproduced byte for byte.
+Neither evidence policy reduced unused grant exposure in this
+fixture. Both blocked fewer legitimate requests than the baselines,
+and both recorded one more violation than the fixed rule. Unresolved
+verdicts allow the total-violation difference versus the time box to
+range from −1 to +1 for evidence leases and −1 to +2 for the sequential
+candidate. These are bounds over the retained fixture's missing
+outcomes.
+
+Two isolated changes bind exposure to recorded lease state and
+restrict sequential freshness, renewal, and revocation to the
+target scope. The combined candidate rejected fabricated opening
+exposure and preserved decisions under unrelated-scope interleaving.
+Twenty tests passed and both historical reports reproduced.
+The source, archive, and missing-outcome recount are in
+`runs/l6-current-accounting.toX4pV`. The scientific comparison still
+requires independent outcome custody, disjoint baseline tuning, the
+frozen sequential assumptions, and exact run admission.
