@@ -204,3 +204,25 @@ byte-identical legacy replay. The isolated source and script are at
 `runs/l3-governed-refit.PPSejK`. Protected source-family custody,
 an author decision on the primary and fallback, and matched actual
 call evidence remain open.
+
+## L5 carrier parity and public grader custody
+
+The current public instrument rebuilt and verified the 200-arm
+carrier matrix and reproduced all archived report fields, including
+1,200 work attempts and 960 named reads. The custody record itself
+has a new instrument digest. The verifier correctly refused the old
+record against the current source.
+
+The carrier auditor now checks every scheduled phase and worker
+against the pinned taskset. It rejected a rehashed memory arm that
+gave one worker the same phase read twice and omitted another
+worker while preserving the total. The public sibling grader now
+derives its frame from the verified Board prefix, rejects a differing
+callback view, and reconciles the norm verdict even for refused work.
+
+The combined isolated source passed 32 tests. The 20-arm archived
+delivery audit reproduced byte for byte. All six public grading cases
+matched the archive apart from the expanded evaluator source digest.
+The sources and receipts are in `runs/l5-parity-current.3fZo4P`.
+Protected N2 predicate, blind custody, formal review, and exact native
+admission remain open.
