@@ -775,3 +775,11 @@ rejected even with a fresh report digest and unchanged counters. Two
 tests passed in `runs/topology-retained-pipe.JVoPBh`. Exit and reaping
 remain parent observations in this replay. Protected measurements and
 independent custody remain outstanding.
+
+Independent review found that the first report assertion could accept
+an undercount because its exit status reflected only the last candidate.
+The revised assertion requires exactly the three expected variants and
+checks all three in one result. The final replay rejected both an
+undercounted candidate and an omitted candidate. This run used the
+pinned checkout spend code. The isolated UTC rollover candidate still
+needs to be integrated and reviewed with the eventual driver.
