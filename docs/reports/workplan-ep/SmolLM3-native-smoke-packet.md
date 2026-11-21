@@ -50,9 +50,8 @@ synthetic CUDA unit checks leave CUDA runtime compatibility unmeasured.
   on uncertainty or an overrun. The R2/R3 balance and historical T7 hold
   have distinct purposes.
 
-The worker plan does not open a GPU run. The launcher and resource owner
-need to bind the reviewed envelope, shared pending-attempt check, exact
-container and reservation before execution.
+The worker plan does not open a GPU run. The run needs an independently
+pinned admission and a separately placed replication reservation.
 
 ## Verified pre-start components
 
@@ -68,13 +67,28 @@ inspection format was exercised against an isolated CPU-only container.
 CUDA device and mount refusals were tested with synthetic inspect output.
 The actual CUDA create and attachment remain unverified.
 
-The offline settlement verifier keeps replication and program balances
-separate and requires independently pinned worker and host receipts before
-release. Launcher integration still needs fresh window and memory checks
-under the common lock immediately before start, durable registration of the
-pending attempt before Docker creation, and exact cleanup and reaping. A
-separate worker-metric check must confirm the CUDA result before it counts
-as a successful technical smoke.
+## Connected launch review
+
+The guarded launcher now performs the window and memory recheck under
+the common lock, records pending intent before Docker creation, and acts on
+the exact inspected ID. It keeps a separate pre-start inspection file and
+clears the shared pending state only after confirmed removal, attachment
+reaping and durable capture. The shared journal retains its existing
+container-name format. The smoke uses its own admission and allocation.
+
+The exact local review bundle is
+`runs/replication-smollm3-staging.out5A0/native-launch-review`.
+Its source manifest SHA-256 is
+`145a26e2a49564c72bee37f7525079ae17ed565d462d037a261b07c3b27413be`.
+Forty focused tests passed in that isolated tree. A mocked launch produced
+receipts that passed both the semantic CUDA worker check and the replication
+settlement check. The reservation stayed held until an exact synthetic
+settlement was supplied. This exercises the launcher and receipt chain
+without making a live CUDA result or changing the ledger.
+
+The run operator needs the live admission and reservation pins to execute
+this exact path. The worker check and the settlement check remain separate.
+They establish technical CUDA behavior and accounting, respectively.
 
 [Checkpoint and CPU evidence](Second-family-candidate-Smollm3.md) ·
 [Spark guard and resource evidence](Spark-readiness.md)
