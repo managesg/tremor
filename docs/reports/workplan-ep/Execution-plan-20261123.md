@@ -277,3 +277,24 @@ readback verified 21 pinned receipts and the R2 settlement and
 hosted API ledger. The final report remains open pending protected
 outcomes, claims verification and provider resource reconciliation.
 [Internal checkpoint](Portfolio-evidence-and-resource-reconciliation-20261121.md)
+
+## L7 selector terminal receipt
+
+The old public replay accepted opposite terminal outcomes for the
+same plan and identical review results if the outcome report was
+repinned. Reclassifying a cancellation as completed added one
+selection unit and changed unavailable utility to one. Reclassifying
+a completed empty selection removed the selector charge and replaced
+measured zero utility with unavailable utility.
+
+The isolated verifier uses a separately pinned witness of the plan,
+ordered reviewed artifacts, terminal state, charge, and selected
+artifact. It refused both crossed reports. The scripted completion
+charges one unit even when utility is zero. A witnessed cancellation
+before selection starts charges zero and leaves utility unavailable.
+Missing or interrupted terminal evidence is refused.
+
+The combined candidate passed 34 tests and reproduced the legacy
+report byte for byte. The source is in
+`runs/l7-selector-terminal.GdEMM7`. Protected execution needs
+independently observed runtime and cost receipts.
