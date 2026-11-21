@@ -802,3 +802,29 @@ the cutoff can retain its old price pin even when the stale reservation
 is refused. A new price sheet cannot replace that pin without the
 existing continuity decision. The preregistration, pricing, exact
 driver and provider gates remain open.
+
+## SmolLM3 preclaim binding and public Pilot 3 wording
+
+The isolated SmolLM3 check binds the launcher input identity, worker
+plan and complete normalized container recipe to a synthetic admission
+and reservation before the mocked claim or create. Independent review
+found that a foreign preflight ID initially reached those steps. The
+fixed version refuses that ID and separately crossed preflight and
+create plans. All 73 tests passed in
+`runs/smol-review-launch-join.RtBV9f`. The stock launcher is unchanged.
+
+A separate real read-only preflight rehashed all 6,167,546,549 staged
+snapshot bytes and the four worker files. The result matched the same
+synthetic review and stock recipe. A crossed preflight identity was
+refused. The verifier and receipt are in
+`runs/smol-real-preflight-dry-join.B0LLWs`. The recorded synthetic time
+and reservation establish a local integration check. A reviewed live
+envelope, reconciled reservation and one-use issuance remain open.
+
+The local public-release README now distinguishes the 150-token
+Pilot 3 clearance ceiling from the 300-token generation cap. The
+archive replay verified 240 normal stops, zero cap stops, 25 second-round
+overages and a longest response of 263 tokens. The three core conditions
+accounted for 13 of the 25 overages. The local release commit is
+`a99cddd`. The replay and seven tests passed in
+`runs/pilot3-release-claims.K315er`.
