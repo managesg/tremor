@@ -54,5 +54,27 @@ The worker plan does not open a GPU run. The launcher and resource owner
 need to bind the reviewed envelope, shared pending-attempt check, exact
 container and reservation before execution.
 
+## Verified pre-start components
+
+The offline preflight rehashed the staged model and four-file native
+worker mount, then matched a synthetic admission to its exact replication
+reserve. It refused the same reserve with a different admission ID.
+The receipt is `offline-prestart-inputs.json` in the staging run root.
+No live admission was written.
+
+The pre-start container recipe pins the image, worker command, device,
+read-only mounts, selected environment, and temporary filesystem. The
+inspection format was exercised against an isolated CPU-only container.
+CUDA device and mount refusals were tested with synthetic inspect output.
+The actual CUDA create and attachment remain unverified.
+
+The offline settlement verifier keeps replication and program balances
+separate and requires independently pinned worker and host receipts before
+release. Launcher integration still needs fresh window and memory checks
+under the common lock immediately before start, durable registration of the
+pending attempt before Docker creation, and exact cleanup and reaping. A
+separate worker-metric check must confirm the CUDA result before it counts
+as a successful technical smoke.
+
 [Checkpoint and CPU evidence](Second-family-candidate-Smollm3.md) ·
 [Spark guard and resource evidence](Spark-readiness.md)
