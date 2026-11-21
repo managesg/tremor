@@ -1,21 +1,88 @@
-<p align="center"><img src="video/hero-paper.png" alt="A team of 32 agents writing to and reading from five shared tables: board, notes, memory, monitor log and landed work" width="100%"></p>
+# TREMOR
 
-<p align="center">
-<b>Measure how a team of agents responds, then use the measurement to run the team.</b><br>
-Research proposal · complex systems and first principles for AI agent teams · <a href="WORKPLAN.md">Work plan</a> · <a href="#see-it-in-50-seconds">Video</a>
-</p>
+**A research testbed for how AI agent teams coordinate, share memory, and catch errors.** We test
+whether measurements of team behavior can guide where to spend verification, monitoring, and compute
+at the same total cost.
 
----
+[Preliminary results](#preliminary-results) · [Research lines](#eight-research-lines) ·
+[Work plan](WORKPLAN.md) · [Scientific references](RESEARCH.md) ·
+[60-second explainer](#see-it-in-60-seconds) · [Contact](#contact)
 
-## See it in 50 seconds
+## Why I started TREMOR
 
-<p align="center"><img src="video/tremor-explainer.gif" alt="Explainer: a team writing to and reading from shared tables; a wrong note spreading and being quarantined; tasks verified where reruns disagree; monitors and verification placed by the statistic; overnight dreaming with a verifier and a threshold where errors start to grow; the eight research lines" width="100%"></p>
+This project grew out of more than two years of hands-on work with AI agents and years of work and
+research on complex systems, artificial agents, and agent-based modeling. I’m increasingly interested
+in what philosophy, psychology, sociology, political science, and complex-systems research can teach
+us about evaluating and improving agent teams. Those fields offer ways to frame the questions, develop
+practical heuristics, and design assessments for how teams coordinate, distribute responsibility, and
+recover from errors.
 
-How to read it: **red lines are writes** from an agent (top row) to a shared table, **green lines are
-reads** from a table back to an agent (bottom row). Each scene shows one idea: a wrong note spreading
-and being quarantined, verification placed where reruns disagree, monitors placed by the statistic,
-and overnight "dreaming" that replays memory through a verifier. **All numbers in the video are
-illustrations, not results.**
+Anthropic’s published research and the directions outlined for its Residency helped shape the agenda,
+especially scalable oversight, AI control, and interpretability. Recent talks and conversations with
+people at Anthropic at the AI Engineer Code Summit in San Francisco gave me concrete examples to
+think through, including how agents coordinate over long tasks and what changes when they consolidate
+memory. TREMOR is my independent research project.
+
+— Alejandro Delmar
+
+[AI Engineer Code Summit 2026](https://ai.engineer/code/2026) ·
+[Lance Martin’s talk on coordination and memory](https://ai.engineer/code/2026/talks/lance-martin) ·
+[Anthropic Residency research directions](https://alignment.anthropic.com/2026/anthropic-residency/)
+
+## From scaling models to scaling teams
+
+Language-model scaling studies showed how training loss changes with model size, training tokens,
+and compute, and helped researchers decide how to allocate a training budget. Agent systems add
+another problem of allocation. Given a budget for inference, tools and verification, who should
+work on what, who can commit a decision, and when should another agent intervene? Studies of agent
+systems already find that the value of coordination depends on the task and architecture. [Scaling and agent-system studies](RESEARCH.md#scaling-models-and-agent-systems)
+
+TREMOR treats these questions as a complex-systems problem. When agents share a board or memory,
+one agent's local action changes what others see and can do. A claim can prevent duplicate work or
+block the only worker who can finish it. A verified note can let several agents combine partial
+solutions. An unchecked note can turn one error into agreement across the team. These effects can
+change with task dependencies, team size, and where decision authority sits. We will measure both
+the work completed and the interaction traces that explain how it happened. [Collective behavior and emergence](RESEARCH.md#collective-behavior-and-emergence)
+
+The **principal–agent problem** gives us a way to ask who sets the goal, who has the evidence and
+authority to act, and who can check the outcome. The **trust ladder** makes delegation testable:
+an agent may first propose an action, then earn a scoped permission through verified work. The
+permission can expire or be revoked, and unresolved decisions can escalate to a lead or human.
+We will measure both harmful over-grants and useful work blocked by an overly restrictive rule.
+[Delegation, oversight, and trust](RESEARCH.md#delegation-oversight-and-trust)
+
+The release standard draws on **Petri**, **Persona Vectors**, and **Subliminal Learning**, three
+past Fellows projects featured in Anthropic’s Residency announcement. TREMOR aims to publish a
+reusable evaluation bench, reproducible traces and scorers, controlled interventions, and a
+held-out replication with clear limits on what the results establish.
+[Residency research comparators](RESEARCH.md#residency-research-comparators)
+
+## Preliminary results
+
+**Pilot 3 selected shared task order. It also found that second-round replies can exceed the
+experiment’s output limit.** EP-1, the confirmatory experiment, remains in draft.
+
+| Check | What we observed |
+|---|---|
+| Scorer agreement | Two Python scorers and one Lean 4 scorer agreed on 10,000 seeded, scripted logs. This checks agreement on those logs. |
+| QGrid simulator cross-check | QGrid's NumPy statevector simulator and TREMOR's independent gate-level simulator agreed on 329 statevectors across 65 Grover-search cases within the stated tolerances. This validates an offline instrument for a planned held-out task family. |
+| First two pilots | Both stopped under predefined rules. The first exposed reply-budget pressure from hidden reasoning. The second exposed parsing failures when replies included prose before JSON. |
+| Pilot 3 | Completed 30 episodes and 240 calls with zero voids or transport aborts. Shared task order was the only order that passed the predefined selection rule. |
+| Reply-length clearance | 13 of 144 replies in the three EP-1 conditions exceeded the 150-token ceiling. All 13 came in round two and had prose before the JSON action array. The longest reply used 263 tokens. |
+
+**What EP-1 will test.** How much of the benefit of enforcing *claim before work* in code can a short
+instruction card recover? Pilot 3 selected a task order for that comparison. It did not estimate the
+card’s effect. A revised second-round instruction has passed scripted checks and still needs
+prospective review and live clearance. [Current workplan](WORKPLAN.md#where-we-are-2026-11-20)
+
+## See it in 60 seconds
+
+<p align="center"><img src="video/tremor-explainer.gif" alt="TREMOR explainer illustrating shared state, quarantine, targeted checks, monitoring, and memory consolidation. The observed Pilot 3 scene shows 30 episodes, 240 calls, zero voids, selection of shared task order, and a longest reply of 263 tokens against the 150-token clearance ceiling." width="100%"></p>
+
+The opening scenes illustrate how agents share state, how a wrong note spreads, and where to place
+verification and monitoring. Red lines show writes and green lines show reads. The closing
+**Observed · Pilot 3** panel shows measured instrument results. The preliminary-results table above
+provides a text version.
 
 ## In one paragraph
 
@@ -27,9 +94,6 @@ recovers from a shock. TREMOR measures those properties from logs and turns each
 **algorithm that decides where scarce resources go**: verification, monitor calls, memory, permissions
 and team structure. Every algorithm must beat a named baseline at equal budget, and every prediction
 carries a criterion that can kill it.
-
-> **Status.** Research proposal plus a working, verified instrument. **No hypothesis has been tested
-> yet and no result here is a finding.** Failures will be published alongside successes.
 
 ## The problem
 
@@ -117,6 +181,10 @@ All eight lines run on one bench, so their results can be compared and combined.
   (66 theorems, standard axioms only, no `sorry`). Any disagreement voids the run.
 - **Seeded shocks and planted notes** with clean twins as controls, so responses and contagion can be
   measured rather than guessed.
+- **A quantum circuit simulator** that runs locally using classical statevectors. Its JSON output
+  compares each step of Grover search with an analytic reference. The planned held-out task family
+  will use this tool to test whether coordination effects transfer beyond arithmetic tasks.
+  [Run the simulator and read the QGrid cross-check](RESEARCH.md#qgrid-and-the-quantum-simulator)
 - **Hard spend limits in code**, with a ledger checked before and after every model call and runs that
   stop themselves on pre-written rules.
 - **Two kinds of models:** hosted Claude models at small and frontier tiers, and open-weight models run
@@ -129,17 +197,16 @@ All eight lines run on one bench, so their results can be compared and combined.
 | Task board, router, practice cards, perturbation and planted-note tools | Built; checked on scripted agents |
 | Three agreeing scorers, one proved in Lean 4 | Built; 0 disagreements on 10,000 seeded logs |
 | Spend ledger with hard caps | Built; independent reviews plus tests that break it on purpose |
-| First calibrated measurement: an instruction card against the same rule enforced in code | Pre-registered, not yet frozen |
+| First calibrated measurement: an instruction card against the same rule enforced in code | Preregistration drafted, awaiting clearance and freeze |
 | Research lines 1 to 8 | Designed; not started |
 
-**Instrument pilots so far.** Two short pilots on a small Claude model each stopped themselves on a rule
-written in advance. The first showed that hidden reasoning was using up the reply budget. The second,
-with reasoning turned off, showed the model writing its reasoning as prose before a correct answer.
-Both are instrument findings, being fixed before any measurement. Neither is a result.
+### Can leadership move with the work?
 
-**Early observation (not evidence).** Identical agents herd: in the pilots, all four agents often
-claimed the same first task. Giving each agent its own task order removed duplicate work in a handful
-of episodes. Herding is the kind of collective effect this project is about, and line 5 studies it.
+An additional experiment compares independent contributors, a fixed orchestrator, rotating lead/helper
+roles, and local coordination through shared claims. We’ll measure verified output at equal total
+cost, including coordination and verification. The comparison for emergence is the verified,
+deduplicated output of the same number of independent contributors. This is a planned test within
+the coordination and team-size research lines.
 
 ## Roadmap
 
@@ -160,9 +227,11 @@ The full work plan, with gates and rules, is in **[WORKPLAN.md](WORKPLAN.md)**.
 1. **No repeatable response:** a statistic measured on one set of seeds does not predict itself on another.
 2. **Allocation never helps:** the techniques fail against uniform, random or tuned baselines at equal budget.
 3. **No dose-response and no thresholds:** the complex-systems ideas add nothing over ordinary ablations.
-4. **Scripted agents reproduce everything:** the effects are about loops, not about language models.
 
-If all four hold, we publish the negatives and keep the bench.
+Scripted agents provide a separate boundary test. If they reproduce an effect, we can study which
+parts of the coordination mechanism are sufficient to produce it.
+
+If the predictions fail, we publish the negative results and keep the bench.
 
 ## How the work is done
 
@@ -180,13 +249,6 @@ never the scope of the questions.**
 - Not offensive security work. Contagion and poisoning experiments use benign stand-ins, under a
   dual-use boundary written down before any run.
 
-## Inspiration
-
-The problems were shaped by four talks at the AI Engineer Code Summit 2026, on thousand-agent teams,
-memory and dreaming, bounded autonomy, trust, and reliability; by the complex-systems literature on
-fluctuation and response, epidemics, stigmergy and renormalization; and by published research
-directions in AI safety on oversight, model organisms, interpretability and agent behaviour.
-
 ## Contact
 
-[owner to add]
+Alejandro Delmar · [adelmar@seabridge.ai](mailto:adelmar@seabridge.ai)
