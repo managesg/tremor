@@ -58,9 +58,10 @@ def initial_state(n):
 
 
 def grover_states(n, marked, k):
-    """Statevectors after 0..k iterations (list of length k+1)."""
+    """Statevectors after 0..k iterations with one fixed marked set."""
     if n < 1 or k < 0:
         raise ValueError("need n >= 1 and k >= 0")
+    marked = tuple(marked)
     state = initial_state(n)
     out = [state]
     for _ in range(k):
