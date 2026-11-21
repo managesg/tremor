@@ -44,3 +44,16 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src:lab:tests python3 -m unittest -v \
 The 32-cell JSON replay reproduced SHA-256
 `6ce893d3c05d06df563dde15086bc3764e1e1b0efdcceebb650b303210115bdc`. Both historical arithmetic
 topology traces reproduced byte for byte. [Coordinator](../../../lab/topology.py) · [Adapter](../../../lab/quantum/topology_transfer.py) · [Tests](../../../lab/tests/test_topology_transfer.py)
+
+The separate [serialized trace auditor](../../../lab/quantum/topology_audit.py) checks exact
+stage answers, receipt visibility and chronology, known actor labels, event costs, directed
+handoffs and the derived distinct stage union. It accepts a source digest from an independent
+record. The synthetic actor labels carry no identity authentication. The audited full envelope
+and budgets 1–31 together cover 1,024 cells. The verified summary SHA-256 is
+`55c770e621a3402a4c5c715a0d1dc24205af59abbbcbbda4bf9bae62cf3da285`.
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m lab.quantum.topology_audit \
+  /path/to/grover-topology-scripted-trace.json \
+  --expected-sha256 6ce893d3c05d06df563dde15086bc3764e1e1b0efdcceebb650b303210115bdc
+```
