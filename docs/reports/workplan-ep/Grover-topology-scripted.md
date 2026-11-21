@@ -166,3 +166,16 @@ readback joined the same 32 arms to distinct synthetic observer
 scopes and retained 288 reads and four fallback uses. The synthetic
 tapes exercise the evidence contract. Actual actor deliveries and
 observer identity still need a protected independent capture.
+
+## Cap label verification
+
+The cap sweep now requires each trace arm's integer budget to equal
+the cap requested by the sweep. The regression supplies the genuine
+cap-32 trace to the cap-26 request. The earlier verifier accepted
+that trace as cap 26. The fixed verifier refuses it.
+
+The genuine 1,024-cell sweep reproduces the archived report byte for
+byte. Cap 27 remains the first cap with the exact full-cap stage unions
+in this public fixture. It is measured in abstract scripted cost units.
+All 27 focused quantum tests passed. Red and green logs and the
+reproduced report are in `runs/grover-cap-label.ntHuTI`.
