@@ -199,6 +199,12 @@ def verify(bundle, plan, registry, *, plan_sha256, registry_sha256, max_snapshot
     _require(families[first[1]] != families[second[1]], "reference and transfer checkpoints are from the same reviewed family")
     _require(first[0] != second[0] and not first[0].is_relative_to(second[0]) and not second[0].is_relative_to(first[0]),
              "snapshot roots must be disjoint")
+    payloads = [
+        sorted(digest for path, (_, digest) in entries.items() if path.suffix == ".safetensors")
+        for _, _, entries in (first, second)
+    ]
+    _require(not payloads[0] or payloads[0] != payloads[1],
+             "reference and transfer checkpoints have identical weight payloads")
     for _, _, entries in normalized.values():
         _require(sum(size for size, _ in entries.values()) <= max_snapshot_bytes,
                  "declared snapshot exceeds the byte limit")

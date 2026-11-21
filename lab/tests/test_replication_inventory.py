@@ -100,6 +100,20 @@ class ReplicationInventoryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "absent from reviewed family"):
             self.verify()
 
+    def test_different_family_label_and_shard_filename_cannot_hide_an_exact_copy(self):
+        reference = self.bundle / "reference" / "model.safetensors"
+        transfer = self.bundle / "transfer"
+        rel = "shards/part.safetensors"
+        weights = reference.read_bytes()
+        (transfer / rel).write_bytes(weights)
+        manifest = json.loads((transfer / inventory.MANIFEST).read_bytes())
+        record = next(row for row in manifest["files"] if row["path"] == rel)
+        record.update(bytes=len(weights), sha256=_digest(weights), lfs_oid=_digest(weights))
+        self.manifest("transfer", manifest)
+
+        with self.assertRaisesRegex(ValueError, "identical weight payloads"):
+            self.verify()
+
     def test_tampered_weight_and_unlisted_or_linked_inventory_rejected(self):
         path = self.bundle / "reference" / "model.safetensors"
         raw = path.read_bytes()
