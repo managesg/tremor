@@ -56,3 +56,45 @@ The original crossed trace replay remained byte-identical at
 The fixed-share audit and its six focused tests ran on the worktree.
 The audit receipt is in `runs/topology-independent-audit.uM8V7P/audit.json`,
 SHA-256 `2906c1ad437927dae16fbbe9ea79ab46929294e229667b3773834eb6bb4913c5`.
+
+## Read opportunities and the separate-worker baseline
+
+Across the 432 public arms, own access yielded 1,611 read opportunities
+and zero foreign receipt exposures. Shared access yielded 1,567 read
+opportunities, with 1,280 foreign receipt exposures and 207 foreign
+receipts used as work inputs. These are occurrences across all reads,
+including repeated exposure to a receipt. The script resolves each
+pointer to a previously accepted submission. A fresh report digest
+did not make a foreign receipt in an own-access trace valid.
+
+Among 648 comparisons between policies at the same access setting,
+350 reached different read slots and 62 saw different receipts at a
+slot both reached. Equal planned traversal and equal caps estimate
+the total policy effect, including which exchanges the policy can
+afford. A direct authority contrast needs a separately frozen common
+delivery schedule. The public traces count requests and receipts.
+Actual delivered context and token use require host observation.
+
+The archived self-assignment arm uses a pooled budget. The separate
+control assigns each worker its own cap and reviews its sealed output
+before merging. The per-block comparison reserves three units for
+reviews and one for merging. The remaining shares are 4/4/4, 5/5/5
+and 10/9/9 at caps 16, 19 and 32. The first worker in the balanced
+traversal receives the extra unit at cap 32. Testing all recipients
+and orders at that cap produced the same union and cost per fixture.
+
+The separate control's union differed from pooled own-access
+self-assignment in 12 redundant-fixture blocks at caps 16 and 19.
+There, the pooled arm verified `backup`, `common` and `separate`.
+The separate union contained `common` and `separate`. All 432 arms
+were re-reviewed using the same detached public answer inventory.
+Against the separate union, 209 scored higher and 223 tied.
+
+Run `bash runs/topology-block-union.w3ilis/verify.sh` from the repo
+root to reproduce both historical archives and the blockwise check.
+Eleven tests passed. The block report SHA-256 is
+`def1536c1759d4403946c974b9be96385481739312d1fcebc139891b86a2f511`.
+The independent exposure recount and refusal evidence are in
+`runs/topology-exposure-current.GctymJ`. Protected acceptance
+still needs the frozen comparison, actual host delivery records,
+independent scoring custody and realized resource accounting.

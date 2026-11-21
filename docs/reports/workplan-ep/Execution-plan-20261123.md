@@ -460,3 +460,19 @@ reproduction scripts are in `runs/l5-condition-current.Pjhcxc`.
 
 These checks used public fixtures. Protected L5 still needs a frozen
 cohort, independent host custody and an admitted native runner.
+
+## M6 authority, access and independent union
+
+The exact 54-block archive met its access rules. Across 648
+same-access policy pairs, 350 reached different read opportunities
+and 62 saw different receipts at slots both reached. Own access
+contained no foreign receipt exposures. Shared arms used 207
+foreign receipt occurrences as work inputs.
+
+A separate fixed-share comparator reviewed the worker seals at each
+block's matched cap. Its union differed from pooled self-assignment
+in 12 low-cap redundant-fixture blocks. The two historical reports
+remained byte-identical. Eleven tests passed in the isolated union
+audit. See [the exposure and fixed-share results](Topology-matched-traversal.md#read-opportunities-and-the-separate-worker-baseline).
+The protocol author and independent custodian still need to freeze
+the protected estimand and retain actual delivered inputs and scores.
