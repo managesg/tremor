@@ -47,3 +47,34 @@ for two example targets. Milestone 5 still requires the independently
 settled L4-E checkpoint pair and comparator evidence, followed by
 actual loaded-state and hook receipts for the frozen L8-D probe.
 [Adapter lineage](L4-L8-adapter-lineage.md) · [Accepted Spark calibration](Spark-readiness.md#calibration-result-and-settlement)
+
+## Synthetic checkpoint switching on actual projections
+
+A separate CPU probe captured the two projection inputs from the public
+base forward. For each projection, it reused that same input with its
+original BF16 weight and a synthetic checkpoint with the first output
+channel's weight row negated. The strict Safetensors loader rehashed the
+installed tensor for each stage.
+
+Both projections produced `[1, 5, 8192]` hook outputs. The first channel
+changed sign and the other channels retained equal values. Giving the
+after file the before digest was refused before the module state changed.
+Restoring the before state reproduced the installed weight digest and the
+original numerical hook output. The receipt field
+`restored_weight_and_hook_bytes` refers to those two checks. The probe
+compared restored hook values rather than hashing the restored hook.
+
+Each checkpoint occupied 41,943,128 bytes in a private temporary directory.
+The receipt records the digests computed in the probe. The temporary
+files were released with that directory, so the receipt supports a
+runtime test and does not supply an independently retained checkpoint pair.
+The read-only model snapshot was rehashed and independently checked
+for a closed file inventory. The bounded CPU container exited, and the
+existing vLLM engine continued running.
+
+The source and receipt are in
+`runs/l4-l8-qwen-projection-load.xfos3z`. Their SHA-256 digests are
+`eb3c482413d0feb7c7e43f29d55ca516ca4c7daa1571609d33f33902ee2a54ba`
+and `21f1184e904104066f15ef7ee7103bac159511272f9a1f1d7228f4ebb1b63af0`.
+The trained adapter, independent checkpoint custody and held-out L8-D
+comparison remain open.
