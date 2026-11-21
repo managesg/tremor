@@ -183,9 +183,23 @@ reproduced report are in `runs/grover-cap-label.ntHuTI`.
 An independent integer gate calculation checked 645 normalized trace
 points up to 10 qubits and the full 128-iteration bound. The scorer
 matched all 11 rational threshold decisions. In three fixtures,
-thresholds (2^{-120}) above and below the exact maximum had the same
+thresholds 2⁻¹²⁰ above and below the exact maximum had the same
 float representation, while the exact decisions distinguished hit from
-no-hit. The maximum floating gate deviation was (4.44 \times 10^{-13}).
+no-hit. The maximum floating gate deviation was 4.44 × 10⁻¹³.
 The verifying command and receipt are under
 `runs/grover-exact-boundary.s0ClQc`. These are public mathematical
 fixtures for the transfer scorer.
+
+## Scheduled public release roster
+
+The independent per-arm checker allows distinct digest-bound witness
+copies to be generated for the same trace. The roster verifier first
+binds the arm to a predeclared slot. It then replays the exact witness,
+rejecting a renamed run or block even when the witness is regenerated
+under valid fresh hashes. The three retained public arms complete with
+one observed fallback use. A missing slot or a budget-stopped prefix
+leaves the complete roster total unavailable.
+
+`bash runs/grover-release-roster.Uc5aBs/verify.sh` passed 12 tests and
+reproduced the retained report. Protected roster custody and
+authenticated runtime evidence remain separate inputs.
