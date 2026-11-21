@@ -85,3 +85,36 @@ all matched their archived bytes.
 The evidence covers public scripted tasks and in-process information
 flow. Protected transfer still requires the frozen protocol, independent
 custody, EP-1 dependency and exact native admission.
+
+## Mixed roles and complete dispatch
+
+A stage whose solvers hold only partial marks needs separate
+publishing and solving roles. The prior projection discarded the
+publisher role for a worker who could also solve. It also omitted
+shard dependencies when each solver held some local marks, even
+when neither held the full set.
+
+The projection now separates local mark publishing from solving
+and gives the solve task only the source IDs and threshold inputs.
+The solver uses the verified shards from its allowed access view.
+A stage whose eligible solvers already hold complete redundant
+sets keeps direct questions. In two public mixed-role controls,
+all eight shared cells found the exact hit at iteration 1 with
+probability 1. The eight own-access cells left the join unverified.
+
+The verifier checks independently computed rational answers,
+receipts and accounting. It also checks the complete scheduled
+dispatch for public fixture cases. Mutations omitted the verified
+no-hit confirmation and the later fallback solve, either by
+closing early or by keeping all nine reads and dropping the work.
+Both are now rejected. The closed event schema also refuses extra
+worker input fields.
+
+The integrated suite passed 44 tests, the cap sweep verified
+1,024 cells, and the original 32-cell trace and audit matched
+byte for byte. Reproduction artifacts are in
+`runs/grover-projection-current.OhP1lP`. Its separate QGrid run
+used a network-disabled, read-only CPU container and found zero
+disagreements across 329 statevectors from 65 cases. These are
+public instrument results. Protected fixtures and a host-observed
+delivery and scoring record require independent custody and admission.

@@ -476,3 +476,25 @@ remained byte-identical. Eleven tests passed in the isolated union
 audit. See [the exposure and fixed-share results](Topology-matched-traversal.md#read-opportunities-and-the-separate-worker-baseline).
 The protocol author and independent custodian still need to freeze
 the protected estimand and retain actual delivered inputs and scores.
+
+## M7 Grover role projection and dispatch completeness
+
+A solver that holds only part of the marked set now receives a
+separate shard-publishing task and a solve task that waits for
+the verified shards. Two mixed-role controls ran across all four
+authority modes and both access modes. The eight shared cells
+verified the join at iteration 1 with probability 1. Own-access
+cells retained their shard receipts and did not verify the join.
+
+The public audit now checks exact event fields and the whole
+scripted dispatch after its independent rational and accounting
+checks. It rejects a shortened no-stop trace and a trace that
+drops confirmation and final work while retaining all nine reads.
+The archived trace and audit reproduced byte for byte. All 44
+combined tests and the 1,024-cell cap sweep passed. A separate
+read-only Spark CPU run compared 329 statevectors with QGrid across
+65 cases and found zero disagreements.
+
+[Detailed public evidence](Grover-topology-scripted.md#mixed-roles-and-complete-dispatch).
+Protected acceptance still depends on completed EP-1, authenticated
+custody and projected delivery, separate admission and settlement.
