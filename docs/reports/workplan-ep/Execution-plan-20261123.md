@@ -744,3 +744,34 @@ The parent reaped the exact child in both cases. Two executable tests
 passed in `runs/topology-child-delivery.u1pPNT`. This exercises actual
 local transport with public byte counts. The protected study requires
 independent delivery custody and model-token measurements.
+
+## Pilot 4 full offline driver rehearsal and retained delivery replay
+
+The stock batch driver, request serializer, reservation, and charging
+paths ran against 240 digest-verified archived replies per rehearsal.
+One baseline and both wording candidates each completed 30 episodes,
+produced 240 distinct reservations and charges, and matched the archived
+board and allocation scores. The existing pinned Lean binary agreed
+on every episode. The rehearsal did not rebuild or audit its source.
+Each candidate preserved the 120 first-round request bodies exactly and
+changed only the wording suffix in 120 second-round bodies. The maximum
+archived output was still 263 tokens. This rehearsal cannot measure
+how the model would respond to either wording.
+
+A missing settled canary refused before output, reservation, or
+transport. The exact reservation test admitted 260 attempt rows and
+598,000 reserved tokens at a modeled USD 0.143, then refused attempt
+261 without changing the scratch ledger. The Pilot 4 namespace existed
+only inside the rehearsal process. No wording or live entry was selected.
+Reproduce with `bash runs/pilot4-stock-driver-dry.yeWWNZ/verify.sh`.
+Report SHA-256
+`7bccc4c2a214a9d9ee9ccb845de494b8746ddab94a7bc527db6215825bf34e35`.
+
+A detached coordination verifier reconstructed each retained pipe
+frame and checked the exact acknowledgment. It reproduced all 72
+completed receipts and the interrupted split of one acknowledged, one
+unknown, and 70 unattempted. An acknowledgment from another round was
+rejected even with a fresh report digest and unchanged counters. Two
+tests passed in `runs/topology-retained-pipe.JVoPBh`. Exit and reaping
+remain parent observations in this replay. Protected measurements and
+independent custody remain outstanding.
