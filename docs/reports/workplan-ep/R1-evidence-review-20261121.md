@@ -107,3 +107,29 @@ The one case skipped in the archived suites ran separately from the
 same pinned source on Spark without Torch and passed. The historical
 suite summaries retain their original skip counts. Protected N2
 verification, per-module review, and quiet-host disposition remain open.
+
+## Host window and candidate join
+
+The exact run windows were 223, 224 and 216 seconds, with two
+interior timestamps each. Across the 12 records, available memory
+ranged from 71.254 to 71.775 GiB and one-minute load from 1.21 to
+3.05. Five vmstat deltas show 90–95% idle and zero I/O wait. Two of
+those deltas record swap-in. The recheck excludes the since-boot
+vmstat row. One inspection lacks image and PID-limit fields, which
+stay unavailable in the report.
+
+Run `bash runs/r1-quiet-join-current.9LKPhZ/rehearse.sh` from the
+checkout. It verifies the test identity and archived source manifest,
+joins the pinned host records to the test windows, and rejects a
+repinned inspection from another run. The host result SHA-256 is
+`3739833c721631e79766deb387fa081229e3f0459681f5994501701102abdd90`.
+These spot samples support a coordinator disposition. They leave
+continuous host activity and formal quiet-host qualification unknown.
+
+Independent worktree readback at `be73a3b` found 29 byte differences
+against the three-pass archive and 27 against the later one-pass
+patch. The 41 additional lab test modules belong to lab discovery.
+The exact path evidence is in
+`runs/r1-worktree-acceptance-review.Eq9fui/result.json`. The
+coordinator and reviewers still need to nominate the exact candidate
+and review the pinned module scope.

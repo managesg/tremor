@@ -533,3 +533,17 @@ successor attempts used a verified no-hit fallback. A late receipt
 was refused at its correct fresh digest. [Release evidence](Grover-topology-scripted.md#observed-release-rehearsal).
 The rehearsal uses generated observer tapes. Protected execution
 still needs an independent observer recording actual delivery.
+
+## R1 host evidence and source scope
+
+The host readback joins the three exact historical test logs to their
+boundary samples, two interior samples per run and the captured
+CPU container inspections. Five vmstat intervals show 90–95% idle
+and zero I/O wait. Swap-in occurred in two intervals. A crossed
+interior sample failed with exit 2 even at a fresh capture digest.
+
+The three passes apply to the archived candidate. A worktree readback
+found 29 different paths against that source and 27 against the later
+one-pass patch. Formal quiet-host disposition and the independent
+module and bench reviews remain open. See
+[the exact archive join](R1-evidence-review-20261121.md#host-window-and-candidate-join).
