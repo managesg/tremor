@@ -13,6 +13,9 @@ ARMS = ("combined", "plain")
 USAGE = tuple(field for field in selection.BUDGET if not field.startswith("per_call_"))
 ROLES = {"worker", "routing", "observation", "communication", "coordination", "verification", "advice", "cleanup"}
 TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "cache_creation_tokens")
+TRACE_V2 = "controller_paired_trace_v2"
+RELEASE_WITNESS = "controller_release_witness_v1"
+RELEASE_PAYLOAD = ("agent", "task", "done")
 
 
 def _scorer_ids():
@@ -20,7 +23,34 @@ def _scorer_ids():
             for module in (alloc, alloc2)}
 
 
-def _outcome(block, arm, row, manifest, prior):
+def _release_events(witness, *, block_id, arm):
+    selection._object(witness, ("block_id", "arm", "releases"), "release witness arm")
+    selection._require(witness["block_id"] == block_id and witness["arm"] == arm,
+                       "release witness does not match the scheduled arm")
+    releases = witness["releases"]
+    if releases is None:
+        return None
+    selection._require(type(releases) is list, "release witness requires an event list or null")
+    events = {}
+    for event in releases:
+        selection._object(event, ("sequence", *RELEASE_PAYLOAD, "executed"), "release event")
+        sequence = event["sequence"]
+        selection._require(type(sequence) is int and sequence >= 0 and sequence not in events,
+                           "invalid or duplicate release sequence")
+        selection._require(type(event["done"]) is bool and type(event["executed"]) is bool,
+                           "release outcome flags must be boolean")
+        events[sequence] = event
+    return events
+
+
+def _completion_safeguard(status, score=None):
+    done = score["done_releases"] if score is not None else None
+    false = score["false_done"] if score is not None else None
+    return {"status": status, "done_releases": done, "false_completions": false,
+            "false_completion_rate": str(Fraction(false, done)) if done else None}
+
+
+def _outcome(block, arm, row, manifest, prior, witness=None):
     selection._object(row, ("block_id", "arm", "condition", "seed", "scope", "inputs",
                             "policy_sha256", "terminal", "attempts"), "arm trace")
     settings = manifest["arms"][arm]
@@ -36,8 +66,16 @@ def _outcome(block, arm, row, manifest, prior):
     cumulative = prior["known_usage"].copy()
     unknown = []
     work = []
+    attempt_fields = ("sequence", "role", "status", "usage", "work")
+    releases = None
+    marked = set()
+    taskset = block["taskset"]
+    if witness is not None:
+        attempt_fields += ("release",)
+        releases = _release_events(witness, block_id=block["block_id"], arm=arm)
+        eligible = {task["id"] for task in taskset["tasks"]}
     for ordinal, attempt in enumerate(row["attempts"]):
-        selection._object(attempt, ("sequence", "role", "status", "usage", "work"), "attempt")
+        selection._object(attempt, attempt_fields, "attempt")
         selection._require(type(attempt["sequence"]) is int and attempt["sequence"] == ordinal
                            and attempt["role"] in ROLES and attempt["status"] in ("completed", "failed", "refused"),
                            "invalid attempt sequence, role or status")
@@ -57,20 +95,45 @@ def _outcome(block, arm, row, manifest, prior):
             selection._object(action, ("agent", "task", "name", "answer"), "worker proposal")
             selection._require(attempt["role"] == "worker", "non-worker role cannot submit work")
             work.append({**action, "action": "work", "rejected": attempt["status"] != "completed"})
+        release = attempt.get("release")
+        if release is not None:
+            selection._object(release, RELEASE_PAYLOAD, "release attempt")
+            selection._require(attempt["role"] == "worker" and action is None, "invalid release attempt")
+            selection._text(release["agent"], "release agent")
+            selection._text(release["task"], "release task")
+            selection._require(type(release["done"]) is bool, "release done flag must be boolean")
+            executed = attempt["status"] == "completed"
+            selection._require(not executed or release["task"] in eligible,
+                               "executed release named a task outside the frozen inventory")
+            marked.add(ordinal)
+            if releases is not None:
+                selection._require(ordinal in releases, "marked release is absent from the witness")
+                event = releases[ordinal]
+                selection._require(executed == event["executed"],
+                                   "witness and attempt disagree on release execution")
+                selection._require(all(release[key] == event[key] for key in RELEASE_PAYLOAD),
+                                   "witness and attempt disagree on release payload")
+                work.append({**release, "action": "release", "rejected": not executed})
+    if releases is not None:
+        selection._require(marked == releases.keys(), "witness release lacks a marked attempt")
     overruns = _breaches(totals, settings["budget"])
     base = {"arm": arm, "terminal": terminal, "attempts": len(row["attempts"]),
             "known_usage": totals, "unknown_usage_attempts": unknown, "exceeded_caps": overruns}
     if terminal != "completed":
+        if witness is not None:
+            base["completion_safeguard"] = _completion_safeguard("unavailable_noncompleted_arm")
         return {**base, "distinct_passing": None}
     selection._require(not unknown and not overruns, "completed arm has unaccounted usage or exceeded a cap")
     selection._require(any(attempt["role"] == "worker" for attempt in row["attempts"]),
                        "completed arm lacks any worker observation")
-    taskset = block["taskset"]
     primary, score = alloc.score(work, taskset), alloc2.score(work, taskset)
     selection._require(score["valid"] and not alloc2.compare(primary, score),
                        "completed arm failed independent work scoring")
     selection._require(primary["unknown_task_events"] == 0,
                        "completed arm submitted work outside the frozen task inventory")
+    if witness is not None:
+        base["completion_safeguard"] = (_completion_safeguard("observed", score) if releases is not None
+                                        else _completion_safeguard("unavailable_missing_witness"))
     return {**base, "distinct_passing": score["distinct_passing"], "duplicate_work": score["duplicates"]}
 
 
@@ -93,12 +156,28 @@ def _breaches(totals, limits):
     return [field for field, amount in totals.items() if amount > limits[field]]
 
 
-def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence_index_sha256, trace_sha256):
+def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence_index_sha256, trace_sha256,
+           release_witness=None):
+    """Replay the legacy pair or a V2 pair with an independently pinned release witness."""
     selected = selection.verify(bundle, manifest, evidence_index, manifest_sha256=manifest_sha256,
                                 evidence_index_sha256=evidence_index_sha256)
     document = selection._pinned_json(manifest, selected["manifest_sha256"])
     tape = selection._pinned_json(trace, trace_sha256)
-    selection._object(tape, ("evidence", "manifest_sha256", "input_files", "arms"), "paired trace")
+    tape_fields = ("evidence", "manifest_sha256", "input_files", "arms")
+    versioned = type(tape) is dict and "schema" in tape
+    selection._object(tape, (*tape_fields, "schema") if versioned else tape_fields, "paired trace")
+    witness_arms = None
+    if versioned:
+        selection._require(tape["schema"] == TRACE_V2, "unknown paired trace schema")
+        selection._require(release_witness is not None, "V2 trace requires an independent release witness pin")
+        witness_path, witness_pin = release_witness
+        witness = selection._pinned_json(witness_path, witness_pin)
+        selection._object(witness, ("schema", "trace_sha256", "arms"), "release witness")
+        selection._require(witness["schema"] == RELEASE_WITNESS and witness["trace_sha256"] == trace_sha256
+                           and type(witness["arms"]) is list, "release witness must bind the pinned V2 trace")
+        witness_arms = witness["arms"]
+    else:
+        selection._require(release_witness is None, "a release witness requires a V2 trace")
     selection._require(tape["evidence"] == "scripted_cpu" and tape["manifest_sha256"] == manifest_sha256,
                        "trace must bind the pinned scripted controller selection")
     root = Path(bundle).resolve(strict=True)
@@ -115,6 +194,10 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
     blocks = inventory["blocks"]
     selection._require(type(blocks) is list and blocks and type(tape["arms"]) is list, "empty or invalid block inventory")
     selection._require(len(tape["arms"]) == 2 * len(blocks), "each declared arm needs a terminal trace")
+    if witness_arms is not None:
+        selection._require(len(witness_arms) == len(tape["arms"]), "each V2 arm needs release witness coverage status")
+        for arm_witness in witness_arms:
+            selection._require(type(arm_witness) is dict, "expected one release witness record per arm")
     resources = {arm: {"known_usage": dict.fromkeys(selection.BUDGET, 0),
                        "unknown_usage_attempts": 0, "exceeded_caps": []} for arm in ARMS}
     seen, pairs = set(), []
@@ -131,8 +214,10 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
         selection._require(eligible and len(eligible) == len(set(eligible)) and type(slots) is int
                            and 0 < slots <= len(eligible) and block["taskset"]["seed"] == block["seed"],
                            "invalid eligible work inventory or seed")
-        rows = [_outcome(block, arm, tape["arms"][2 * block_index + ordinal], document, resources[arm])
-                for ordinal, arm in enumerate(block["order"])]
+        rows = []
+        for ordinal, arm in enumerate(block["order"], start=2 * block_index):
+            arm_witness = witness_arms[ordinal] if witness_arms is not None else None
+            rows.append(_outcome(block, arm, tape["arms"][ordinal], document, resources[arm], arm_witness))
         for row in rows:
             aggregate = resources[row["arm"]]
             _accumulate(aggregate["known_usage"], row["known_usage"])
@@ -144,9 +229,12 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
         counts = {row["arm"]: row["distinct_passing"] for row in rows}
         delta = None if None in counts.values() else str(Fraction(counts["combined"] - counts["plain"], len(eligible)))
         pairs.append({"block_id": identifier, "eligible_count": len(eligible), "paired_delta": delta, "arms": rows})
-    return {"evidence": "scripted_cpu_pair_audit", "scientific_acceptance": False,
-            "trace_sha256": trace_sha256, "complete_pairs": sum(row["paired_delta"] is not None for row in pairs),
-            "arm_resource_receipts": resources, "pairs": pairs}
+    result = {"evidence": "scripted_cpu_pair_audit", "scientific_acceptance": False,
+              "trace_sha256": trace_sha256, "complete_pairs": sum(row["paired_delta"] is not None for row in pairs),
+              "arm_resource_receipts": resources, "pairs": pairs}
+    if witness_arms is not None:
+        result["release_witness_sha256"] = witness_pin
+    return result
 
 
 def main():
@@ -155,6 +243,7 @@ def main():
         parser.add_argument(path, type=Path)
     for pin in ("manifest", "evidence-index", "trace"):
         parser.add_argument(f"--{pin}-sha256", required=True)
+    parser.add_argument("--release-witness", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     try:
         result = verify(**vars(args))

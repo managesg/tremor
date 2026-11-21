@@ -44,14 +44,38 @@ class ControllerPairAuditTests(unittest.TestCase):
                 "policy_sha256": f.manifest["arms"][arm]["policy_sha256"], "terminal": "completed",
                 "attempts": [self.attempt(i, "worker", work) for i, work in enumerate(proposals)]}
 
-    def freeze(self):
+    def freeze(self, releases=None):
         f = self.fixture
         manifest, index, manifest_pin, index_pin = f.freeze()
         trace = f.root / "trace.json"
-        trace_pin = f.write(trace, {"evidence": "scripted_cpu", "manifest_sha256": manifest_pin,
-                                    "input_files": self.inputs, "arms": self.rows})
-        return {"bundle": f.bundle, "manifest": manifest, "evidence_index": index, "trace": trace,
-                "manifest_sha256": manifest_pin, "evidence_index_sha256": index_pin, "trace_sha256": trace_pin}
+        document = {"evidence": "scripted_cpu", "manifest_sha256": manifest_pin,
+                    "input_files": self.inputs, "arms": self.rows}
+        if releases is not None:
+            document["schema"] = audit.TRACE_V2
+            for row in self.rows:
+                for attempt in row["attempts"]:
+                    attempt.setdefault("release", None)
+        trace_pin = f.write(trace, document)
+        inputs = {"bundle": f.bundle, "manifest": manifest, "evidence_index": index, "trace": trace,
+                  "manifest_sha256": manifest_pin, "evidence_index_sha256": index_pin, "trace_sha256": trace_pin}
+        if releases is not None:
+            witness = f.root / "release_witness.json"
+            witness_pin = f.write(witness, {
+                "schema": audit.RELEASE_WITNESS, "trace_sha256": trace_pin,
+                "arms": [
+                    {"block_id": row["block_id"], "arm": row["arm"], "releases": observations}
+                    for row, observations in zip(self.rows, releases, strict=True)
+                ],
+            })
+            inputs["release_witness"] = (witness, witness_pin)
+        return inputs
+
+    def add_release(self, row_index, work, *, status="completed", done=True):
+        row = self.rows[row_index]
+        sequence = len(row["attempts"])
+        payload = {"agent": work["agent"], "task": work["task"], "done": done}
+        row["attempts"].append(self.attempt(sequence, "worker", status=status) | {"release": payload})
+        return {"sequence": sequence, **payload, "executed": status == "completed"}
 
     def test_committed_fixture_recounts_penalized_duplicate_and_charges_failed_advice(self):
         combined = self.rows[1]["attempts"]
@@ -63,6 +87,97 @@ class ControllerPairAuditTests(unittest.TestCase):
         self.assertEqual([row["distinct_passing"] for row in pair["arms"]], [2, 3])
         self.assertEqual(pair["arms"][0]["duplicate_work"], 1)
         self.assertEqual(result["arm_resource_receipts"]["combined"]["known_usage"]["cpu_wall_ns"], 11)
+        self.assertNotIn("release_witness_sha256", result)
+        self.assertNotIn("completion_safeguard", pair["arms"][0])
+
+    def test_v2_independent_scorer_counts_false_done_and_preserves_primary(self):
+        combined = self.rows[1]["attempts"]
+        correct = combined[0]["work"]
+        wrong = {**combined[1]["work"], "answer": combined[1]["work"]["answer"] + 1}
+        combined[1]["work"] = wrong
+        releases = [
+            self.add_release(1, wrong),
+            self.add_release(1, correct),
+            self.add_release(1, wrong, status="refused"),
+            self.add_release(1, wrong, done=False),
+        ]
+        inputs = self.freeze([[], releases])
+        result = audit.verify(**inputs)
+        self.assertFalse(result["scientific_acceptance"])
+        self.assertEqual(result["release_witness_sha256"], inputs["release_witness"][1])
+        pair, = result["pairs"]
+        self.assertEqual(pair["paired_delta"], "0")
+        self.assertEqual(pair["arms"][0]["completion_safeguard"], {
+            "status": "observed", "done_releases": 0, "false_completions": 0, "false_completion_rate": None,
+        })
+        self.assertEqual(pair["arms"][1]["completion_safeguard"], {
+            "status": "observed", "done_releases": 2, "false_completions": 1, "false_completion_rate": "1/2",
+        })
+
+    def test_v2_release_before_correct_work_still_counts_as_false(self):
+        arm = self.rows[1]
+        work = arm["attempts"][0]["work"]
+        release = self.add_release(1, work) | {"sequence": 0}
+        arm["attempts"].insert(0, arm["attempts"].pop())
+        for ordinal, attempt in enumerate(arm["attempts"]):
+            attempt["sequence"] = ordinal
+        result = audit.verify(**self.freeze([[], [release]]))
+        safeguard = result["pairs"][0]["arms"][1]["completion_safeguard"]
+        self.assertEqual((safeguard["done_releases"], safeguard["false_completions"]), (1, 1))
+
+    def test_v2_explicit_missing_witness_and_noncompleted_arm_stay_unavailable(self):
+        self.add_release(0, self.rows[0]["attempts"][0]["work"])
+        combined = self.rows[1]
+        combined["terminal"] = "stopped"
+        event = self.add_release(1, combined["attempts"][0]["work"])
+        combined["attempts"][-1]["usage"] = None
+        pair, = audit.verify(**self.freeze([None, [event]]))["pairs"]
+        self.assertIsNone(pair["paired_delta"])
+        for arm, status in zip(pair["arms"], ("unavailable_missing_witness", "unavailable_noncompleted_arm"), strict=True):
+            self.assertEqual(arm["completion_safeguard"], {
+                "status": status, "done_releases": None, "false_completions": None, "false_completion_rate": None,
+            })
+
+    def test_v2_rejects_erased_fabricated_and_contradictory_releases(self):
+        event = self.add_release(1, self.rows[1]["attempts"][0]["work"])
+        for releases, error in (
+            ([], "marked release is absent"),
+            ([event, event], "duplicate release sequence"),
+            ([event, {**event, "sequence": 1}], "release lacks a marked attempt"),
+            ([{**event, "executed": False}], "disagree on release execution"),
+            ([{**event, "done": False}], "disagree on release payload"),
+            ([{**event, "agent": "other-worker"}], "disagree on release payload"),
+        ):
+            with self.subTest(error=error), self.assertRaisesRegex(ValueError, error):
+                audit.verify(**self.freeze([[], releases]))
+        self.rows[1]["attempts"][-1]["release"]["task"] = "unknown-task"
+        with self.assertRaisesRegex(ValueError, "outside the frozen inventory"):
+            audit.verify(**self.freeze([[], [{**event, "task": "unknown-task"}]]))
+
+    def test_v2_rejects_witness_from_other_trace_even_with_a_valid_pin(self):
+        inputs = self.freeze([[], []])
+        with self.assertRaisesRegex(ValueError, "requires an independent release witness pin"):
+            audit.verify(**{field: value for field, value in inputs.items() if field != "release_witness"})
+        path, _ = inputs["release_witness"]
+        document = json.loads(path.read_bytes())
+        document["trace_sha256"] = "0" * 64
+        inputs["release_witness"] = path, self.fixture.write(path, document)
+        with self.assertRaisesRegex(ValueError, "must bind the pinned V2 trace"):
+            audit.verify(**inputs)
+
+    def test_v2_cli_replays_an_independently_pinned_witness(self):
+        inputs = self.freeze([[], []])
+        command = [sys.executable, "-B", "-m", "lab.controller_pair_audit",
+                   *[str(inputs[key]) for key in ("bundle", "manifest", "evidence_index", "trace")],
+                   "--manifest-sha256", inputs["manifest_sha256"], "--evidence-index-sha256",
+                   inputs["evidence_index_sha256"], "--trace-sha256", inputs["trace_sha256"],
+                   "--release-witness", *map(str, inputs["release_witness"])]
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10, check=True)
+        self.assertEqual(json.loads(result.stdout), audit.verify(**inputs))
+        command[-1] = "0" * 64
+        refused = subprocess.run(command, capture_output=True, text=True, timeout=10, check=False)
+        self.assertEqual(refused.returncode, 2)
+        self.assertIn("digest mismatch: release_witness.json", refused.stderr)
 
     def test_stopped_arm_keeps_unknown_usage_without_a_paired_effect(self):
         row = self.rows[1]
