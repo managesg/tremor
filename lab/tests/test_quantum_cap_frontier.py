@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from lab.quantum import cap_frontier
 
@@ -24,3 +25,13 @@ class GroverCapFrontierTests(unittest.TestCase):
     def test_wrong_reference_digest_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "input digest mismatch"):
             cap_frontier.summarize("0" * 64)
+
+    def test_genuine_full_cap_trace_cannot_be_relabeled_as_a_lower_cap(self):
+        compare = cap_frontier.topology_transfer.compare
+
+        def swapped(*args, budget):
+            return compare(*args, budget=32 if not args and budget == 26 else budget)
+
+        with patch.object(cap_frontier.topology_transfer, "compare", side_effect=swapped):
+            with self.assertRaisesRegex(ValueError, "trace arm budget differs from requested cap 26"):
+                cap_frontier._replay(26)

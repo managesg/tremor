@@ -12,6 +12,9 @@ REFERENCE_SHA256 = "6ce893d3c05d06df563dde15086bc3764e1e1b0efdcceebb650b30321011
 
 def _replay(cap, expected_sha256=None):
     trace = topology_transfer.compare(budget=cap)
+    if any(type(arm["budget"]) is not int or arm["budget"] != cap
+           for case in trace["cases"] for arm in case["arms"]):
+        raise ValueError(f"trace arm budget differs from requested cap {cap}")
     # Match topology_transfer's CLI serialization and historical reference.
     raw = (json.dumps(trace, indent=2, sort_keys=True) + "\n").encode()
     verified = topology_audit.audit(raw, expected_sha256=expected_sha256)
