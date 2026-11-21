@@ -9,6 +9,7 @@ from lab import adapter_lineage, r1_episode_v2
 
 
 ARTIFACTS = ("plan.json", "dispatch.json", "board.jsonl", "delivery.jsonl")
+CELL_ARTIFACTS = ("cell/cell.json", "cell/policy.json", "cell/log.jsonl", "cell/log.head")
 
 
 def verify(bundle, *, summary_sha256):
@@ -26,9 +27,15 @@ def verify(bundle, *, summary_sha256):
         )
         if summary != expected:
             raise ValueError("pinned summary differs from the replayed episode and scores")
-        for name in ARTIFACTS:
+        for name in (*ARTIFACTS, *CELL_ARTIFACTS):
+            replayed = output / name
+            if not replayed.is_file():
+                original = root / name
+                if original.exists() or original.is_symlink():
+                    raise ValueError(f"unexpected archived {name} for the replayed stop boundary")
+                continue
             archive = adapter_lineage._path(root, {"path": name})
-            if archive.read_bytes() != (output / name).read_bytes():
+            if archive.read_bytes() != replayed.read_bytes():
                 raise ValueError(f"archived {name} differs from replay")
     prefix = summary["first_round_score"]
     final = summary["final_score"]
