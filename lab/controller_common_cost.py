@@ -11,10 +11,11 @@ from lab import controller_shared_cost as shared
 SCHEMA = "controller_common_charge_roles_v1"
 
 
-def verify(placement, charge_index, roles, *, placement_sha256, charge_index_sha256, roles_sha256):
+def verify(placement, charge_index, roles, *, placement_sha256, charge_index_sha256, roles_sha256,
+           prior_settlement_witness=None):
     """Keep common cost categories visible without allocating them to paired arms."""
     audited = shared.verify(placement, charge_index, placement_sha256=placement_sha256,
-                            charge_index_sha256=charge_index_sha256)
+                            charge_index_sha256=charge_index_sha256, prior_settlement_witness=prior_settlement_witness)
     plan = selection._pinned_json(placement, placement_sha256)
     index = selection._pinned_json(charge_index, charge_index_sha256)
     catalog = selection._pinned_json(roles, roles_sha256)
@@ -56,6 +57,7 @@ def main():
     for name in ("placement", "charge_index", "roles"):
         parser.add_argument(name, type=Path)
         parser.add_argument(f"--{name.replace('_', '-')}-sha256", required=True)
+    parser.add_argument("--prior-settlement-witness", nargs=3, metavar=("BUNDLE", "PATH", "SHA256"))
     try:
         report = verify(**vars(parser.parse_args()))
     except (OSError, ValueError, TypeError, KeyError) as error:

@@ -272,6 +272,48 @@ class ControllerClusterAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "attempt meter witness requires an attempt charge join"):
             audit.verify(**inputs, attempt_meter_witness=(inputs["trace"], inputs["trace_sha256"]))
 
+    def test_cluster_cli_binds_reused_common_cost_to_prior_settlement(self):
+        inputs = self.freeze()
+        fixture = self.pair.fixture
+        bundle = fixture.root / "independent-meter"
+        parent_folder = bundle / "prior-settlement"
+        parent_folder.mkdir(parents=True)
+        parent = {"schema": "controller_prior_settlement_v1", "ledger_id": "archived-resource-ledger",
+                  "entries": [{"entry_id": "setup-work", "usage": self.pair.attempt(0, "cleanup", cpu=9)["usage"]}]}
+        raw = json.dumps(parent, sort_keys=True).encode()
+        parent_pin = sha256(raw).hexdigest()
+        (parent_folder / parent_pin).write_bytes(raw)
+
+        def pin_setup(_rows, charges, _roles):
+            next(charge for charge in charges if charge["id"] == "setup")["prior_settlement_sha256"] = parent_pin
+
+        charge = self.cost_witness(inputs, modify=pin_setup)
+        index_pin = json.loads((fixture.bundle / "charge-witness.json").read_bytes())["charge_index"]["sha256"]
+        witness = fixture.root / "prior-settlement.json"
+        document = {"schema": "controller_prior_settlement_witness_v1", "charge_index_sha256": index_pin,
+                    "rows": [{"charge_id": "setup", "entry_id": "setup-work"}]}
+        pin = fixture.write(witness, document)
+        command = [
+            sys.executable, "-B", "-m", "lab.controller_cluster_audit",
+            *(str(inputs[key]) for key in (
+                "bundle", "manifest", "evidence_index", "trace", "task_inventory", "exposure_witness"
+            )),
+            *(piece for field in ("manifest", "evidence_index", "trace", "witness")
+              for piece in (f"--{field.replace('_', '-')}-sha256", inputs[f"{field}_sha256"])),
+            "--release-witness", *(str(value) for value in inputs["release_witness"]),
+            "--charge-witness", *map(str, charge), "--prior-settlement-witness", str(bundle), str(witness), pin,
+        ]
+        run = subprocess.run(command, capture_output=True, text=True, check=True, timeout=10)
+        joined = json.loads(run.stdout)["observed_charge_join"]
+        placement = joined["common_and_arm_costs"]["placement"]
+        self.assertEqual(placement["known_prior_usage"]["cpu_wall_ns"], 9)
+        self.assertEqual(joined["unknown_attempt_charge_ids"], ["attempt-charge-9"])
+        self.assertFalse(placement["prior_settlement_observations"]["native_authenticity_verified"])
+
+        bad_pin = fixture.write(witness, document | {"charge_index_sha256": "a" * 64})
+        with self.assertRaisesRegex(ValueError, "prior settlement witness"):
+            audit.verify(**inputs, charge_witness=charge, prior_settlement_witness=(bundle, witness, bad_pin))
+
     def test_policy_witness_preserves_an_all_disabled_cluster_as_diagnostic(self):
         common, references = self.pair.policy_files(combined={}, plain={})
         inputs = self.freeze()

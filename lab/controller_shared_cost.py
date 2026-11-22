@@ -6,9 +6,12 @@ from pathlib import Path
 
 from lab import controller_pair_audit as pair
 from lab import controller_selection as selection
+from lab.replication_inventory import _capture_bytes, _json, _metadata
 
 SCOPES = (*pair.ARMS, "common")
 COMMON_ROLES = {"setup", "calibration", "training", "checkpoint", "independent_scoring", "cleanup"}
+PRIOR_WITNESS_SCHEMA = "controller_prior_settlement_witness_v1"
+PRIOR_SETTLEMENT_SCHEMA = "controller_prior_settlement_v1"
 
 
 def _receipt(record):
@@ -47,12 +50,57 @@ def _totals(records):
     }
 
 
-def verify(placement, charge_index, *, placement_sha256, charge_index_sha256):
+def _prior_observations(reference, charge_index_sha256, receipts):
+    bundle, path, pin = reference
+    root = Path(bundle).resolve(strict=True)
+    selection._require(root.is_dir(), "prior settlement bundle must be a directory")
+    witness = selection._object(_metadata(Path(path), pin), ("schema", "charge_index_sha256", "rows"),
+                                "prior settlement witness")
+    selection._require(witness["schema"] == PRIOR_WITNESS_SCHEMA
+                       and witness["charge_index_sha256"] == charge_index_sha256
+                       and type(witness["rows"]) is list, "invalid prior settlement witness or charge index pin")
+    prior = {key: row for key, row in receipts.items() if row["prior_settlement_sha256"] is not None}
+    seen_charges = set()
+    by_parent = {}
+    for row in witness["rows"]:
+        selection._object(row, ("charge_id", "entry_id"), "prior settlement witness row")
+        charge_id = selection._text(row["charge_id"], "prior charge ID")
+        entry_id = selection._text(row["entry_id"], "prior entry ID")
+        selection._require(charge_id in prior and charge_id not in seen_charges,
+                           "unknown or duplicate prior settlement witness charge")
+        seen_charges.add(charge_id)
+        by_parent.setdefault(prior[charge_id]["prior_settlement_sha256"], []).append((charge_id, entry_id))
+    selection._require(seen_charges == prior.keys(), "incomplete prior settlement witness coverage")
+
+    seen_entries = set()
+    for digest, links in by_parent.items():
+        parent = selection._object(_json(_capture_bytes(root, "prior-settlement", digest)),
+                                   ("schema", "ledger_id", "entries"), "prior settlement")
+        selection._require(parent["schema"] == PRIOR_SETTLEMENT_SCHEMA and type(parent["entries"]) is list,
+                           "invalid prior settlement schema or entries")
+        ledger_id = selection._text(parent["ledger_id"], "prior ledger ID")
+        entries = {}
+        for entry in parent["entries"]:
+            selection._object(entry, ("entry_id", "usage"), "prior settlement entry")
+            entry_id = selection._text(entry["entry_id"], "prior entry ID")
+            selection._require(entry_id not in entries, "duplicate entry in prior settlement")
+            pair._meter(entry["usage"])
+            entries[entry_id] = entry["usage"]
+        for charge_id, entry_id in links:
+            identity = ledger_id, entry_id
+            selection._require(identity not in seen_entries, "prior settlement entry reused")
+            selection._require(entry_id in entries and entries[entry_id] == prior[charge_id]["usage"],
+                               "prior settlement entry is absent or its exact usage differs")
+            seen_entries.add(identity)
+    return {"witness_sha256": pin, "matched_charges": len(seen_charges), "native_authenticity_verified": False}
+
+
+def verify(placement, charge_index, *, placement_sha256, charge_index_sha256, prior_settlement_witness=None):
     """Check allocation coverage against its supplied index, without admitting a run.
 
-    Each index row is one independently attributable charge. A prior settlement
-    pin is a claim from that index. This checker does not authenticate its origin
-    or independently audit the prior resource ledger.
+    With a prior settlement witness, each prior charge must match the exact usage
+    of a distinct ledger entry in its pinned settlement. This verifies the retained
+    evidence and leaves native ledger authenticity unverified.
     """
     plan = selection._pinned_json(placement, placement_sha256)
     index = selection._pinned_json(charge_index, charge_index_sha256)
@@ -92,7 +140,7 @@ def verify(placement, charge_index, *, placement_sha256, charge_index_sha256):
         }
     coverage_complete = all(report["coverage_complete"] for report in by_scope.values())
     program_totals = _totals(receipts.values())
-    return {
+    report = {
         "evidence": "offline_charge_placement",
         "authorizes_execution": False,
         "placement_sha256": placement_sha256,
@@ -103,6 +151,10 @@ def verify(placement, charge_index, *, placement_sha256, charge_index_sha256):
         "known_incremental_usage": program_totals["known_incremental_usage"],
         "incremental_usage": program_totals["known_incremental_usage"] if coverage_complete else None,
     }
+    if prior_settlement_witness is not None:
+        report["prior_settlement_observations"] = _prior_observations(prior_settlement_witness,
+                                                                    charge_index_sha256, receipts)
+    return report
 
 
 def main():
@@ -111,6 +163,7 @@ def main():
     parser.add_argument("charge_index", type=Path)
     parser.add_argument("--placement-sha256", required=True)
     parser.add_argument("--charge-index-sha256", required=True)
+    parser.add_argument("--prior-settlement-witness", nargs=3, metavar=("BUNDLE", "PATH", "SHA256"))
     args = parser.parse_args()
     try:
         report = verify(**vars(args))

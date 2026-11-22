@@ -39,7 +39,7 @@ def _meter_observations(witness, trace_pin, charge_index_pin):
     return by_charge
 
 
-def reconcile(trace, trace_pin, witness, *, attempt_meter_witness=None):
+def reconcile(trace, trace_pin, witness, *, attempt_meter_witness=None, prior_settlement_witness=None):
     """Join a replayed trace to cost artifacts. The caller first verifies the pair."""
     witness_path, witness_pin = witness
     root = Path(witness_path).resolve(strict=True).parent
@@ -52,7 +52,7 @@ def reconcile(trace, trace_pin, witness, *, attempt_meter_witness=None):
     pins = {name: document[name]["sha256"] for name in names}
     totals = common.verify(paths["placement"], paths["charge_index"], paths["common_roles"],
                            placement_sha256=pins["placement"], charge_index_sha256=pins["charge_index"],
-                           roles_sha256=pins["common_roles"])
+                           roles_sha256=pins["common_roles"], prior_settlement_witness=prior_settlement_witness)
     assignment = selection._pinned_json(paths["assignment"], pins["assignment"])
     selection._object(assignment, ("schema", "trace_sha256", "rows"), "attempt charge assignment")
     selection._require(assignment["schema"] == ASSIGNMENT_SCHEMA and assignment["trace_sha256"] == trace_pin
