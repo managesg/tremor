@@ -95,6 +95,23 @@ class ControllerClusterAuditTests(unittest.TestCase):
         self.assertEqual(audit_report["arm_resource_receipts"]["combined"]["unknown_usage_attempts"], 1)
         self.assertFalse(report["scientific_acceptance"])
 
+    def test_frozen_order_survives_exposure_and_missing_outcome_join(self):
+        inputs = self.freeze()
+        fixture = self.pair.fixture
+        path = fixture.root / "order.json"
+        declaration = {"schema": pair_fixtures.audit.ORDER_PLAN, "manifest_sha256": inputs["manifest_sha256"],
+                       "task_inventory_sha256": self.pair.inputs["task_manifest_sha256"]["sha256"],
+                       "strata": [{"id": block["condition"], "condition": block["condition"],
+                                   "block_ids": [block["block_id"]], "combined_first_min": 0,
+                                   "combined_first_max": 0} for block in self.blocks]}
+        pin = fixture.write(path, declaration)
+        prior = audit.verify(**inputs, missing_outcome_bounds=True)
+        report = audit.verify(**inputs, missing_outcome_bounds=True, order_witness=(path, pin))
+        order = report["paired_audit"].pop("scheduled_order")
+        self.assertEqual(report, prior)
+        self.assertEqual(order["strata"]["disrupted"]["scheduled_first"], {"combined": 0, "plain": 1})
+        self.assertFalse(order["runtime_order_verified"])
+
     def test_both_completed_pairs_count_as_one_fully_observed_cluster(self):
         stopped = self.pair.rows[3]
         stopped["terminal"] = "completed"

@@ -101,7 +101,7 @@ def _weight_diagnostics(clusters, bounds, weights, witness_pin):
 def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_witness, *,
            manifest_sha256, evidence_index_sha256, trace_sha256, witness_sha256, release_witness,
            prior_inventory=None, policy_witness=None, missing_outcome_bounds=False, charge_witness=None,
-           cohort_weight_witness=None):
+           cohort_weight_witness=None, order_witness=None):
     """Retain each scheduled pair in its verified cluster, including stopped pairs."""
     selection._require(release_witness is not None, "cluster audit requires a V2 release witness")
     freeze = {"manifest_sha256": manifest_sha256, "evidence_index_sha256": evidence_index_sha256}
@@ -111,7 +111,7 @@ def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_wit
     )
     outcomes = pairs.verify(
         bundle, manifest, evidence_index, trace, **freeze, trace_sha256=trace_sha256,
-        release_witness=release_witness, policy_witness=policy_witness,
+        release_witness=release_witness, policy_witness=policy_witness, order_witness=order_witness,
     )
     custody = selection._pinned_json(exposure_witness, witness_sha256)
     clusters = {}
@@ -162,6 +162,7 @@ def main():
     parser.add_argument("--release-witness", nargs=2, metavar=("PATH", "SHA256"), required=True)
     parser.add_argument("--prior-inventory", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--order-witness", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--missing-outcome-bounds", action="store_true",
                         help="report descriptive paired score bounds within each declared cluster")
     parser.add_argument("--cohort-weight-witness", nargs=2, metavar=("PATH", "SHA256"),

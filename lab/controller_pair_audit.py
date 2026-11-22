@@ -14,6 +14,7 @@ USAGE = tuple(field for field in selection.BUDGET if not field.startswith("per_c
 ROLES = {"worker", "routing", "observation", "communication", "coordination", "verification", "advice", "cleanup"}
 TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "cache_creation_tokens")
 TRACE_V2 = "controller_paired_trace_v2"
+ORDER_PLAN = "controller_order_plan_v1"
 RELEASE_WITNESS = "controller_release_witness_v1"
 RELEASE_PAYLOAD = ("agent", "task", "done")
 
@@ -164,9 +165,54 @@ def _breaches(totals, limits):
     return [field for field, amount in totals.items() if amount > limits[field]]
 
 
+
+def _order_plan(witness, blocks, manifest_pin, task_pin):
+    path, pin = witness
+    plan = selection._pinned_json(path, pin)
+    selection._object(plan, ("schema", "manifest_sha256", "task_inventory_sha256", "strata"), "order plan")
+    selection._require(plan["schema"] == ORDER_PLAN and plan["manifest_sha256"] == manifest_pin
+                       and plan["task_inventory_sha256"] == task_pin, "order plan does not bind the frozen schedule")
+    expected = {}
+    for block in blocks:
+        block_id = selection._text(block["block_id"], "block ID")
+        order = block["order"]
+        selection._require(block_id not in expected and type(order) is list and sorted(order) == sorted(ARMS),
+                           "invalid block or arm order in frozen schedule")
+        expected[block_id] = (block["condition"], order[0])
+    strata = plan["strata"]
+    selection._require(type(strata) is list and strata, "expected nonempty order strata")
+    matched, reports = set(), {}
+    for stratum in strata:
+        selection._object(stratum, ("id", "condition", "block_ids", "combined_first_min", "combined_first_max"),
+                          "order stratum")
+        label = selection._text(stratum["id"], "stratum ID")
+        condition = selection._text(stratum["condition"], "stratum condition")
+        members = stratum["block_ids"]
+        selection._require(label not in reports and type(members) is list and members,
+                           "repeated or empty order stratum")
+        minimum, maximum = stratum["combined_first_min"], stratum["combined_first_max"]
+        selection._require(type(minimum) is int and type(maximum) is int and 0 <= minimum <= maximum <= len(members),
+                           "invalid first-arm count bounds")
+        counts = dict.fromkeys(ARMS, 0)
+        for member in members:
+            member = selection._text(member, "stratum block ID")
+            selection._require(member in expected and member not in matched,
+                               "order strata must partition the frozen schedule")
+            actual_condition, first_arm = expected[member]
+            selection._require(actual_condition == condition, "order stratum condition differs from frozen block")
+            counts[first_arm] += 1
+            matched.add(member)
+        selection._require(minimum <= counts["combined"] <= maximum, "first-arm count outside frozen bounds")
+        reports[label] = {"condition": condition, "block_ids": members, "scheduled_first": counts,
+                          "combined_first_bounds": [minimum, maximum]}
+    selection._require(matched == expected.keys(), "order strata must partition the frozen schedule")
+    return {"order_plan_sha256": pin, "planned_order_bounds_verified": True, "runtime_order_verified": False,
+            "strata": reports}
+
+
 def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence_index_sha256, trace_sha256,
-           release_witness=None, policy_witness=None):
-    """Replay the legacy pair or a V2 pair with an independently pinned release witness."""
+           release_witness=None, policy_witness=None, order_witness=None):
+    """Replay paired outcomes and optionally check an independently pinned schedule order plan."""
     selected = selection.verify(bundle, manifest, evidence_index, manifest_sha256=manifest_sha256,
                                 evidence_index_sha256=evidence_index_sha256, policy_witness=policy_witness)
     document = selection._pinned_json(manifest, selected["manifest_sha256"])
@@ -201,6 +247,8 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
     selection._object(inventory, ("blocks",), "task inventory")
     blocks = inventory["blocks"]
     selection._require(type(blocks) is list and blocks and type(tape["arms"]) is list, "empty or invalid block inventory")
+    order_report = (_order_plan(order_witness, blocks, manifest_sha256, tasks["sha256"])
+                    if order_witness is not None else None)
     selection._require(len(tape["arms"]) == 2 * len(blocks), "each declared arm needs a terminal trace")
     if witness_arms is not None:
         selection._require(len(witness_arms) == len(tape["arms"]), "each V2 arm needs release witness coverage status")
@@ -261,6 +309,8 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
         result["release_witness_sha256"] = witness_pin
     if policy_witness is not None:
         result["policy_configuration"] = selected["policy_configuration"]
+    if order_report is not None:
+        result["scheduled_order"] = order_report
     return result
 
 
@@ -272,6 +322,7 @@ def main():
         parser.add_argument(f"--{pin}-sha256", required=True)
     parser.add_argument("--release-witness", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--order-witness", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     try:
         result = verify(**vars(args))

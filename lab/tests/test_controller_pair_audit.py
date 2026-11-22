@@ -277,6 +277,60 @@ class ControllerPairAuditTests(unittest.TestCase):
         result = audit.verify(**self.freeze())
         self.assertEqual(result["arm_resource_receipts"]["combined"]["known_usage"]["cpu_wall_ns"], 12)
 
+    def test_cli_checks_frozen_order_strata_and_keeps_planned_stops(self):
+        f = self.fixture
+        blocks = [self.block, self.block | {"block_id": "paired-later", "seed": 26, "taskset": alloc.gen(26)},
+                  self.block | {"block_id": "paired-reversed", "seed": 27, "taskset": alloc.gen(27),
+                                "order": ["combined", "plain"]}]
+        self.inputs["task_manifest_sha256"] = f.artifact("tasks.json", {"blocks": blocks})
+        f.manifest["inputs"]["task_manifest_sha256"] = self.inputs["task_manifest_sha256"]["sha256"]
+        original = {row["arm"]: row for row in self.rows}
+        for row in self.rows:
+            row["inputs"] = f.manifest["inputs"].copy()
+        for block in blocks[1:]:
+            for arm in block["order"]:
+                self.rows.append(original[arm] | {"block_id": block["block_id"], "seed": block["seed"],
+                                                  "terminal": "stopped", "attempts": []})
+        inputs = self.freeze()
+        self.assertNotIn("scheduled_order", audit.verify(**inputs))
+        document = {"schema": audit.ORDER_PLAN, "manifest_sha256": inputs["manifest_sha256"],
+                    "task_inventory_sha256": self.inputs["task_manifest_sha256"]["sha256"],
+                    "strata": [{"id": "clean-stratum", "condition": "clean",
+                                "block_ids": [block["block_id"] for block in blocks],
+                                "combined_first_min": 1, "combined_first_max": 1}]}
+        path = f.root / "order-witness.json"
+        pin = f.write(path, document)
+        command = [sys.executable, "-B", "-m", "lab.controller_pair_audit",
+                   *(str(inputs[field]) for field in ("bundle", "manifest", "evidence_index", "trace"))]
+        for field in ("manifest", "evidence_index", "trace"):
+            command.extend((f"--{field.replace('_', '-')}-sha256", inputs[f"{field}_sha256"]))
+        result = json.loads(subprocess.run([*command, "--order-witness", str(path), pin],
+                                           capture_output=True, text=True, check=True).stdout)
+        report = result["scheduled_order"]
+        self.assertEqual(report["strata"]["clean-stratum"]["scheduled_first"], {"combined": 1, "plain": 2})
+        self.assertTrue(report["planned_order_bounds_verified"])
+        self.assertFalse(report["runtime_order_verified"])
+        self.assertEqual(result["complete_pairs"], 1)
+        self.assertIsNone(result["pairs"][2]["paired_delta"])
+
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            audit.verify(**inputs, order_witness=(path, "0" * 64))
+        wrong = document | {"task_inventory_sha256": "0" * 64}
+        with self.assertRaisesRegex(ValueError, "does not bind the frozen schedule"):
+            audit.verify(**inputs, order_witness=(path, f.write(path, wrong)))
+        row, = document["strata"]
+        for changes, error in (
+            ({"combined_first_min": 2, "combined_first_max": 2}, "outside frozen bounds"),
+            ({"combined_first_min": True}, "invalid first-arm count bounds"),
+            ({"condition": "disrupted"}, "condition differs"),
+            ({"block_ids": row["block_ids"][1:]}, "partition the frozen schedule"),
+            ({"block_ids": row["block_ids"] + row["block_ids"][:1]}, "partition the frozen schedule"),
+            ({"block_ids": ["unknown", *row["block_ids"][1:]]}, "partition the frozen schedule"),
+        ):
+            with self.subTest(changes=changes), self.assertRaisesRegex(ValueError, error):
+                wrong = document | {"strata": [row | changes]}
+                audit.verify(**inputs, order_witness=(path, f.write(path, wrong)))
+
     def test_cleanup_must_be_a_terminal_suffix_of_the_arm(self):
         row = self.rows[1]
         work = row["attempts"]
