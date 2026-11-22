@@ -219,7 +219,7 @@ def _graded_contrasts(complete_pairs, planned):
     return contrasts
 
 
-def _grade_receipts(witness, line, execution_pin, root, expected, roles, schedule):
+def _grade_receipts(witness, line, execution_pin, root, expected, roles, schedule, limit_eligible):
     path, pin = witness
     document = _metadata(Path(path), pin)
     _object(document, ("schema", "line", "execution_observation_sha256", "grades"), "grading witness")
@@ -261,14 +261,23 @@ def _grade_receipts(witness, line, execution_pin, root, expected, roles, schedul
     for (role, task, replicate), arms in scored_arms.items():
         if len(arms) == len(ARMS):
             complete_pairs[role].add((task, replicate))
-    return {"grading_witness_sha256": pin, "states": counts,
-            "complete_graded_pairs_by_role": {role: len(keys) for role, keys in complete_pairs.items()},
-            "graded_contrast_coverage": _graded_contrasts(complete_pairs, schedule),
-            "scorer_execution_verified": False}
+    report = {
+        "grading_witness_sha256": pin, "states": counts,
+        "complete_graded_pairs_by_role": {role: len(keys) for role, keys in complete_pairs.items()},
+        "graded_contrast_coverage": _graded_contrasts(complete_pairs, schedule),
+        "scorer_execution_verified": False,
+    }
+    if limit_eligible is not None:
+        qualified = {role: complete_pairs[role] & limit_eligible[role] for role in roles}
+        report["within_per_assignment_limits"] = {
+            "complete_graded_pairs_by_role": {role: len(keys) for role, keys in qualified.items()},
+            "graded_contrast_coverage": _graded_contrasts(qualified, schedule),
+        }
+    return report
 
 
 def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_root, schedule, policy_witness,
-                           grade_witness):
+                           grade_witness, limit_eligible):
     bindings = paired.get("scheduled_snapshot_binding")
     _require(bindings is not None, "execution observation requires snapshot-bound schedules")
     document = _metadata(Path(witness[0]), witness[1])
@@ -352,7 +361,7 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
         result["native_policy_application_verified"] = False
     if grade_witness is not None:
         result["grading_receipts"] = _grade_receipts(
-            grade_witness, paired["line"], witness[1], root, grade_inputs, roles, schedule,
+            grade_witness, paired["line"], witness[1], root, grade_inputs, roles, schedule, limit_eligible,
         )
     return result
 
@@ -382,6 +391,7 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
     roles = tuple(role for role in pins if role != "splits")
     rows, totals = _coverage(declared["rows"], schedule, roles)
     limits_by_role = _limits(limits, line, pins, roles, schedule) if limits is not None else None
+    limit_eligible = {role: set() for role in roles} if limits_by_role is not None and grade_witness is not None else None
     clusters = []
     for members in _components(schedule, group_by_task):
         complete = {
@@ -402,7 +412,10 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
                 for role, receipts in rows[key].items():
                     checks[role] = {arm: _limit_result(record, limits_by_role[role][block])
                                     for arm, record in receipts.items()}
-                    eligible_pairs[role] += all(result["eligible"] for result in checks[role].values())
+                    eligible = all(result["eligible"] for result in checks[role].values())
+                    eligible_pairs[role] += eligible
+                    if eligible and limit_eligible is not None:
+                        limit_eligible[role].add(key)
                 assignment["per_assignment_limit_checks"] = checks
             cluster["observed_pairs_within_limits"] = eligible_pairs
         clusters.append(cluster)
@@ -425,7 +438,7 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
     if execution_observation is not None:
         report["execution_observation"] = _execution_observation(execution_observation, paired, coverage[1], rows,
                                                                 roles, capture_root, schedule, policy_witness,
-                                                                grade_witness)
+                                                                grade_witness, limit_eligible)
     return report
 
 

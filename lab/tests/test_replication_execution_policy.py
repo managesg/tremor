@@ -242,3 +242,45 @@ class ReplicationExecutionPolicyTests(unittest.TestCase):
         self.assertEqual(coverage["reference_vs_recalibrated"], unavailable)
         self.assertEqual(coverage["unchanged_vs_recalibrated"],
                          {"scheduled_assignments": 2, "matched_graded_assignments": 0, "reason": None})
+
+    def test_contrast_requires_grades_and_limits_on_the_same_assignment(self):
+        coverage = json.loads(self.inputs["coverage"][0].read_bytes())
+        rows = {(row["task_id"], row["replicate_id"]): row["roles"] for row in coverage["rows"]}
+        rows["case-a", "r2"]["recalibrated"]["technique"]["usage"]["calls"] = 1
+        rows["case-b", "r1"]["reference"]["comparator"]["usage"]["gpu_wall_ns"] = None
+        self.inputs["coverage"] = self.policy.fixture._pin("budgeted-coverage", json.dumps(coverage))
+        self.document["coverage_sha256"] = self.inputs["coverage"][1]
+        for terminal in self.terminals:
+            assignment = terminal["assignment"]
+            key = assignment["task_id"], assignment["replicate_id"]
+            terminal["usage"] = rows[key][assignment["role"]][assignment["arm"]]["usage"]
+            terminal["coverage_sha256"] = self.inputs["coverage"][1]
+
+        execution, grades = self.grading_fixture(recalibrated_gap=("case-b", "r1"))
+        graded = self.policy.fixture._pin("budgeted-grades", json.dumps(grades))
+        schedule = json.loads(self.inputs["unchanged"][0].read_bytes())["rows"]
+        limits = {
+            "schema": audit.LIMIT_SCHEMA, "line": self.inputs["line"], "schedule_pins": self.document["schedule_pins"],
+            "per_assignment_limits": {
+                role: {row["block_id"]: {"calls": 0, "gpu_wall_ns": 0} for row in schedule}
+                for role in ("reference", "unchanged", "recalibrated")
+            },
+        }
+        limit_pin = self.policy.fixture._pin("per-assignment-limits", json.dumps(limits))
+        inputs = self.inputs | {"execution_observation": execution, "grade_witness": graded}
+        report = audit.verify(**inputs, limits=limit_pin)
+        result = report["execution_observation"]["grading_receipts"]
+        cluster, = report["linked_clusters"]
+        self.assertEqual(cluster["observed_pairs_within_limits"], {"reference": 1, "unchanged": 2, "recalibrated": 2})
+        self.assertEqual(result["complete_graded_pairs_by_role"], {"reference": 2, "unchanged": 2, "recalibrated": 2})
+        within = result["within_per_assignment_limits"]
+        self.assertEqual(within["complete_graded_pairs_by_role"], {"reference": 1, "unchanged": 2, "recalibrated": 1})
+        self.assertEqual({name: row["matched_graded_assignments"]
+                          for name, row in within["graded_contrast_coverage"].items()},
+                         {"reference_vs_unchanged": 1, "reference_vs_recalibrated": 0,
+                          "unchanged_vs_recalibrated": 0})
+        self.assertTrue(all(row["scheduled_assignments"] == 3 and row["reason"] is None
+                            for row in within["graded_contrast_coverage"].values()))
+        before = audit.verify(**inputs)["execution_observation"]["grading_receipts"]
+        self.assertNotIn("within_per_assignment_limits", before)
+        self.assertEqual({key: value for key, value in result.items() if key != "within_per_assignment_limits"}, before)
