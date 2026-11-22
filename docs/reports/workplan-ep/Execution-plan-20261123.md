@@ -1715,3 +1715,19 @@ The new detached release passed 60 tests and 12 browser checks.
 The complete 432-arm replay and the explainer bytes reproduced.
 The staged Git checkout stays at the pinned a99cddd base pending
 review. [Public candidate](../../../runs/m6-public-arithmetic-domain.AZVeDW/OWNER.md)
+
+## M6 independently computed public child work
+
+An isolated child now computes selected public fixture work from the
+exact delivered contexts. The detached scorer uses those fresh work
+receipts in one complete and one interrupted cell. Six other cells
+retain their archived evidence. The complete cell verifies three
+tasks at 25 synthetic units. The interrupted cell retains one
+computed response and three known units, with the complete cost and
+verified union unavailable. Reusing a receipt under a different
+attempt is refused even if its answer and context match.
+
+Seven existing scorer checks and five new checks passed. The raw
+child stdout and derived report reproduced byte for byte. Native
+model usage, historical transport and protected outcomes remain open.
+[Child computation evidence](../../../runs/m6-computed-public-work.UdtQq1/OWNER.md)
