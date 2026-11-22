@@ -1519,3 +1519,18 @@ Historical billable occupancy remains unavailable and the existing
 The integrated archive retained all 445 previous cases and passed
 three added prior-settlement tests, 448 total.
 [Integrated evidence](../../../runs/m9-settlement-integration.06PlZF/OWNER.md)
+
+## M10 exact threshold public release candidate
+
+The optional Grover target mode returns iteration one at exact equality
+with 25/32. Comparing the displayed simulated floats at this boundary
+returns iteration two. The detached release candidate preserves legacy
+CLI bytes, exposes the exact probability and leaves the protected
+transfer criterion open. Independent source review reproduced the
+maximum CLI size and iteration-zero extremes.
+
+All 28 release tests passed. Seven offline pages resolved 34 local
+references, and ten browser views rendered the relevant sections.
+The 377-frame, 60-second explainer reproduced byte for byte.
+Claims and release-owner acceptance remain open.
+[Release evidence](../../../runs/m10-public-exact-grover.wPqCMg/OWNER.md)
