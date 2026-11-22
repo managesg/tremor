@@ -2281,17 +2281,22 @@ hypothesis. The proposed paragraph preserves the targeted-policy and
 verification-cost comparisons and points to the public preregistration
 rules. The decision bounds still need a prospective freeze. The exact
 50-file readback changed only the README and verified 38 local links
-across eight Markdown pages. Release-owner adoption remains open.
+across eight Markdown pages. Offline browser replay opened the
+disclosure and reached the exact workplan heading by keyboard at
+500 and 1280 pixels. The four existing motion and playback cases also
+passed on this preview. Release-owner adoption remains open.
+[Browser replay](../../../runs/m10-l2-link-browser.LfeCiJ/OWNER.md)
 
 
 ## M8 retained read-only backing review
 
-The [offline mount review](../../../runs/m8-readonly-backing-review.mzfOfK/OWNER.md)
-distinguishes a container's read-only bind from a read-only backing
-filesystem. The stock inspector accepts the synthetic bind record.
-The optional reviewer refuses the same bind on a writable superblock
-and accepts the matching read-only snapshots. Nine checks passed,
-including mount changes, overlapping roots and ambiguous backing.
-This applies to the read-only filesystem route. The storage owner
-still needs to provide actual stable paths and custody through cleanup.
-The packet adds no admission or runtime control.
+The [first offline mount review](../../../runs/m8-readonly-backing-review.mzfOfK/OWNER.md)
+distinguished a read-only bind from a writable superblock, but an
+independent control found it could select a read-only row shadowed by
+a newer writable ancestor. The [ancestry follow-up](../../../runs/m8-readonly-backing-ancestry.mOfF65/OWNER.md)
+checks the covering parent IDs and refuses that case while preserving
+a correctly parented read-only child. Thirteen checks passed and the
+earlier archive reproduced exactly. Phase references bind supplied
+bytes without authenticating their capture. The storage owner and
+reviewer still need actual stable paths and custody through cleanup.
+The candidate adds no admission or runtime control.
