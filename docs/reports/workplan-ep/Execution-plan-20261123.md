@@ -1265,3 +1265,16 @@ authority with the appointed reviewers. A separate replay of the archived
 CPU interruption recovered two of 96 planned attempts, one acknowledged
 exchange and two cleanup records, with no paired result. Twenty-nine
 tests passed. See `runs/m3-l5-review-artifact-intake.KKagJG/OWNER.md`.
+
+## Integrated handoff after the current research changes
+
+The exact 23707fc cut with pinned detached owners' overlays and public
+attachments passed all 419 lab tests. Package discovery passed 767 of
+768 tests with the existing Torch-dependent skip. The skipped test and
+implementation match the prior CPU archive that passed it. The
+detached five-patch release passed all 24 tests, verified 27 local
+links and six browser views, and reproduced the 377-frame explainer
+and Pilot 3 chart. The local accounting replay passed six tests.
+See `runs/wednesday-combined-current.y5ahz3/OWNER.md` for source
+attachment and release-owner dependencies. Protected outcomes and
+authenticated acceptance remain open.
