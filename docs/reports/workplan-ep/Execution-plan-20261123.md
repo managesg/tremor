@@ -1577,3 +1577,19 @@ The two candidates compose over the pinned baseline with 78 tests
 passing. The historical calibration, mocked completion and mocked
 cancellation reports reproduce.
 [Typed settlement candidate](../../../runs/r3-typed-settlement.9SOuV4/OWNER.md)
+
+## M3 settlement receipt bound to the reviewed R3 batch
+
+The detached R3-L2/L5 audit joins a reviewed resource placement to the
+complete one-admission ledger, exact reserve row, frozen plan and
+independently pinned V2 host and worker receipts. A repinned ledger
+cannot change the approved batch or opening balance. Explicit crossed
+allocations and settlements whose known elapsed time exceeds the
+reviewed wall-plus-cleanup envelope are refused. The lost-create
+fixture retains the full reservation and reports no measured charge.
+
+The final source passed 18 focused and 87 integrated offline checks
+and reproduced the archived R2 calibration digest and two mocked
+SmolLM3 outcomes. The protected R3 batch still needs a current
+placement, an independently captured run and a verified ledger close.
+[Local verifier evidence](../../../runs/r3-bound-settlement.GxJpZy/OWNER.md)
