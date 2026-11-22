@@ -136,6 +136,39 @@ class GroverCustodyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     self.verify()
 
+    def test_fresh_commitment_cannot_label_independent_work_as_a_coordination_regime(self):
+        stages = (Stage("direct", 3, 2, Fraction(4, 5), (("a", (5,)),), ("a",)),)
+        for regime in ("complementary", "redundant", "sequential"):
+            with self.subTest(regime=regime), self.assertRaisesRegex(ValueError, "does not implement " + regime):
+                self.document["blocks"] = [block("relabeled", Fixture(regime, stages))]
+                self.bundle()
+                self.verify()
+
+    def test_redundancy_requires_a_shared_direct_stage_and_an_independent_stage(self):
+        common = Stage("common", 3, 2, Fraction(4, 5), (("a", (3,)), ("b", (3,))), ("a", "b"))
+        separate = Stage("separate", 3, 2, Fraction(1), (("c", (6,)),), ("c",))
+        self.document["blocks"] = [block("redundancy", Fixture("redundant", (common, separate)))]
+        self.bundle()
+        self.assertEqual(self.verify()["matched_arms"], 8)
+        self.document["blocks"] = [block("no-separate", Fixture("redundant", (common,)))]
+        self.bundle()
+        with self.assertRaisesRegex(ValueError, "does not implement redundant"):
+            self.verify()
+
+    def test_complementary_requires_marks_from_multiple_sources(self):
+        join = Stage("join", 3, 2, Fraction(1), (("a", (0, 1)), ("b", (1,))), ("c",))
+        self.document["blocks"] = [block("duplicated-shard", Fixture("complementary", (join,)))]
+        self.bundle()
+        with self.assertRaisesRegex(ValueError, "does not implement complementary"):
+            self.verify()
+
+        overlap = Stage("joint", 3, 2, Fraction(1), (
+            ("a", (0, 1)), ("b", (1, 2)), ("c", (0, 2)),
+        ), ("c",))
+        self.document["blocks"] = [block("overlap", Fixture("complementary", (overlap,)))]
+        self.bundle()
+        self.assertEqual(self.verify()["matched_arms"], 8)
+
     def test_relabelled_index_positions_cannot_reuse_development_math_and_structure(self):
         aliases = Fixture("complementary", (Stage("other", 3, 1, Fraction(1), (
             ("a", (6,)), ("b", (7,)),

@@ -107,6 +107,25 @@ def projections(fixture):
     }
 
 
+def _requires_separate_sources(stage):
+    sources = [set(marks) for _, marks in stage.marks]
+    marked = set().union(*sources)
+    return all(source != marked for source in sources)
+
+
+def _check_regime(fixture):
+    if fixture.regime == "complementary":
+        valid = any(_requires_separate_sources(stage) for stage in fixture.stages)
+    elif fixture.regime == "redundant":
+        direct = [stage for stage in fixture.stages if stage.prerequisite is None and not stage.needs_shards()]
+        common = [stage for stage in direct if len(stage.solvers) >= 2]
+        separate = [stage for stage in direct if len(stage.solvers) == 1]
+        valid = any(other.solvers[0] not in shared.solvers for shared in common for other in separate)
+    else:
+        valid = any(stage.prerequisite is not None for stage in fixture.stages)
+    _require(valid, f"block structure does not implement {fixture.regime}")
+
+
 def _block(record):
     _object(record, ("id", "family", "instance", "structure", "regime", "budget", "order", "worker_order",
                      "stages", "projections"), "block")
@@ -147,7 +166,9 @@ def _block(record):
             "effective_target": str(task.target),
             "probability": [str(probability) for probability in trace],
         })
-    expected = projections(Fixture(record["regime"], tuple(stages)))
+    fixture = Fixture(record["regime"], tuple(stages))
+    _check_regime(fixture)
+    expected = projections(fixture)
     _require(canonical(record["projections"]) == canonical(expected), "role projection differs from its exact scope")
     return identity, sha256(canonical(signatures)).hexdigest(), counts
 
