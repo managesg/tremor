@@ -20,11 +20,13 @@ from .transfer_fixtures import Fixture, REGIMES, Stage, WORKERS
 MANIFEST = "grover_custody_rehearsal_manifest_v1"
 RECEIPT = "grover_custody_rehearsal_receipt_v1"
 DEVELOPMENT = "grover_custody_rehearsal_development_v1"
+EXPECTATIONS = "grover_custody_rehearsal_expectations_v1"
 DOMAIN = b"tremor:grover:custody-rehearsal:manifest:v1\x00"
 LIMIT = 512 * 1024
 DIGEST = re.compile(r"[0-9a-f]{64}")
 IDENTITY = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}")
 ARMS = set(product(topology.MODES, topology.EVIDENCE_ACCESS))
+BRANCHES = ("hit", "no_hit", "boundary")
 
 
 def _require(condition, message):
@@ -141,7 +143,7 @@ def _block(record):
 
     rows = record["stages"]
     _require(type(rows) is list and 0 < len(rows) <= 16, "empty or oversized block stage inventory")
-    stages, prior, signatures, counts = [], {}, [], {"hit": 0, "no_hit": 0, "boundary": 0}
+    stages, prior, signatures, counts = [], {}, [], dict.fromkeys(BRANCHES, 0)
     slots = {}
     for row in rows:
         stage = _stage(row, prior)
@@ -177,7 +179,7 @@ def _inventory(rows):
     _require(type(rows) is list and 0 < len(rows) <= 64, "empty or oversized block inventory")
     groups = [set() for _ in range(4)]
     fingerprints = set()
-    branches = {"hit": 0, "no_hit": 0, "boundary": 0}
+    branches_by_regime = {regime: Counter(dict.fromkeys(BRANCHES, 0)) for regime in REGIMES}
     for row in rows:
         identifiers, fingerprint, counts = _block(row)
         _require(identifiers[0] not in groups[0] and identifiers[2] not in groups[2], "duplicate block or instance")
@@ -185,14 +187,38 @@ def _inventory(rows):
         for group, item in zip(groups, identifiers, strict=True):
             group.add(item)
         fingerprints.add(fingerprint)
-        for branch, count in counts.items():
-            branches[branch] += count
-    return groups, fingerprints, branches
+        branches_by_regime[row["regime"]].update(counts)
+    return groups, fingerprints, branches_by_regime
+
+
+def _check_expectations(path, digest, document, manifest_commitment, branches_by_regime):
+    raw = _read(path, 16 * 1024)
+    _require(compare_digest(sha256(raw).hexdigest(), _pin(digest)), "expectations digest does not match")
+    expected = _canonical_document(raw)
+    identity = ("inventory_id", "protocol_sha256", "split_rule_sha256", "generator_revision",
+                "generator_config_sha256", "development_inventory_sha256")
+    _object(expected, ("schema", *identity, "block_ids", "manifest_commitment", "branches_by_regime"),
+            "expectations document")
+    _require(expected["schema"] == EXPECTATIONS, "unknown rehearsal expectations schema")
+    for field in identity:
+        _require(expected[field] == document[field], f"{field} differs from expectations")
+    _require(expected["block_ids"] == [block["id"] for block in document["blocks"]],
+             "ordered block IDs differ from expectations")
+    _require(expected["manifest_commitment"] == manifest_commitment, "manifest commitment differs from expectations")
+    quotas = expected["branches_by_regime"]
+    _object(quotas, REGIMES, "expected regime quota")
+    for regime, counts in quotas.items():
+        _object(counts, BRANCHES, f"expected {regime} branch quota")
+        _require(all(type(value) is int and value >= 0 for value in counts.values()),
+                 "expected branch quota must be a nonnegative integer")
+    _require(quotas == branches_by_regime, "branch quotas differ from the exact scorer")
 
 
 def verify(manifest, nonce, receipt, development, *, receipt_sha256, protocol_sha256, split_rule_sha256,
-           custodian_id):
-    """Check a synthetic opening against an independently supplied receipt digest."""
+           custodian_id, expectations=None, expectations_sha256=None):
+    """Check a synthetic opening and, optionally, a separately pinned comparison."""
+    _require((expectations is None) == (expectations_sha256 is None),
+             "expectations and their SHA-256 must be supplied together")
     trusted = _read(receipt, 16 * 1024)
     _require(compare_digest(sha256(trusted).hexdigest(), _pin(receipt_sha256)), "receipt digest does not match")
     receipt_row = _canonical_document(trusted)
@@ -228,21 +254,25 @@ def verify(manifest, nonce, receipt, development, *, receipt_sha256, protocol_sh
     _object(dev, ("schema", "blocks"), "development inventory")
     _require(dev["schema"] == DEVELOPMENT, "unknown rehearsal development schema")
     dev_groups, dev_fingerprints, _ = _inventory(dev["blocks"])
-    groups, fingerprints, branches = _inventory(document["blocks"])
+    groups, fingerprints, branches_by_regime = _inventory(document["blocks"])
     for field, prior, held in zip(("block", "family", "instance", "structure"), dev_groups, groups, strict=True):
         _require(prior.isdisjoint(held), f"{field} overlaps the development inventory")
     _require(dev_fingerprints.isdisjoint(fingerprints), "equivalent task structure and probability overlap development")
-    return {
+    result = {
         "evidence": "synthetic_grover_custody_opening",
         "receipt_sha256": receipt_sha256,
         "commitment": receipt_row["commitment"],
         "blocks": len(document["blocks"]),
         "matched_arms": len(document["blocks"]) * len(ARMS),
-        "branches": branches,
+        "branches": {branch: sum(counts[branch] for counts in branches_by_regime.values()) for branch in BRANCHES},
         "custodian_authenticated": False,
         "authorizes_execution": False,
         "scientific_result": False,
     }
+    if expectations is not None:
+        _check_expectations(expectations, expectations_sha256, document, receipt_row["commitment"], branches_by_regime)
+        result.update(expectations_sha256=expectations_sha256, branches_by_regime=branches_by_regime)
+    return result
 
 
 def main():
@@ -251,6 +281,8 @@ def main():
         parser.add_argument(arg, type=Path)
     for arg in ("receipt-sha256", "protocol-sha256", "split-rule-sha256", "custodian-id"):
         parser.add_argument(f"--{arg}", required=True)
+    parser.add_argument("--expectations", type=Path)
+    parser.add_argument("--expectations-sha256")
     try:
         result = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, RecursionError, TypeError, ValueError, ZeroDivisionError) as error:

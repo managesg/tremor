@@ -80,6 +80,85 @@ class GroverCustodyTests(unittest.TestCase):
     def verify(self):
         return custody.verify(**self.paths, **self.pins)
 
+    def expected_quotas(self):
+        return {
+            "schema": "grover_custody_rehearsal_expectations_v1",
+            "inventory_id": "synthetic-example",
+            "protocol_sha256": "1" * 64,
+            "split_rule_sha256": "3" * 64,
+            "generator_revision": "synthetic-1",
+            "generator_config_sha256": "2" * 64,
+            "development_inventory_sha256": sha256(custody.canonical(self.development)).hexdigest(),
+            "block_ids": ["rehearsal"],
+            "manifest_commitment": custody.commitment(custody.canonical(self.document), self.opening),
+            "branches_by_regime": {
+                "complementary": {"hit": 0, "no_hit": 0, "boundary": 0},
+                "redundant": {"hit": 0, "no_hit": 0, "boundary": 0},
+                "sequential": {"hit": 1, "no_hit": 1, "boundary": 1},
+            },
+        }
+
+    def verify_expected(self, expected):
+        path = self.root / "expectations"
+        raw = custody.canonical(expected)
+        path.write_bytes(raw)
+        return custody.verify(**self.paths, **self.pins, expectations=path,
+                              expectations_sha256=sha256(raw).hexdigest())
+
+    def test_frozen_comparison_keeps_rehearsal_scope(self):
+        self.bundle()
+        expected = self.expected_quotas()
+        result = self.verify_expected(expected)
+        self.assertEqual(result["expectations_sha256"], sha256(custody.canonical(expected)).hexdigest())
+        self.assertEqual(result["branches_by_regime"], expected["branches_by_regime"])
+        for flag in ("custodian_authenticated", "authorizes_execution", "scientific_result"):
+            self.assertFalse(result[flag])
+        self.assertNotIn("expectations_sha256", self.verify())
+        self.assertNotIn("block_ids", result)
+
+    def test_recommitted_opening_cannot_change_frozen_generator_or_block_set(self):
+        expected = self.expected_quotas()
+        original = deepcopy(self.document)
+        for field, value in (("generator_revision", "synthetic-2"), ("generator_config_sha256", "4" * 64),
+                             ("inventory_id", "other-inventory")):
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, field):
+                self.document = {**original, field: value}
+                self.bundle()
+                self.verify_expected(expected)
+        self.document = deepcopy(original)
+        self.document["blocks"][0]["id"] = "other-block"
+        self.bundle()
+        with self.assertRaisesRegex(ValueError, "ordered block IDs"):
+            self.verify_expected(expected)
+        self.document = deepcopy(original)
+        self.document["blocks"][0]["order"].reverse()
+        self.bundle()
+        with self.assertRaisesRegex(ValueError, "manifest commitment differs"):
+            self.verify_expected(expected)
+
+    def test_repinned_quotas_refuse_mismatches_with_the_same_aggregate(self):
+        self.bundle()
+        expected = self.expected_quotas()
+        quotas = expected["branches_by_regime"]
+        quotas["sequential"]["hit"] -= 1
+        quotas["redundant"]["hit"] += 1
+        with self.assertRaisesRegex(ValueError, "quotas differ"):
+            self.verify_expected(expected)
+        expected = self.expected_quotas()
+        expected["branches_by_regime"]["sequential"]["boundary"] = True
+        with self.assertRaisesRegex(ValueError, "nonnegative integer"):
+            self.verify_expected(expected)
+
+    def test_expectations_path_and_external_pin_must_be_paired(self):
+        self.bundle()
+        path = self.root / "expectations"
+        path.write_bytes(custody.canonical(self.expected_quotas()))
+        for args in ({"expectations": path}, {"expectations_sha256": "4" * 64}):
+            with self.subTest(args=args), self.assertRaisesRegex(ValueError, "supplied together"):
+                custody.verify(**self.paths, **self.pins, **args)
+        with self.assertRaisesRegex(ValueError, "expectations digest does not match"):
+            custody.verify(**self.paths, **self.pins, expectations=path, expectations_sha256="4" * 64)
+
     def test_exact_opening_counts_boundaries_and_no_hit_without_disclosing_inputs(self):
         self.bundle()
         expected = self.verify()
