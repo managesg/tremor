@@ -133,6 +133,77 @@ class ControllerClusterAuditTests(unittest.TestCase):
         self.assertEqual(cluster["mean_paired_delta_bounds"], ["1/6", "1/6"])
         self.assertEqual(cluster["missing_pairs"], 0)
 
+    def cost_witness(self, inputs, *, modify=None):
+        fixture = self.pair.fixture
+        scopes = {"plain": [], "combined": [], "common": ["setup", "scoring"]}
+        rows, charges = [], []
+        for arm_row in self.pair.rows:
+            arm = arm_row["arm"]
+            for attempt in arm_row["attempts"]:
+                charge = f"attempt-charge-{len(charges)}"
+                scopes[arm].append(charge)
+                rows.append({"block_id": arm_row["block_id"], "arm": arm,
+                             "sequence": attempt["sequence"], "charge_id": charge})
+                charges.append({"id": charge, "scope": arm, "role": attempt["role"],
+                                "usage": deepcopy(attempt["usage"]), "prior_settlement_sha256": None})
+        charges += [
+            {"id": "setup", "scope": "common", "role": "setup",
+             "usage": self.pair.attempt(0, "cleanup", cpu=9)["usage"], "prior_settlement_sha256": "a" * 64},
+            {"id": "scoring", "scope": "common", "role": "independent_scoring",
+             "usage": None, "prior_settlement_sha256": None},
+        ]
+        roles = {"setup": "setup", "scoring": "independent_scoring"}
+        if modify is not None:
+            modify(rows, charges, roles)
+        charge_index = fixture.artifact("cost-index.json", {
+            "schema": "controller_unit_charges_v1", "receipts": charges,
+        })
+        placement = fixture.artifact("cost-placement.json", {
+            "schema": "controller_cost_placement_v1", "charge_index_sha256": charge_index["sha256"],
+            "charges_by_scope": scopes,
+        })
+        assignment = fixture.artifact("cost-assignment.json", {
+            "schema": "public_controller_attempt_charges_v1", "trace_sha256": inputs["trace_sha256"],
+            "rows": rows,
+        })
+        common_roles = fixture.artifact("cost-common-roles.json", {
+            "schema": "controller_common_charge_roles_v1", "roles": roles,
+        })
+        witness = fixture.bundle / "charge-witness.json"
+        pin = fixture.write(witness, {"schema": "controller_attempt_charge_witness_v1",
+                                      "trace_sha256": inputs["trace_sha256"], "assignment": assignment,
+                                      "placement": placement, "charge_index": charge_index,
+                                      "common_roles": common_roles})
+        return str(witness), pin
+
+    def test_cost_join_retains_unknown_arm_and_common_cost_and_prior_settlement(self):
+        inputs = self.freeze()
+        result = audit.verify(**inputs, charge_witness=self.cost_witness(inputs))
+        joined = result["observed_charge_join"]
+        self.assertEqual(joined["matched_attempts"], 10)
+        self.assertEqual(joined["unknown_attempt_charge_ids"], ["attempt-charge-9"])
+        self.assertFalse(joined["native_metering_verified"])
+        totals = joined["common_and_arm_costs"]
+        self.assertIsNone(totals["placement"]["incremental_usage"])
+        self.assertEqual(totals["placement"]["known_incremental_usage"]["cpu_wall_ns"], 18)
+        self.assertEqual(totals["by_role"]["setup"]["known_prior_usage"]["cpu_wall_ns"], 9)
+        self.assertIsNone(totals["by_role"]["independent_scoring"]["incremental_usage"])
+
+    def test_fresh_charge_witness_rejects_equal_total_reallocation_and_common_role_swap(self):
+        inputs = self.freeze()
+
+        def transfer_cost(rows, charges, roles):
+            charges[0]["usage"]["cpu_wall_ns"] += 1
+            charges[1]["usage"]["cpu_wall_ns"] -= 1
+
+        for modify, expected in (
+            (transfer_cost, "exact usage differs"),
+            (lambda rows, charges, roles: rows.pop(), "incomplete attempt mapping"),
+            (lambda rows, charges, roles: roles.update(scoring="calibration"), "common charge role differs"),
+        ):
+            with self.subTest(expected=expected), self.assertRaisesRegex(ValueError, expected):
+                audit.verify(**inputs, charge_witness=self.cost_witness(inputs, modify=modify))
+
     def test_policy_witness_preserves_an_all_disabled_cluster_as_diagnostic(self):
         common, references = self.pair.policy_files(combined={}, plain={})
         inputs = self.freeze()

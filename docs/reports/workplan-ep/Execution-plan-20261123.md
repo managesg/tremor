@@ -917,6 +917,14 @@ cases and produced the same report against the updated paired verifier.
 Actual charge observation, custody and the confirmatory estimator
 remain open.
 
+The tracked cluster audit accepts the optional `--charge-witness`
+input. It verifies the exact mapping from trace attempts to charge
+receipts and independently checks the placement and common cost roles.
+The public CLI replay joined ten attempts. One arm charge and the
+independent scorer charge remain unknown, so the complete incremental
+total is unavailable. Prior setup remains separate. The earlier
+reports replay byte for byte. See `runs/m9-integrated-charge-join.ijbFE6`.
+
 ## L4-E to L8-D split identity
 
 The upstream lineage checker previously accepted canonically equivalent

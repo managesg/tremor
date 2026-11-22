@@ -5,6 +5,7 @@ from fractions import Fraction
 import json
 from pathlib import Path
 
+from lab import controller_attempt_cost as costs
 from lab import controller_holdout as holdout
 from lab import controller_pair_audit as pairs
 from lab import controller_selection as selection
@@ -44,7 +45,7 @@ def _missing_bounds(clusters, pairs_by_id, slots_by_id):
 
 def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_witness, *,
            manifest_sha256, evidence_index_sha256, trace_sha256, witness_sha256, release_witness,
-           prior_inventory=None, policy_witness=None, missing_outcome_bounds=False):
+           prior_inventory=None, policy_witness=None, missing_outcome_bounds=False, charge_witness=None):
     """Retain each scheduled pair in its verified cluster, including stopped pairs."""
     selection._require(release_witness is not None, "cluster audit requires a V2 release witness")
     freeze = {"manifest_sha256": manifest_sha256, "evidence_index_sha256": evidence_index_sha256}
@@ -82,6 +83,8 @@ def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_wit
             summaries, {pair["block_id"]: pair for pair in outcomes["pairs"]},
             {block["block_id"]: block["taskset"]["n_agents"] for block in inventory["blocks"]},
         )
+    if charge_witness is not None:
+        report["observed_charge_join"] = costs.reconcile(trace, trace_sha256, charge_witness)
     return report
 
 
@@ -96,6 +99,8 @@ def main():
     parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--missing-outcome-bounds", action="store_true",
                         help="report descriptive paired score bounds within each declared cluster")
+    parser.add_argument("--charge-witness", nargs=2, metavar=("PATH", "SHA256"),
+                        help="join exact arm attempts to independently pinned cost and common-role artifacts")
     try:
         report = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:
