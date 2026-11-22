@@ -1139,3 +1139,14 @@ the detached smoke bundle fails its source manifest. The smoke review
 and the scientific replication comparator have their own exact source
 identities.
 [Local readback and source evidence](../../../runs/smollm3-image-shape-readiness.VF1grj/OWNER.md)
+
+## Pilot 4 criterion 7 evidence intake
+
+The offline receipt audit joins all 260 reserved attempts to 30 episode
+records in each synthetic retry case, with separate metered and unknown
+reservation balances. It rejects relabeled charges, reordered attempts and
+duplicate episode records. The cap-stop case retains an attempted turn with
+no reply. Criterion 7 still requires the Pilot 4 Console receipt, complete
+prompt content and documented manual review for every episode. See
+`runs/m2-gate7-custody.KUiJwO/OWNER.md` for the reproducible receipts and
+handoff. The online pilot and EP-1 freeze remain gated.
