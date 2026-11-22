@@ -128,7 +128,20 @@ def _check_regime(fixture):
     _require(valid, f"block structure does not implement {fixture.regime}")
 
 
-def _block(record):
+def _structural_fingerprint(signatures):
+    """Canonicalize a prerequisite forest without treating a schedule as new tasks."""
+    children = [[] for _ in signatures]
+    roots = []
+    for position in reversed(range(len(signatures))):
+        signature = signatures[position]
+        parent = signature["dependency"]
+        stage = {field: value for field, value in signature.items() if field != "dependency"}
+        subtree = sha256(canonical({"stage": stage, "children": sorted(children[position])})).hexdigest()
+        (roots if parent is None else children[parent]).append(subtree)
+    return sha256(canonical(sorted(roots))).hexdigest()
+
+
+def _validated_block(record):
     _object(record, ("id", "family", "instance", "structure", "regime", "budget", "order", "worker_order",
                      "stages", "projections"), "block")
     identity = tuple(_identifier(record[field]) for field in ("id", "family", "instance", "structure"))
@@ -172,23 +185,31 @@ def _block(record):
     _check_regime(fixture)
     expected = projections(fixture)
     _require(canonical(record["projections"]) == canonical(expected), "role projection differs from its exact scope")
-    return identity, sha256(canonical(signatures)).hexdigest(), counts
+    return identity, sha256(canonical(signatures)).hexdigest(), _structural_fingerprint(signatures), counts
+
+
+def _block(record):
+    """Retain the original order-sensitive fingerprint for replay callers."""
+    identity, ordered, _, counts = _validated_block(record)
+    return identity, ordered, counts
 
 
 def _inventory(rows):
     _require(type(rows) is list and 0 < len(rows) <= 64, "empty or oversized block inventory")
     groups = [set() for _ in range(4)]
-    fingerprints = set()
+    fingerprints, structures = set(), set()
     branches_by_regime = {regime: Counter(dict.fromkeys(BRANCHES, 0)) for regime in REGIMES}
     for row in rows:
-        identifiers, fingerprint, counts = _block(row)
+        identifiers, fingerprint, structure, counts = _validated_block(row)
         _require(identifiers[0] not in groups[0] and identifiers[2] not in groups[2], "duplicate block or instance")
         _require(fingerprint not in fingerprints, "duplicate equivalent task within the rehearsal inventory")
+        _require(structure not in structures, "duplicate equivalent task after prerequisite-preserving reorder")
         for group, item in zip(groups, identifiers, strict=True):
             group.add(item)
         fingerprints.add(fingerprint)
+        structures.add(structure)
         branches_by_regime[row["regime"]].update(counts)
-    return groups, fingerprints, branches_by_regime
+    return groups, fingerprints, structures, branches_by_regime
 
 
 def _check_expectations(path, digest, document, manifest_commitment, branches_by_regime):
@@ -253,11 +274,13 @@ def verify(manifest, nonce, receipt, development, *, receipt_sha256, protocol_sh
     dev = _canonical_document(reference)
     _object(dev, ("schema", "blocks"), "development inventory")
     _require(dev["schema"] == DEVELOPMENT, "unknown rehearsal development schema")
-    dev_groups, dev_fingerprints, _ = _inventory(dev["blocks"])
-    groups, fingerprints, branches_by_regime = _inventory(document["blocks"])
+    dev_groups, dev_fingerprints, dev_structures, _ = _inventory(dev["blocks"])
+    groups, fingerprints, structures, branches_by_regime = _inventory(document["blocks"])
     for field, prior, held in zip(("block", "family", "instance", "structure"), dev_groups, groups, strict=True):
         _require(prior.isdisjoint(held), f"{field} overlaps the development inventory")
     _require(dev_fingerprints.isdisjoint(fingerprints), "equivalent task structure and probability overlap development")
+    _require(dev_structures.isdisjoint(structures),
+             "equivalent task structure and probability overlap development after prerequisite-preserving reorder")
     result = {
         "evidence": "synthetic_grover_custody_opening",
         "receipt_sha256": receipt_sha256,

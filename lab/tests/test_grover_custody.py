@@ -266,6 +266,45 @@ class GroverCustodyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate equivalent task"):
             self.verify()
 
+    def _two_redundant_stages(self):
+        shared = Stage("common", 3, 2, Fraction(4, 5), (("a", (3,)), ("b", (3,))), ("a", "b"))
+        separate = Stage("separate", 3, 2, Fraction(1), (("c", (6,)),), ("c",))
+        return shared, separate
+
+    def test_reversing_independent_stages_cannot_split_the_same_task_structure(self):
+        shared, separate = self._two_redundant_stages()
+        original = block("development-redundant", Fixture("redundant", (shared, separate)))
+        reordered = block("held-redundant", Fixture("redundant", (separate, shared)))
+        self.assertNotEqual(custody._block(original)[1], custody._block(reordered)[1])
+        self.development["blocks"] = [original]
+        self.document["development_inventory_sha256"] = sha256(custody.canonical(self.development)).hexdigest()
+        self.document["blocks"] = [reordered]
+        self.bundle()
+        with self.assertRaisesRegex(ValueError, "equivalent task structure and probability"):
+            self.verify()
+
+    def test_reordering_parallel_branches_does_not_inflate_branch_quota(self):
+        shared, separate = self._two_redundant_stages()
+        following = Stage("following", 3, 1, Fraction(4, 5), (("b", (2,)),), ("b",), "common")
+        first_order = Fixture("sequential", (shared, following, separate))
+        second_order = Fixture("sequential", (separate, shared, following))
+        self.document["blocks"] = [block("first", first_order), block("second", second_order)]
+        self.bundle()
+        with self.assertRaisesRegex(ValueError, "duplicate equivalent task"):
+            self.verify()
+
+    def test_different_prerequisite_with_equal_scorer_values_is_novel(self):
+        left = Stage("left", 3, 2, Fraction(4, 5), (("a", (3,)),), ("a",))
+        right = Stage("right", 3, 2, Fraction(4, 5), (("c", (6,)),), ("c",))
+        left_child = Stage("following", 3, 1, Fraction(4, 5), (("b", (2,)),), ("b",), "left")
+        right_child = Stage("following", 3, 1, Fraction(4, 5), (("b", (2,)),), ("b",), "right")
+        self.document["blocks"] = [block("left-linked", Fixture("sequential", (left, right, left_child))),
+                                   block("right-linked", Fixture("sequential", (left, right, right_child)))]
+        self.assertEqual([row["branch"] for row in self.document["blocks"][0]["stages"]],
+                         [row["branch"] for row in self.document["blocks"][1]["stages"]])
+        self.bundle()
+        self.assertEqual(self.verify()["blocks"], 2)
+
     def test_unreleased_shard_changes_only_its_own_source_projection(self):
         def observe(mark):
             fixture = Fixture("complementary", (Stage(
