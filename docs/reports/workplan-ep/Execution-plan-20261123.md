@@ -5,15 +5,15 @@
 | Status | Milestone | Acceptance and next owner |
 | --- | --- | --- |
 | DONE | 1. Spark calibration | Guarded native Qwen run, exact removal, and audited settlement. R2 charged 0.023123 GPU-hours. [Local receipt](Spark-readiness.md#calibration-result-and-settlement) |
-| BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) · [Current B4 replay](../../../runs/b4-current-checkout.6MX2SY/OWNER.md) |
-| IN PROGRESS | 3. CPU benchmark and first R3 slices | Local Coordinator routes quiet-host qualification and independent R1 review. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 intake and stop evidence](../../../runs/r3-l2-stop-consistency.1B6YKm/OWNER.md) |
-| IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) |
+| BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) · [Enabled B4 reply custody replay](../../../runs/m2-enabled-response-custody.cHx1kP/OWNER.md) |
+| IN PROGRESS | 3. CPU benchmark and first R3 slices | Local Coordinator routes quiet-host qualification and independent R1 review. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
+| IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) · [L7 combined backend replay](../../../runs/m4-l7-combined-rotation.X5jf6W/OWNER.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
 | IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
 | BLOCKED | 7. Grover transfer | After EP-1, obtain protected fixtures, independent custody, and exact resource admission. Verify matched quantum and topology outcomes with the pinned scorer. [Local custody checklist](Grover-holdout-custody-checklist.md) · [Public replay](Grover-topology-scripted.md) · [Matched caps and stops](../../../runs/grover-paired-frontier.dJrINF/OWNER.md) |
 | IN PROGRESS | 8. Second-family replication | Coordinator and resource owner route the named SmolLM3 smoke reserve and admission. On the chosen distinct family verify the protected L1–L3 unchanged-transfer and recalibrated comparisons against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Local pairing design](Second-model-replication-design.md) · [Local image and model check](../../../runs/smollm3-image-shape-readiness.VF1grj/OWNER.md) |
 | IN PROGRESS | 9. Combined controller | Author and claims reviewer freeze component eligibility, safeguards, baseline and resource limits. Independently verify held-out matched outcomes and accounting. [Local controller design](Combined-controller-design.md) · [Cluster coverage replay](../../../runs/controller-cluster-join.iJZn9z/OWNER.md) |
-| IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) · [Local visual verification](../../../runs/tremor-static-frontend.QaGBGR/OWNER.md) |
+| IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) · [Local visual verification](../../../runs/tremor-static-frontend.QaGBGR/OWNER.md) · [Opt-in explainer](../../../runs/m10-static-explainer.QcO0jq/OWNER.md) |
 
 Links labeled local refer to coordination records retained on Spark.
 
@@ -466,9 +466,16 @@ admission and proposed reserve to the same declared cut.
 
 The independent local rerun passed 24 tests and reproduced the R2
 archive. The recorded opening was 65.976877 GPU-hours with a 4-hour
-T7 hold. The synthetic 0.1-hour reserve projects 65.876877 program
-hours and 9.4 replication hours. Fresh digests do not make a balance
-rollback, erased hold, or crossed admission acceptable.
+T7 hold. The proposed SmolLM3 reserve alone projects 65.876877
+program GPU-hours and 9.4 GPU-hours shared among the adapter, Grover
+transfer, replication and controller. The separate 0.1-hour dry R3-L2
+proposal uses the same historical opening and draws from R2/R3. If both
+were placed against that opening, the projected program balance would
+be 65.776877 GPU-hours, with 7.376877 in R2/R3 and 9.4 in the shared
+additional-work allocation. These are projections. Actual placement
+and current capacity require a reconciled ledger head. Fresh digests
+do not make a balance rollback, erased hold, or crossed admission
+acceptable.
 
 The verifier is in `runs/smollm3-opening-balance.Me0P5v`. Its result
 SHA-256 is
@@ -2157,3 +2164,29 @@ trigger-only and planted completions passed. Memory-floor and
 wall-limit stops remained stopped, and the paired cap case retained
 missing observations. The exact source owner adoption, protected
 inputs and one-use native admission remain pending.
+
+
+## M4 L7 rotation in the combined backend
+
+The [combined replay](../../../runs/m4-l7-combined-rotation.X5jf6W/OWNER.md)
+applies the exact L7 traversal change to the retained 531-test backend
+and attaches six test modules. The first assembly identified a missing
+archived work-stop fixture. Including its pinned bytes resolved that
+dependency with all assertions intact. Full lab discovery passed 565
+tests with all 531 baseline cases retained. Both prior failure controls
+reproduced before the change. All four public reports matched byte for
+byte after it. This verifies the detached backend source and leaves
+protected L7 acceptance open.
+
+
+## M10 explainer playback and reduced motion
+
+The staged README embedded an infinite-loop GIF without keyboard
+playback controls. The [detached owner patch](../../../runs/m10-static-explainer.QcO0jq/OWNER.md)
+loads the original static poster and opens the original GIF through
+a labeled, focusable link. The exact twelve-patch local candidate
+keeps the Pilot 3 findings, poster and GIF bytes. Offline browser
+verification passed six existing views and four added keyboard
+checks at 500 and 1280 pixels with both default and reduced-motion
+settings. The GIF was requested only when readers activated the
+link. The release owner retains adoption and GitHub rendering.
