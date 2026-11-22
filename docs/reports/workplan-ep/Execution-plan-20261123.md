@@ -1896,3 +1896,21 @@ M7 oracle agreed across 384 prerequisite forests. Protected execution,
 resource settlement and line-level acceptance retain their own evidence
 requirements.
 [Integration replay](../../../runs/m7-m9-integrated-source.lXYtCo/OWNER.md)
+
+## M4 L3 joint calibration and M8 outer deadline
+
+The [L3 check](../../../runs/m4-l3-joint-feasibility.j4YKXN/OWNER.md)
+rejects a pairwise-plausible table that no three monitor histories can
+produce. Exact enumeration agreed on 494 feasible and 116 infeasible
+three-view summaries and the original L3 and seven L7 outputs stayed
+byte-identical. Local `74fbd84` passed 17 tracked tests, and the expanded
+source replay passed 525 lab and 34 focused package tests.
+Higher-dimensional panels still need raw joint evidence.
+[Full source replay](../../../runs/m4-m9-integrated-source.ysfER0/OWNER.md)
+
+The [SmolLM3 deadline check](../../../runs/m8-smoke-output-deadline.fd9K8u/OWNER.md)
+refuses a successful-worker receipt when reported load plus generation
+reaches 300 seconds, even if total elapsed time fits the cleanup reserve.
+It passed 18 focused and 50 mocked opening tests. The just-below-deadline
+case and historical output bytes stay intact. Actual completion time,
+native admission and exact source adoption are still open.
