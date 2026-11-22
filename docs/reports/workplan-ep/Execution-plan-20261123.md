@@ -1331,3 +1331,24 @@ applies its declared first-arm count bounds, including blocks with
 missing outcomes. The author still needs to freeze the actual grouping
 and bounds, and native runtime order needs independent verification.
 [Offline control](../../../runs/m9-frozen-order.bZ5vlB/OWNER.md)
+
+## M5 feasible recovery window and M8 captured grades
+
+The V2 matched-recovery plan now checks that its hold can fit the
+observation window, including night zero. The largest feasible hold
+on the zero-to-six grid confirms on night six. A larger hold is refused
+before scoring. The V1 and V2 archived public reports remain unchanged.
+[Recovery verification](../../../runs/m5-feasible-recovery-hold.zFlwmM/OWNER.md)
+
+The M8 coverage audit can join independently pinned grades to exact
+policy-bound terminal and output bytes. A score capture repeats the
+assignment and frozen scorer, hidden truth and scoring-opportunity
+digests. An invalid or unavailable grade keeps its reason, and stopped
+arms stay in the coverage denominator. The line author still owns the
+measurements and statistical contract. Native scorer execution and
+protected matched effects remain open.
+[Grading verification](../../../runs/m8-frozen-grading.fXFQ0t/OWNER.md)
+
+Isolated discovery retained all 424 tests from the prior order
+integration and added three M5 and M8 regressions. All 427 passed.
+[Integrated replay](../../../runs/m5-m8-integrated-evidence.6visSS/OWNER.md)
