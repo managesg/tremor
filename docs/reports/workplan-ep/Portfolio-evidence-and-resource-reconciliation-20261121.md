@@ -113,6 +113,15 @@ by design. Actual training, independent protected custody, and native
 activation capture still await evidence.
 [Event-time parity](../../../runs/m5-event-time-parity.IdIlGZ/OWNER.md)
 
+**Second-family scoring inputs.** The optional witness verifies exact
+scorer, truth and opportunity bytes for every scheduled assignment,
+including one with no attempted run. The public rehearsal verified nine
+files across three assignments and preserved the prior grading report.
+Independent checks refused a grade bound to another assignment's truth
+and an omitted observed grade. The local change passed 79 replication
+tests. Actual grader execution and protected replication remain open.
+[Scoring artifact evidence](../../../runs/m8-scoring-artifact-custody.u5DSic/OWNER.md)
+
 **Non-model development baseline.** On one SQLite training sequence,
 a primary-key guess scored 0/40. A deterministic rule inferred the
 join key from all 60 observed references and scored 40/40. Each
@@ -132,8 +141,8 @@ tasks. Those realized-cost subgroups are descriptive.
 [Runnable coordination comparison](../../../runs/m6-public-frontier.mffLw1/OWNER.md)
 
 In the separate public subprocess replay, a complete fixed-lead child
-returned six work receipts and three verified tasks at 25 synthetic
-cost units. A stopped independent child retained one response and three
+returned six work receipts at 25 synthetic cost units. The detached
+scorer verified three tasks. A stopped independent child retained one response and three
 known synthetic cost units. Complete cost and task union are unavailable
 for that cell. The other six cells retain their archived data.
 [Local child replay](../../../runs/m6-computed-public-work.UdtQq1/OWNER.md)
