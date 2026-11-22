@@ -6,8 +6,12 @@ import json
 from pathlib import Path
 import re
 
+from lab.replication_inventory import _capture_bytes, _json, _object, _require
+
 
 BATCH = "R3-L5"
+REVIEW_RECEIPT_SCHEMA = "r3_l5_review_receipt_v1"
+REVIEW_DISPOSITIONS = ("reviewed", "awaiting_changes", "declined")
 ROOT = Path(__file__).resolve().parents[1]
 SHA256 = re.compile(r"[0-9a-f]{64}")
 REVIEW_ROLES = {
@@ -82,13 +86,30 @@ def _review_references(index):
     return plan, references
 
 
-def inventory(root, index=None):
+def _review_receipts(review_root, plan, references):
+    root = Path(review_root).resolve(strict=True)
+    _require(root.is_dir(), "review root must be a directory")
+    receipts = {}
+    for role, reference in references.items():
+        digest = reference["reference_sha256"]
+        record = _json(_capture_bytes(root, "review", digest))
+        _object(record, ("schema", "batch", "plan_sha256", "role", "disposition", "reason"), "review receipt")
+        _require((record["schema"], record["batch"], record["plan_sha256"], record["role"])
+                 == (REVIEW_RECEIPT_SCHEMA, BATCH, plan, role), "review receipt differs from the indexed plan or role")
+        _require(record["disposition"] in REVIEW_DISPOSITIONS and type(record["reason"]) is str
+                 and bool(record["reason"].strip()), "invalid review receipt disposition or reason")
+        receipts[role] = {"reference_sha256": digest, "receipt_asserted_disposition": record["disposition"]}
+    return {"receipts": receipts, "matched_receipts": len(receipts), "reviewer_identity_verified": False}
+
+
+def inventory(root, index=None, *, review_root=None):
+    _require(review_root is None or index is not None, "review bytes require a pinned review index")
     plan, references = _review_references(index)
     public = {}
     for name, (relative, digest, fields) in PUBLIC_EVIDENCE.items():
         receipt = _read_pinned(root / relative, digest)
         public[name] = {"path": relative, "sha256": digest, **{key: receipt[key] for key in fields}}
-    return {
+    report = {
         "batch": BATCH,
         "plan_sha256": plan,
         "public_development_evidence": public,
@@ -105,6 +126,9 @@ def inventory(root, index=None):
         "protected_custody_verified": False,
         "authorizes_execution": False,
     }
+    if review_root is not None:
+        report["review_receipt_bytes"] = _review_receipts(review_root, plan, references)
+    return report
 
 
 def main():
@@ -112,13 +136,14 @@ def main():
     parser.add_argument("--root", type=Path, default=ROOT, help="root of the retained public artifacts")
     parser.add_argument("--review-index", type=Path, help="public metadata with opaque review digests")
     parser.add_argument("--review-index-sha256", help="independently supplied digest of the review index")
+    parser.add_argument("--review-root", type=Path, help="bundle with content-addressed files under review/")
     args = parser.parse_args()
     if (args.review_index is None) != (args.review_index_sha256 is None):
         parser.error("--review-index and --review-index-sha256 must be supplied together")
     try:
         index = _read_pinned(args.review_index, args.review_index_sha256) if args.review_index else None
-        report = inventory(args.root, index)
-    except (OSError, KeyError, ValueError) as error:
+        report = inventory(args.root, index, review_root=args.review_root)
+    except (OSError, KeyError, TypeError, ValueError) as error:
         parser.exit(2, f"{error}\n")
     print(json.dumps(report, indent=2, sort_keys=True))
 

@@ -1258,3 +1258,10 @@ preserving its norm result. The 37-test suite includes gap, zero-observed
 night and post-confirmation stop controls. See
 `runs/m5-observed-recovery-witness.aWkr2W/OWNER.md`. Actual training,
 independent observation and the L8-D freeze remain open.
+
+The R3-L5 intake now checks exact review receipts against the indexed
+role and plan. Matching bytes leave independent verdict and execution
+authority with the appointed reviewers. A separate replay of the archived
+CPU interruption recovered two of 96 planned attempts, one acknowledged
+exchange and two cleanup records, with no paired result. Twenty-nine
+tests passed. See `runs/m3-l5-review-artifact-intake.KKagJG/OWNER.md`.
