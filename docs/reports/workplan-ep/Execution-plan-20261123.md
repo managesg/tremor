@@ -11,7 +11,7 @@
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
 | IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
 | BLOCKED | 7. Grover transfer | After EP-1, obtain protected fixtures, independent custody, and exact resource admission. Verify matched quantum and topology outcomes with the pinned scorer. [Local custody checklist](Grover-holdout-custody-checklist.md) · [Public replay](Grover-topology-scripted.md) |
-| IN PROGRESS | 8. Second-family replication | Coordinator and resource owner route the named SmolLM3 smoke reserve and admission. On the chosen distinct family verify the protected L1–L3 unchanged-transfer and recalibrated comparisons against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Local pairing design](Second-model-replication-design.md) |
+| IN PROGRESS | 8. Second-family replication | Coordinator and resource owner route the named SmolLM3 smoke reserve and admission. On the chosen distinct family verify the protected L1–L3 unchanged-transfer and recalibrated comparisons against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Local pairing design](Second-model-replication-design.md) · [Local image and model check](../../../runs/smollm3-image-shape-readiness.VF1grj/OWNER.md) |
 | IN PROGRESS | 9. Combined controller | Author and claims reviewer freeze component eligibility, safeguards, baseline and resource limits. Independently verify held-out matched outcomes and accounting. [Local controller design](Combined-controller-design.md) · [Cluster coverage replay](../../../runs/controller-cluster-join.iJZn9z/OWNER.md) |
 | IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) |
 
@@ -982,3 +982,15 @@ source rerun. The Pilot 4 manifest still depends on the independently
 held historical archive, author wording, pricing coverage and the
 current named release. B4 loopback evidence leaves all those gates open.
 [Local source and runtime check](../../../runs/b4-current-checkout.6MX2SY/OWNER.md)
+
+## SmolLM3 pinned image and exact source
+
+The Spark operator confirmed read access to the pinned ARM64 image
+on the same local Docker socket as the reviewed launcher. All 326
+staged weight names and shapes matched the pinned architecture and
+index through metadata reads. Runtime cache and CUDA memory remain
+unmeasured. Substituting the newer tracked pair-inventory module into
+the detached smoke bundle fails its source manifest. The smoke review
+and the scientific replication comparator have their own exact source
+identities.
+[Local readback and source evidence](../../../runs/smollm3-image-shape-readiness.VF1grj/OWNER.md)
