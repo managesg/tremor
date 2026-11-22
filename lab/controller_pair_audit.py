@@ -69,6 +69,7 @@ def _outcome(block, arm, row, manifest, prior, witness=None):
     attempt_fields = ("sequence", "role", "status", "usage", "work")
     releases = None
     marked = set()
+    cleanup_started = False
     taskset = block["taskset"]
     if witness is not None:
         attempt_fields += ("release",)
@@ -79,9 +80,12 @@ def _outcome(block, arm, row, manifest, prior, witness=None):
         selection._require(type(attempt["sequence"]) is int and attempt["sequence"] == ordinal
                            and attempt["role"] in ROLES and attempt["status"] in ("completed", "failed", "refused"),
                            "invalid attempt sequence, role or status")
-        selection._require(attempt["role"] == "cleanup" or not _breaches(cumulative, settings["budget"]),
+        is_cleanup = attempt["role"] == "cleanup"
+        selection._require(is_cleanup or not cleanup_started, "only cleanup can follow the first cleanup attempt")
+        cleanup_started = cleanup_started or is_cleanup
+        selection._require(is_cleanup or not _breaches(cumulative, settings["budget"]),
                            "only cleanup can follow a recorded cap breach")
-        selection._require(attempt["role"] == "cleanup" or not (unknown or prior["unknown_usage_attempts"]),
+        selection._require(is_cleanup or not (unknown or prior["unknown_usage_attempts"]),
                            "only cleanup can follow unresolved usage")
         usage = attempt["usage"]
         if usage is None:
@@ -89,8 +93,7 @@ def _outcome(block, arm, row, manifest, prior, witness=None):
         else:
             charged = _meter(usage)
             # A call requires an available slot at dispatch. Other measured costs may overrun on return.
-            selection._require(attempt["role"] == "cleanup"
-                               or cumulative["calls"] + charged["calls"] <= settings["budget"]["calls"],
+            selection._require(is_cleanup or cumulative["calls"] + charged["calls"] <= settings["budget"]["calls"],
                                "recorded call after the dispatch cap was exhausted")
             _accumulate(totals, charged)
             _accumulate(cumulative, charged)

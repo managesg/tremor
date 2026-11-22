@@ -1302,3 +1302,19 @@ on floating gate probabilities finds no hit through iteration 128.
 The exact scorer accepts iteration zero and refuses the other two answers.
 These public checks leave protected execution dependent on EP-1, custody
 and admission. [Reproducible evidence](../../../runs/m7-all-cardinality-exact.XrwDrI/OWNER.md)
+
+## M6 fixed-share exact arithmetic and M9 cleanup ordering
+
+The fixed-share verifier now refuses Boolean and float truth and
+observations before scripted dispatch. A genuine wrong integer is still
+scored as a mismatch. Forty source tests pass and the archived report
+matches byte for byte. Shared topology and selector adoption remain
+separately routed. [M6 evidence](../../../runs/m6-fixed-share-arithmetic.j3FJO8/OWNER.md)
+
+The paired-controller verifier now refuses worker, advisor and other
+non-cleanup attempts after the first cleanup attempt in the same arm.
+It preserves charges for trailing cleanup retries. Sixty-four focused
+tests pass and the pinned scripted audit matches byte for byte. The
+freeze still needs prospective arm-order review, independent held-out
+scoring, physical cleanup and settlement evidence.
+[M9 evidence](../../../runs/m9-terminal-cleanup.AH9x0t/OWNER.md)

@@ -277,6 +277,20 @@ class ControllerPairAuditTests(unittest.TestCase):
         result = audit.verify(**self.freeze())
         self.assertEqual(result["arm_resource_receipts"]["combined"]["known_usage"]["cpu_wall_ns"], 12)
 
+    def test_cleanup_must_be_a_terminal_suffix_of_the_arm(self):
+        row = self.rows[1]
+        work = row["attempts"]
+        cleanup = [self.attempt(3, "cleanup", status="failed"), self.attempt(4, "cleanup")]
+        row["attempts"] = [*work, *cleanup]
+        result = audit.verify(**self.freeze())
+        self.assertEqual(result["pairs"][0]["paired_delta"], "1/6")
+        self.assertEqual(result["arm_resource_receipts"]["combined"]["known_usage"]["cpu_wall_ns"], 10)
+
+        row["attempts"] = [attempt | {"sequence": sequence}
+                           for sequence, attempt in enumerate([work[0], *cleanup, *work[1:]])]
+        with self.assertRaisesRegex(ValueError, "only cleanup can follow the first cleanup attempt"):
+            audit.verify(**self.freeze())
+
     def test_unresolved_attempt_blocks_later_noncleanup_across_blocks(self):
         f = self.fixture
         second = self.block | {"block_id": "paired-second", "condition": "disrupted"}
