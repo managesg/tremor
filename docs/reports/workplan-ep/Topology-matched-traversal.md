@@ -142,3 +142,13 @@ The equal-ceiling design is primary. The equal-realized-cost slice is
 descriptive because realized spending depends on the policy. These
 operation units do not measure model tokens or native cost. Review the
 [proof and reproduction packet](../../../runs/m6-realized-cost-frontier.3kIqzZ/OWNER.md).
+
+## Fixed-share arithmetic evidence
+
+The independent fixed-share comparator now requires exact integers in
+the full scoring reference and in worker observations. A Boolean
+`True` and the float `1.0` previously counted as the integer answer
+`1`. The regression distinguishes those inputs from the valid integer
+mismatch `0`. Forty focused tests pass and the archived fixed-share
+report reproduces byte for byte.
+[Evidence packet](../../../runs/m6-fixed-share-arithmetic.j3FJO8/OWNER.md)

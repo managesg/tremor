@@ -20,8 +20,15 @@ def run(fixture, *, worker_caps, budget, scoring_truth, worker_order=None):
         type(cap) is not int or cap < topology.UNIT_COST["merge"] for cap in worker_caps.values()
     ):
         raise ValueError("each contributor needs a fixed cap that covers sealing")
-    if set(scoring_truth) != set(fixture.tasks):
-        raise ValueError("scoring truth must cover the full task inventory")
+    tasks = set(fixture.tasks)
+    if set(scoring_truth) != tasks or any(type(value) is not int for value in scoring_truth.values()):
+        raise ValueError("exact integer truth must cover the full task inventory")
+    if any(
+        not isinstance(values, dict) or not values.keys() <= tasks
+        or any(type(value) is not int for value in values.values())
+        for values in fixture.observations.values()
+    ):
+        raise ValueError("contributors need exact integer task observations from the fixture inventory")
     review_cost = len(roster) * assessment.REVIEW_COST
     union_cost = topology.UNIT_COST["merge"]
     if type(budget) is not int or sum(worker_caps.values()) + review_cost + union_cost != budget:

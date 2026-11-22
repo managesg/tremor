@@ -40,3 +40,18 @@ class IndependentBudgetTests(unittest.TestCase):
             independent.run(fixture, worker_caps=caps, budget=32, scoring_truth=truth)
         with self.assertRaisesRegex(ValueError, "worker order"):
             independent.run(fixture, worker_caps=caps, budget=31, scoring_truth=truth, worker_order=("a", "b", "b"))
+
+    def test_fixed_share_requires_exact_integer_truth_and_observations(self):
+        tasks = {"one": topology.Task(1, ())}
+        valid = topology.Fixture("one-task", tasks, {"a": {"one": 1}})
+        options = {"worker_caps": {"a": 7}, "budget": 9}
+        for invalid in (True, 1.0):
+            with self.subTest(truth=repr(invalid)):
+                with self.assertRaisesRegex(ValueError, "exact integer truth"):
+                    independent.run(valid, **options, scoring_truth={"one": invalid})
+            with self.subTest(observation=repr(invalid)):
+                fixture = topology.Fixture("one-task", tasks, {"a": {"one": invalid}})
+                with self.assertRaisesRegex(ValueError, "exact integer task observations"):
+                    independent.run(fixture, **options, scoring_truth={"one": 1})
+        self.assertEqual(independent.run(valid, **options, scoring_truth={"one": 1})["verified_union"], ["one"])
+        self.assertEqual(independent.run(valid, **options, scoring_truth={"one": 0})["verified_union"], [])
