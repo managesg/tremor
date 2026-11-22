@@ -2005,3 +2005,16 @@ candidate after a fresh 63-test, 14-view replay and independent
 cohort recount. It leaves the final portfolio outcomes, scientific
 claims, resource settlement, authenticated view and publication to
 their established owners.
+
+## M2 exact producer ledger and review corpus
+
+The [producer-to-intake replay](../../../runs/m2-exact-ledger-intake.aDnrgH/OWNER.md)
+corrects two differences between the synthetic checker and the actual
+mock driver records. It recognizes the writer's null valid-usage flag,
+checks the serialized charge with the pinned tariff, and reconstructs
+the metered total using exact Decimal arithmetic. Both baseline mock
+cases join all 260 request intents to the retained records. Complete
+has 240 metered and 20 unresolved attempts. The cap-stop has 239
+metered, 21 unresolved attempts and one missing reply. All three
+targeted controls passed. The actual prospective wording, dated
+pricing, authenticated human reviews and Console evidence remain open.
