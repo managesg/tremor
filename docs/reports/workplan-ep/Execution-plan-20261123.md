@@ -1534,3 +1534,26 @@ references, and ten browser views rendered the relevant sections.
 The 377-frame, 60-second explainer reproduced byte for byte.
 Claims and release-owner acceptance remain open.
 [Release evidence](../../../runs/m10-public-exact-grover.wPqCMg/OWNER.md)
+
+## M6 standalone coordination replay and M10 dated T7 readback
+
+The detached release now regenerates the 54 synthetic blocks, 432
+arms and independent fixed-share baseline from a compact fixture and
+separate task assessment. Forty-one arms in 26 blocks verified more
+tasks than both independent baselines at no higher operation cost and
+retained both baseline task sets. Twenty-five arms in 12 blocks did so
+at exactly the same realized cost. The observed subgroups are
+descriptive. Equal planned ceilings and independently scored held-out
+outcomes remain the protocol for scientific acceptance.
+
+An archive of the staged source plus eight ordered patches passed 26
+coordination tests and 28 other tests. Eight offline pages resolved 36
+references, with 12 browser views and byte-identical explainer playback
+assets. [Candidate evidence](../../../runs/m6-public-frontier.mffLw1/OWNER.md)
+
+The bounded historical Spark journal query retained 11 named T7
+network joins, 28 runtime task deletions and three unassigned NVIDIA
+memory warnings. These establish UTC timestamps but supply no identity
+join between the named attempts and the deletion records. Additional
+measured occupancy remains unavailable, so retain the provisional
+4.0 GPU-hour hold. [Private journal replay](../../../runs/t7-dated-daemon.oo7Qwv/OWNER.md)
