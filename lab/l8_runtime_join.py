@@ -19,6 +19,8 @@ PLAN_SCHEMA = "tremor.l8d_runtime_plan.v1"
 CAPTURE_SCHEMA = "tremor.l8d_runtime_capture.v1"
 RAW_WITNESS_SCHEMA = "tremor.l8d_dense_capture_witness.v1"
 TENSOR_CONTRACT_SCHEMA = "tremor.l8d_dense_tensor_contract.v1"
+ACTIVATION_CONTRACT_SCHEMA = "tremor.l8d_activation_selection_contract.v1"
+TOKENIZED_SAMPLE_SCHEMA = "tremor.l8d_tokenized_sample.v1"
 DTYPE_BYTES = {"f32": 4, "f16": 2, "bf16": 2}
 EXPONENTS = {"f32": ("<I", 0x7F800000), "f16": ("<H", 0x7C00), "bf16": ("<H", 0x7F80)}
 
@@ -117,6 +119,39 @@ def _lineage_binding(root, reference, freeze_path, pinned, stages, samples):
             "base_revision": revision, "heldout_size": len(prompts)}
 
 
+def _activation_selection(root, reference, pinned, samples):
+    path, pin = reference
+    selection = _object(_metadata(Path(path), pin), ("schema", *BINDINGS, "samples"),
+                        "L8-D activation selection contract")
+    _require(selection["schema"] == ACTIVATION_CONTRACT_SCHEMA
+             and all(selection[field] == value for field, value in pinned.items()),
+             "activation selection contract differs from the approved freeze, protocol, base or hook")
+    _require(type(selection["samples"]) is list, "expected activation selection samples")
+    verified = {}
+    for row in selection["samples"]:
+        _object(row, (*SAMPLE_FIELDS, "tokenized_input"), "L8-D activation selection sample")
+        identifier, sample = _sample(row)
+        _require(identifier in samples and identifier not in verified and samples[identifier] == sample,
+                 "activation selection sample differs from the runtime prompt or selected tokens")
+        artifact = row["tokenized_input"]
+        tokenized = _object(_metadata(_reference(root, artifact), artifact["sha256"]),
+                            ("schema", "sample_id", "prompt_sha256", "token_ids"), "L8-D tokenized input")
+        _require(tokenized["schema"] == TOKENIZED_SAMPLE_SCHEMA
+                 and tokenized["sample_id"] == identifier and tokenized["prompt_sha256"] == sample[0],
+                 "tokenized input differs from the selected sample or frozen rendered prompt")
+        token_ids = tokenized["token_ids"]
+        _require(type(token_ids) is list and token_ids
+                 and all(type(value) is int and value >= 0 for value in token_ids),
+                 "expected a nonempty sequence of exact token IDs")
+        _require(all(index < len(token_ids) for index in sample[1]),
+                 "activation selection contains an out-of-range token index")
+        verified[identifier] = {"tokenized_input_sha256": artifact["sha256"],
+                                "sequence_tokens": len(token_ids), "selected_tokens": len(sample[1])}
+    _require(verified.keys() == samples.keys(), "activation selection must cover every frozen held-out sample")
+    return {"contract_sha256": pin, "hook_id": pinned["hook_id"], "samples": verified,
+            "tokenizer_execution_verified": False, "observed_hook_verified": False}
+
+
 def _finite_capture(path, expected_size, expected_digest, dtype):
     """Check the floating-point exponent bits and hash the same bytes."""
     word_format, exponent = EXPONENTS[dtype]
@@ -136,11 +171,13 @@ def _finite_capture(path, expected_size, expected_digest, dtype):
 
 
 def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_witness=None, tensor_contract=None,
-           lineage_receipt=None, lineage_plan=None):
+           lineage_receipt=None, lineage_plan=None, activation_contract=None):
     """Verify the declared receipt and optionally check finite values in its stated encoding."""
     root = Path(bundle).resolve(strict=True)
     _require((lineage_receipt is None) == (lineage_plan is None),
              "lineage receipt and freeze plan must be supplied together")
+    _require(activation_contract is None or lineage_receipt is not None,
+             "activation selection requires the independent lineage freeze and receipt")
     plan = _object(_metadata(Path(plan_path), plan_sha256), ("schema", *BINDINGS, "stages", "samples"),
                    "L8-D runtime plan")
     capture = _object(_metadata(Path(capture_path), capture_sha256), ("schema", *BINDINGS, "rows"),
@@ -169,6 +206,8 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
         samples[identifier] = sample
     lineage = (_lineage_binding(root, lineage_receipt, lineage_plan, pinned, stages, samples)
                if lineage_receipt is not None else None)
+    selection = (_activation_selection(root, activation_contract, pinned, samples)
+                 if activation_contract is not None else None)
 
     _require(type(capture["rows"]) is list, "expected L8-D activation rows")
     expected = {(identifier, stage) for identifier in samples for stage in STAGES}
@@ -220,6 +259,8 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
         report["finite_encoded_scalars"] = scalars
     if lineage is not None:
         report["approved_lineage_binding"] = lineage
+    if selection is not None:
+        report["activation_selection"] = selection
     return report
 
 
@@ -233,6 +274,8 @@ def main():
     parser.add_argument("--tensor-contract", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--lineage-receipt", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--lineage-plan", type=Path)
+    parser.add_argument("--activation-contract", nargs=2, metavar=("PATH", "SHA256"),
+                        help="match the reviewed hook and exact held-out token selection")
     try:
         result = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:

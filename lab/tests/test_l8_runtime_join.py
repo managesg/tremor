@@ -91,6 +91,87 @@ class L8RuntimeJoinTests(unittest.TestCase):
         return {"lineage_receipt": (self.root / saved["path"], saved["sha256"]),
                 "lineage_plan": self.root / freeze["path"]}
 
+    def activation_contract(self, *, replace=None):
+        rows = []
+        for sample in self.plan["samples"]:
+            identifier = sample["sample_id"]
+            tokenized = {"schema": "tremor.l8d_tokenized_sample.v1", "sample_id": identifier,
+                         "prompt_sha256": sample["prompt_sha256"], "token_ids": [10, 22, 34, 56, 78]}
+            path = self.root / f"{identifier}.tokens.json"
+            rows.append(deepcopy(sample) | {
+                "tokenized_input": {"path": path.name, "sha256": self.write(path, tokenized)},
+            })
+        document = {"schema": "tremor.l8d_activation_selection_contract.v1",
+                    **{field: self.plan[field] for field in l8_runtime_join.BINDINGS}, "samples": rows}
+        if replace is not None:
+            replace(document)
+        path = self.root / "activation-selection.json"
+        return path, self.write(path, document)
+
+    def change_positions(self, token_indices):
+        first = self.plan["samples"][0]
+        first["token_indices"] = token_indices
+        for row in self.capture["rows"]:
+            if row["sample_id"] == first["sample_id"]:
+                row["token_indices"] = list(token_indices)
+
+    def test_independent_activation_contract_through_normal_cli(self):
+        lineage = self.lineage()
+        contract = self.activation_contract()
+        pins = self.pins()
+        command = [sys.executable, "-B", "-m", "lab.l8_runtime_join", str(self.root), str(self.plan_path),
+                   str(self.capture_path), "--plan-sha256", pins["plan_sha256"], "--capture-sha256",
+                   pins["capture_sha256"], "--lineage-receipt", *map(str, lineage["lineage_receipt"]),
+                   "--lineage-plan", str(lineage["lineage_plan"]), "--activation-contract", *map(str, contract)]
+        run = subprocess.run(command, capture_output=True, text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        report = json.loads(run.stdout)
+        selection = report["activation_selection"]
+        self.assertEqual(selection["contract_sha256"], contract[1])
+        self.assertEqual(selection["hook_id"], self.plan["hook_id"])
+        self.assertEqual(selection["samples"]["p1"]["sequence_tokens"], 5)
+        self.assertEqual(selection["samples"]["p1"]["selected_tokens"], 2)
+        self.assertFalse(selection["observed_hook_verified"])
+        self.assertFalse(selection["tokenizer_execution_verified"])
+        self.assertFalse(report["native_execution_verified"])
+
+    def test_repinned_wrong_hook_still_conflicts_with_independent_contract(self):
+        lineage = self.lineage()
+        contract = self.activation_contract()
+        self.plan["hook_id"] = self.capture["hook_id"] = "model.language_model.layers.999999"
+        self.assertEqual(self.verify(**lineage)["verified_capture_rows"], 4)
+        with self.assertRaisesRegex(ValueError, "contract differs from"):
+            self.verify(**lineage, activation_contract=contract)
+
+    def test_repinned_out_of_range_token_cannot_pass_even_with_new_contract(self):
+        lineage = self.lineage()
+        contract = self.activation_contract()
+        # Position 5 is outside the tokenized sequence of length 5.
+        self.change_positions([1, 5])
+        self.assertEqual(self.verify(**lineage)["verified_capture_rows"], 4)
+        with self.assertRaisesRegex(ValueError, "sample differs from the runtime prompt or selected tokens"):
+            self.verify(**lineage, activation_contract=contract)
+        contract = self.activation_contract()
+        with self.assertRaisesRegex(ValueError, "out-of-range token index"):
+            self.verify(**lineage, activation_contract=contract)
+
+    def test_contract_requires_lineage_and_every_exact_sample(self):
+        lineage = self.lineage()
+        contract = self.activation_contract()
+        with self.assertRaisesRegex(ValueError, "requires the independent lineage"):
+            self.verify(activation_contract=contract)
+        contract = self.activation_contract(replace=lambda document: document["samples"].pop())
+        with self.assertRaisesRegex(ValueError, "cover every frozen held-out sample"):
+            self.verify(**lineage, activation_contract=contract)
+
+    def test_tokenized_receipt_cannot_be_crossed_with_another_prompt(self):
+        lineage = self.lineage()
+        def cross(document):
+            document["samples"][0]["tokenized_input"] = document["samples"][1]["tokenized_input"]
+        contract = self.activation_contract(replace=cross)
+        with self.assertRaisesRegex(ValueError, "tokenized input differs from the selected sample"):
+            self.verify(**lineage, activation_contract=contract)
+
     def test_joins_lineage_freeze_checkpoint_pair_and_exact_heldout_prompts(self):
         report = self.verify(**self.lineage())
         self.assertEqual(report["approved_lineage_binding"]["heldout_size"], 2)
