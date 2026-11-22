@@ -145,6 +145,14 @@ source prompt must already be the runtime prompt for this check.
 Protocol interpretation, settlement and installed-state evidence
 remain separate checks. See `runs/m5-runtime-lineage-link.GsDUCK`.
 
+The scripted L4-E comparator now reports both proposed measures
+from exact matched arm declarations. The two public example pairs
+give a sibling-norm gain of 1/2 and a ratio of restricted
+confirmation-night means of 5/3. A short operational follow-up
+withholds recovery and leaves known resource subtotals visible.
+The recovery endpoint and inference remain prospective decisions.
+See `runs/m5-matched-norm-recovery.YMjryc`.
+
 ## R1 and L4-B independent checks
 
 The archived three R1 CPU suite receipts reproduced exactly. A separate
