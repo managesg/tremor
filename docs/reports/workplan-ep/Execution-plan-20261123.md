@@ -1189,3 +1189,11 @@ all had leading text before a final JSON array. The design notes now
 give the reconciled count and distinguish the 260-call cap from the
 88 calls made. A detached release patch links the aggregate receipt
 from the README. See `runs/m10-early-pilot-provenance.l7RSWZ/OWNER.md`.
+
+The detached public L2 replay adds a `--usage` receipt regenerated from
+matched attempts and responses. The interrupted window retains 48 input
+tokens, 32 output tokens and 400 generation nanoseconds over four metered
+responses, with one attempted response unavailable and one opportunity
+never attempted. Its relay estimate remains undefined. The original CLI
+output is byte-identical. See `runs/m10-relay-usage-release.lHeXvd/OWNER.md`
+for the 18-test suite, browser verification and owner patch.
