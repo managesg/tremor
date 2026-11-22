@@ -74,3 +74,29 @@ The replay evidence is
 `runs/smollm3-placement-review.oqs7DV/historical-audit.json`,
 SHA-256 `643ea2e89a5561ea4583648d4a519b5555d4827321c9345e59e49b6359c47154`.
 [Exact smoke bundle and receipt requirements](SmolLM3-native-smoke-packet.md)
+
+## Deadline and device time
+
+At the November 22 00:18:56 UTC checkpoint, Spark reported one NVIDIA
+GB10. The Monday 09:00 UTC deadline left 117,664 seconds, or 32.684444
+hours at full serial utilization. This is a physical-device upper bound
+for newly started serial experiment work. Host availability, service
+contention, ordered dependencies, and cleanup can reduce usable time.
+
+The 49 GPU-hours across L1–L8 and the historical 65.976877 GPU-hours of
+remaining program balance are resource ceilings. Both exceed the
+checkpoint's remaining serial wall time if used in full. Actual native
+durations and deadline feasibility remain unknown. A reviewer can
+prioritize a truly admissible tranche only after checking its measured
+runtime and cleanup bound, prerequisite order, and separately assigned
+capacity. Shared traces require prospective approval from each receiving
+protocol, with one resource charge for the underlying job. Preserve
+each milestone's registered comparisons and acceptance criteria.
+
+Reproduce the timestamp, device count, line ceiling sum, and historical
+ledger arithmetic from the repository root.
+
+```bash
+sha256sum -c runs/spark-deadline-envelope.gTLzpr/evidence.sha256
+python3 -B runs/spark-deadline-envelope.gTLzpr/replay.py | cmp - runs/spark-deadline-envelope.gTLzpr/report.json
+```
