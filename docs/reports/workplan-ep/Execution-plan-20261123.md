@@ -182,6 +182,15 @@ false claims to the end changed its false-completion count from
 zero to four in an all-checks-returned control. The scientific
 protocol still needs a fixed, truth-blind sampling or ordering rule.
 
+For a hypothetical uniform sample of 14 of the same 32 public claims,
+the exact distribution covers 471,435,600 subsets. Assuming check
+responses stay fixed across assignments, three detectable false claims
+and one unanswered verdict bound the mean residual between 2.25 and
+2.6875. Zero residual is possible on about 2.78% of subsets and
+guaranteed on none with the unanswered verdict. This is a fixed-roster
+sensitivity result. It does not estimate uncertainty across task sets.
+The replay is in `runs/l1-uniform-finite-population.aOjgnT`.
+
 The advanced-baseline replay refused reordered plans and plans that
 reduced a 40-unit charge to one unit, even with fresh digests. The
 separate measured-dispatch verifier rederives the plan from independently
