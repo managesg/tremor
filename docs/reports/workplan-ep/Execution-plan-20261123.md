@@ -28,7 +28,9 @@ The [13:38 UTC Coordinator acknowledgement](../../../coordinator-outbox/pc-ack-t
 extends Table A through Spark outbox line 3111. It records routing and
 scope and retains the existing execution approvals. The later
 [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) names the exact corrected cut for source review.
-The three host dispositions and independent bench verdict remain open.
+The Coordinator designated the Assistant for the three host dispositions
+and specified a separate fresh-context reviewer for the formal bench
+verdict. Both reviews remain open. [X42 reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md)
 
 The [11:55 UTC Coordinator successor](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1155Z.md)
 covers Table A fingerprints through Spark outbox line 2875, extending
@@ -2789,3 +2791,21 @@ rejects the disagreement, passes nine focused tests and preserves six
 genuine public results after verifying the distinct evaluator digests.
 The source owner decides adoption. Any revised cut needs exact review
 and appropriately bound test receipts.
+
+## R1 independent reviewer designation and revised-cut rehearsal
+
+The [reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md)
+assigns the Assistant to review the three exact archived host windows.
+The Coordinator specified a separate fresh-context bench reviewer.
+Those roles apply to e972484a. All three host dispositions and the
+bench verdict remain open.
+
+The [detached revised cut](../../../runs/r1-revised-candidate-offline.2fqPte/OWNER.md)
+applies the grader and monitor-readout patches to the exact source
+preimage. Its 352-file manifest binds both changes. The offline lab
+suite retains all 554 previous case identities and statuses. Of the 556
+cases, 555 passed and one was skipped. The skipped metadata check passed
+separately. All 15 targeted package readout tests passed. Perfect
+anticorrelation still produces an infinite Kish value on both cuts.
+The strict JSON handling decision, revised source adoption, full package
+suite, qualified host windows and formal bench verdict remain open.
