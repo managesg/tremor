@@ -171,13 +171,15 @@ def _finite_capture(path, expected_size, expected_digest, dtype):
 
 
 def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_witness=None, tensor_contract=None,
-           lineage_receipt=None, lineage_plan=None, activation_contract=None):
+           lineage_receipt=None, lineage_plan=None, activation_contract=None, installation_witness=None):
     """Verify the declared receipt and optionally check finite values in its stated encoding."""
     root = Path(bundle).resolve(strict=True)
     _require((lineage_receipt is None) == (lineage_plan is None),
              "lineage receipt and freeze plan must be supplied together")
     _require(activation_contract is None or lineage_receipt is not None,
              "activation selection requires the independent lineage freeze and receipt")
+    _require(installation_witness is None or lineage_receipt is not None,
+             "installation witness requires the independent lineage freeze and receipt")
     plan = _object(_metadata(Path(plan_path), plan_sha256), ("schema", *BINDINGS, "stages", "samples"),
                    "L8-D runtime plan")
     capture = _object(_metadata(Path(capture_path), capture_sha256), ("schema", *BINDINGS, "rows"),
@@ -261,6 +263,13 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
         report["approved_lineage_binding"] = lineage
     if selection is not None:
         report["activation_selection"] = selection
+    if installation_witness is not None:
+        from lab import l8_installation_witness
+
+        report["installation_witness"] = l8_installation_witness.verify(
+            root, installation_witness, plan_sha256=plan_sha256, pinned=pinned, stages=stages,
+            freeze_path=lineage_plan, lineage=lineage,
+        )
     return report
 
 
@@ -276,6 +285,8 @@ def main():
     parser.add_argument("--lineage-plan", type=Path)
     parser.add_argument("--activation-contract", nargs=2, metavar=("PATH", "SHA256"),
                         help="match the reviewed hook and exact held-out token selection")
+    parser.add_argument("--installation-witness", nargs=2, metavar=("PATH", "SHA256"),
+                        help="bind the exact public CPU loader receipt and canonical installed tensors")
     try:
         result = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:
