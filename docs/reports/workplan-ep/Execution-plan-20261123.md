@@ -2190,3 +2190,41 @@ verification passed six existing views and four added keyboard
 checks at 500 and 1280 pixels with both default and reduced-motion
 settings. The GIF was requested only when readers activated the
 link. The release owner retains adoption and GitHub rendering.
+
+
+## M3 legacy L2 inventory completion
+
+The [V1 adoption follow-up](../../../runs/r3-l2-v1-completion-join.lFsiIc/OWNER.md)
+uses the typed completion and planted-plan replay from the prior
+adoption closure. V1 pins the parent report and requires its host
+terminal to agree when present. Older bundles without that companion
+still replay after typed summary validation. V2 independently pins the
+terminal and more of the closure. Both historical reports reproduced
+byte for byte and seven retained tests passed. Five public receipt
+contradictions that passed the predecessor are refused. The inventory
+still reports awaiting inputs.
+
+
+## M9 serial process metering
+
+The [same-process timing replay](../../../runs/m9-process-meter-envelope.MHdHwQ/OWNER.md)
+binds the sum of serial SQL timings to the parent-observed worker
+interval between pidfd acknowledgement and wait. The prior replay
+accepted a 500 ms query inside a 29.456303 ms lifecycle. The detached
+candidate refuses that case and a sum of individually plausible
+durations. Four checks passed and the exact public process report
+reproduced without starting either worker. This covers the serial
+scripted comparator. Live held-out cost and cleanup remain open.
+
+
+## M5 direct hook feature width
+
+The [direct hook witness](../../../runs/m5-l8-hook-width.MP6DBn/OWNER.md)
+optionally joins an L8-D capture's feature dimension to a pinned public
+hook. The prior caller accepted a two-feature capture for the installed
+one-feature fixture. The CLI now refuses that pairing with the witness.
+The distinct Qwen base hooks also retain their observed widths of
+2560 and 8192 features, and the cross-pair is refused. Thirty-four tests
+passed. The witness establishes feature width only. Actual adapter
+installation, native hook values and the held-out result remain separate
+acceptance requirements.

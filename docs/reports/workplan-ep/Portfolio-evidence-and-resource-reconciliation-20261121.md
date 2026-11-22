@@ -19,7 +19,7 @@ Wednesday morning, November 25 checkpoint.
 | 7. Grover transfer | **Blocked.** The public simulator reproduced 265,224 exact probability points. The custody verifier now refuses reordered copies of the same prerequisite structure. | After EP-1, the author freezes the protected design and the custodian and scorer reviewer verify independent inventories and exact scoring. The operator then needs admission, measured matched outcomes and settlement. [Custody](Grover-holdout-custody-checklist.md) · [Structural check](../../../runs/m7-structural-novelty.3kiUPz/OWNER.md) |
 | 8. Second-family replication | **In progress.** The public CPU probe and named tensor scan matched the staged identities. The replication CLI joined exact grading artifacts and nine synthetic envelopes to a separately executed scorer. | The storage operator returns stable owned model and worker backing paths. Resource owner and issuer bind the current reserve and one-use smoke. Protected L1–L3 transfer and recalibration then need frozen custody, observed scoring and charges. [Storage handoff](../../../runs/smol-mount-custody.p7a4zR/coordinator-packet.md) · [Public scoring](../../../runs/m8-l2c-executable-coverage.FA4RQp/OWNER.md) |
 | 9. Combined controller | **In progress.** The scripted arithmetic and missing-pair checks reproduce. Two bounded local processes each scored 40/40 with the same public SQL training policy and confirmed same-run teardown. | Integration author and claims reviewer freeze supported components, a credible plain team, safeguards, and held-out tasks. Reviewers verify admitted active comparisons, shared-state reset and full measured resource use. [Design](Combined-controller-design.md) · [Process replay](../../../runs/m9-public-process.dWPzTi/OWNER.md) |
-| 10. Internal research report | **In progress.** The exact local README claims review is independently accepted, with 63 tests and 14 offline browser views. | Claims reviewer independently reproduces final findings and uncertainty. Resource owner reconciles actual GPU and provider accounting, including T7. Authenticated rendering and any publication have separate approvals. [Local signoff](../../../runs/m10-independent-release-signoff.5GEhhm/OWNER.md) |
+| 10. Internal research report | **In progress.** The independent local claims review covered the eleven-patch candidate. The twelve-patch candidate also verifies opt-in, keyboard-accessible explainer playback. | Claims reviewer independently reproduces final findings and uncertainty. Resource owner reconciles actual GPU and provider accounting, including T7. Authenticated rendering and any publication have separate approvals. [Local claims signoff](../../../runs/m10-independent-release-signoff.5GEhhm/OWNER.md) · [Playback replay](../../../runs/m10-static-explainer.QcO0jq/OWNER.md) |
 
 ## Results the current evidence supports
 
@@ -35,22 +35,25 @@ agreed, and 2,396 logs met the scorer's validity predicate. The receipt
 describes which properties Lean checked.
 [Scorer receipt replay](../../../runs/wednesday-integrated-closures.apKpbl/OWNER.md)
 
-**Current detached release.** The eleven-patch local candidate over
-staging commit `a99cddd` passed 63 tests, including 35 coordination
-tests. It resolved 36 local references across eight pages and passed
-14 offline browser views. The README showed both coordination findings
-and the matched-access link at actual widths of 500 and 1280 pixels.
-Both coordination outputs reproduced byte for byte. The unchanged
-explainer decodes to 377 frames over 60 seconds. Its illustrative
-qualifier is small in the standalone mobile view. Published rendering
-and release approval remain open.
-[Release candidate](../../../runs/m10-public-coordination-scope.iIc2K3/OWNER.md) ·
-[Independent local claims signoff](../../../runs/m10-independent-release-signoff.5GEhhm/OWNER.md)
+**Current detached release.** The twelve-patch local candidate over
+staging commit `a99cddd` adds a README-only playback change to the
+eleven-patch claims candidate. The existing static poster opens the
+original animation through a labeled link. The replay validated 37
+local references across eight pages, six offline browser views and
+four keyboard activation checks at 500 and 1280 pixels with default
+and reduced-motion preferences. The animation loads only after
+activation. It still decodes to 377 frames over 60 seconds, and its
+illustration label is small on narrow screens.
+[Current release replay](../../../runs/m10-static-explainer.QcO0jq/OWNER.md)
 
-The independent reviewer accepted the exact local README claims, link
-and explainer context after recounting all 432 scripted arms. This
-completes the local claims review for this candidate. Final native
-findings, ledger reconciliation and release approval remain open.
+The eleven-patch claims candidate passed 63 tests and 14 offline
+browser views. Both coordination outputs reproduced byte for byte.
+The independent claims review recounted all 432 scripted arms and
+checked the README, matched-access link and explainer context. Final
+native findings, ledger reconciliation, release approval and
+published rendering remain open.
+[Earlier claims candidate](../../../runs/m10-public-coordination-scope.iIc2K3/OWNER.md) ·
+[Independent local claims signoff](../../../runs/m10-independent-release-signoff.5GEhhm/OWNER.md)
 
 **Research source integration.** The earlier archive at `08808a1`
 with its overlays passed 460 lab tests. The later source replay adds
@@ -234,13 +237,15 @@ scientific intervals. The full acceptance scope remains in the
 
 ## Reproduction
 
-Run the latest source and release checks from the Murmuration root.
-The release command creates its two supplied directories and uses
-offline local files for browser verification.
+From the Murmuration root, reproduce the source integration, prior
+claims candidate, and current release with these commands. Both
+release verifiers use offline local files and create fresh readback
+directories.
 
 ```bash
 bash runs/m3-m5-source-integration.vMYmXV/verify.sh
-bash runs/m6-public-arithmetic-domain.AZVeDW/verify.sh /absolute/new-release-root /absolute/new-browser-root
+bash runs/m10-public-coordination-scope.iIc2K3/verify.sh
+bash runs/m10-static-explainer.QcO0jq/verify.sh
 ```
 
 The earlier combined portfolio replay reconstructs its pinned source and
