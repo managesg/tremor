@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | DONE | 1. Spark calibration | Guarded native Qwen run, exact removal, and audited settlement. R2 charged 0.023123 GPU-hours. [Local receipt](Spark-readiness.md#calibration-result-and-settlement) |
 | BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) · [Enabled B4 reply custody replay](../../../runs/m2-enabled-response-custody.cHx1kP/OWNER.md) |
-| IN PROGRESS | 3. CPU benchmark and first R3 slices | The Coordinator nominated the exact R1 source for review. Independent host and bench reviewers still own their separate verdicts. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) · [Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md) · [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
+| IN PROGRESS | 3. CPU benchmark and first R3 slices | The Coordinator nominated the exact R1 source for review. The independent host review reported insufficient evidence for all three windows. The formal bench verdict remains open. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) · [Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md) · [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
 | IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) · [L7 combined backend replay](../../../runs/m4-l7-combined-rotation.X5jf6W/OWNER.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
 | IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
@@ -30,7 +30,8 @@ scope and retains the existing execution approvals. The later
 [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) names the exact corrected cut for source review.
 The Coordinator designated the Assistant for the three host dispositions
 and specified a separate fresh-context reviewer for the formal bench
-verdict. Both reviews remain open. [X42 reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md)
+verdict. The host review reported zero eligible windows. The bench verdict
+remains open. [Host disposition and readback](../../../runs/r1-quiet-host-disposition-readback.INk0uV/OWNER.md) · [X42 reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md)
 
 The [11:55 UTC Coordinator successor](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1155Z.md)
 covers Table A fingerprints through Spark outbox line 2875, extending
@@ -2809,3 +2810,25 @@ separately. All 15 targeted package readout tests passed. Perfect
 anticorrelation still produces an infinite Kish value on both cuts.
 The strict JSON handling decision, revised source adoption, full package
 suite, qualified host windows and formal bench verdict remain open.
+
+## R1 host disposition and strict-JSON source rehearsal
+
+All three reviewed windows on exact e972484a returned insufficient
+evidence for quiet-host qualification. The verified receipt reports zero
+eligible and zero unreported windows. Aggregate counters and mixed
+sample edges do not establish benchmark-versus-host activity under
+the archived rule. The Coordinator and host reviewer can reconsider
+contemporaneous attribution for those exact windows. If it is unavailable,
+they own a prospective evidence rule and any authorized replacement
+windows on the eventually selected source. The formal bench verdict
+remains separate. [Host disposition and readback](../../../runs/r1-quiet-host-disposition-readback.INk0uV/OWNER.md)
+
+The [353-file strict-JSON replay](../../../runs/r1-revised-strict-json.scs93q/OWNER.md)
+rebuilds the exact revised cut and applies the existing Kish patch.
+It retains all 556 lab cases and statuses. The one skipped model
+metadata case passes separately, as do all 18 focused readout tests.
+The independent oracle checks 4,096 binary tables. L1/L3/L7 controls
+are byte-identical. One L8 scripted field moves from floating-point
+residue to exact zero. The patch retains the defined correlation and
+represents unavailable Kish as null with a reason. Source adoption,
+quiet-host qualification, full package and bench evidence stay open.

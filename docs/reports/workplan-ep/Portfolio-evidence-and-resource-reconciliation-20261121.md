@@ -12,7 +12,7 @@ Wednesday morning, November 25 checkpoint.
 | --- | --- | --- |
 | 1. Spark R2 calibration | **Accepted.** The native Qwen run used 83.242 seconds through confirmed cleanup. The GPU ledger settled 0.023123 hours. | The operator retains the accepted run and receipt. Later workloads have separate admission. [Settlement](Spark-readiness.md#calibration-result-and-settlement) |
 | 2. Pilot 4 and EP-1 | **Blocked.** Pilot 3 selected shared order and reached 263 output tokens against the 150-token ceiling. Both unselected mock drafts recorded 260 request intents per case. At the stopped cap, 144 core replies were planned, 143 were charged and 140 had terminal classifications. The exact parser confirms three additional valid replies without dispatch results. | The preregistration author selects wording and records scoring scope and order disposition. The driver, pricing, and release reviewers clear the exact source. The actual Pilot 4 Console and manual review remain unavailable. EP-1 freeze and its separately admitted 60 episodes follow. [Mock parser replay](../../../runs/m2-raw-reply-parser.zB6xq1/OWNER.md) · [Gates](Pilot4-pricing-verification-gates.md) |
-| 3. CPU benchmark and R3 | **In progress.** The corrected R1 candidate has three archived package runs with 785 tests each and 554 separately exercised lab cases, including the metadata skip replay. The independent intake binds the exact host windows and cleanup receipts. | The Coordinator nominated the exact source for review. The designated host reviewer owes all three dispositions, and the independent bench verdict remains open. Protected N2 custody stays separate. [X42 reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md) · [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) The R3 owners still need protected inputs, measured dispatch and cleanup, settlement, and separate admission. [Window review](../../../runs/r1-quiet-review-intake.Kd1OIs/OWNER.md) · [Lab replay](../../../runs/r1-exact-lab-suite.BYjGfc/OWNER.md) |
+| 3. CPU benchmark and R3 | **In progress.** The corrected R1 candidate has three archived package runs with 785 tests each and 554 separately exercised lab cases, including the metadata skip replay. The independent intake binds the exact host windows and cleanup receipts. | The Coordinator nominated the exact source for review. The designated reviewer found insufficient evidence in all three windows. The independent bench verdict remains open. Protected N2 custody stays separate. The R3 owners still need protected inputs, measured dispatch and cleanup, settlement, and separate admission. [Host disposition and readback](../../../runs/r1-quiet-host-disposition-readback.INk0uV/OWNER.md) [Window review](../../../runs/r1-quiet-review-intake.Kd1OIs/OWNER.md) · [Lab replay](../../../runs/r1-exact-lab-suite.BYjGfc/OWNER.md) |
 | 4. L1–L8 portfolio | **In progress.** Each line has a reproducible public instrument check. The L7 fixture compares five layouts on a common 16-worker schedule. L3 recomputes fit and held-out flags from exact public raw rows. | Line authors freeze the primary scope and design, custodians supply protected inputs and labels, and independent reviewers verify admitted comparisons or registered stops with uncertainty and observed costs. [Eight-line plan](R2-R4-protocol-readiness.md) · [L3 raw replay](../../../runs/m4-l3-raw-fit-replay.CpD9MN/OWNER.md) |
 | 5. L4-E to L8-D | **In progress.** The public replay joins four timeline cutoffs, ordered visits, and matching evaluations. The L8-D witness binds named before/after checkpoint tensors to the loader receipt. | Trainer and reviewer need the actual settled checkpoint pair and matched context control. The L8-D freeze then needs the versioned normalization and random-control recipe, independent custody, and native loader and hook capture. [Event-time parity](../../../runs/m5-event-time-parity.IdIlGZ/OWNER.md) · [Installation](../../../runs/m5-l8-installed-state.Ouxw2i/OWNER.md) |
 | 6. Coordination | **In progress.** The public frontier covers 54 blocks and 432 arms. All 41 improvements against the original own-view baselines used shared evidence. At matched access, 0 of 324 scripted comparisons gained tasks over independent assignment. A separate fixture shows that the unassigned-task rule can change the apparent lead effect and independently scores acknowledged empty choices. | Author and custodian freeze matched authority and access contrasts, unassigned policy, held-out tasks and stop handling. Independent grader and resource reviewer verify actual task union and observed costs. [Matched access](../../../runs/m6-matched-access-frontier.IwTktY/OWNER.md) · [Rule sensitivity](../../../runs/m6-local-choice-sensitivity.GcL2kL/OWNER.md) · [Empty-choice scoring](../../../runs/m6-no-choice-scorer.B9jgNL/OWNER.md) |
@@ -45,6 +45,14 @@ and reduced-motion preferences. The animation loads only after
 activation. It still decodes to 377 frames over 60 seconds, and its
 illustration label is small on narrow screens.
 [Twelve-patch playback replay](../../../runs/m10-static-explainer.QcO0jq/OWNER.md)
+
+Successive pinned previews cover nine local accessibility scenarios.
+Four check opt-in playback, two check keyboard-only navigation, and
+three check that the thesis text fallback fits at 320, 500 and 1280 pixels.
+These results apply to the respective offline previews.
+[Playback](../../../runs/m10-static-explainer.QcO0jq/OWNER.md) ·
+[Keyboard navigation](../../../runs/m10-l2-tab-check.oxXy3v/OWNER.md) ·
+[Text fallback](../../../runs/m10-thesis-text-fallback.PHapvX/OWNER.md)
 
 The eleven-patch claims candidate passed 63 tests and 14 offline
 browser views. Both coordination outputs reproduced byte for byte.
@@ -116,8 +124,8 @@ checks provide no counterfactual provider token counts.
 **CPU benchmark and interruption.** The R1 runs establish three
 successful suites on one exact candidate. Host load and sampled
 idle fractions differed across windows. The Coordinator nominated the exact
-source for review. The three independent quiet-host dispositions and formal
-bench verdict remain pending. The observed
+source for review. All three independent host dispositions found insufficient
+evidence. The formal bench verdict remains pending. The observed
 L5 interruption retains six wire requests, one validated
 acknowledgment, two cleanup observations and 94 unstarted positions.
 The second acknowledgment and paired comparison remain unavailable.

@@ -31,14 +31,16 @@ interval to the attachment. The sampled one-minute load still includes
 work from earlier in the minute. [Replay and scope](../../../runs/r1-window-counter-scope.QjV54l/OWNER.md)
 
 The Coordinator nominated this exact source and designated the Assistant
-to provide a reasoned disposition for each window. Only qualified
-windows can count toward the three-run gate. The Coordinator specified
+to review each window. The Assistant reported insufficient evidence
+for all three, with zero eligible for the three-run gate. The archived
+counters could not distinguish benchmark activity from unrelated host
+work under the policy. The Coordinator specified
 a separate, fresh-context bench reviewer. The bench review has yet to
 start. The protected N2 predicate, examples and separation review remain
 with the author and independent custodian.
 [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) ·
 [X42 reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md) ·
-[Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md)
+[Host disposition and readback](../../../runs/r1-quiet-host-disposition-readback.INk0uV/OWNER.md)
 
 The independent technical pre-review found that `pairwise_miss`
 silently truncates mismatched monitor rows and reports zero correlation
