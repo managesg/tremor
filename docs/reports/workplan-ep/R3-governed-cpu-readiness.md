@@ -100,3 +100,19 @@ Twenty-six tests passed. Both actual isolated CPU containers were
 removed. The interrupted receipt keeps the paired score unset. The
 plan and scripted responses are still generated within the same
 public rehearsal process.
+
+## Combined L2 and L5 checkout
+
+One disposable checkout on Spark joins the Wednesday source overlay,
+the detached L2 index verifier, and the detached opt-in L5 reply-write
+capture. It uses the L2 versions of the shared adoption, generation
+audit, and adapter helpers, with the required fixtures held alongside
+the source checkout. The lane-specific archived reports reproduced byte
+for byte. The older unbound L2 readouts kept their previous values and
+gained a decision-window field.
+
+Rerun the combined lab suite and archived command-line checks from the
+[integration packet](../../../runs/wednesday-r3-integration.5P0zJR/OWNER.md).
+The combined checkout supplies source evidence for public fixtures.
+The shared source owners retain review and adoption. Native execution,
+protected custody, and measured results remain open.
