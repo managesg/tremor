@@ -96,6 +96,64 @@ class ReplicationCoverageTests(unittest.TestCase):
         self.assertEqual(report["clusters_with_all_declared_pairs_observed"], 1)
         self.assertEqual(report["pairing"]["cross_family_pairing"], "withheld_missing_reference_holdout")
 
+    def limits(self):
+        return {
+            "schema": audit.LIMIT_SCHEMA,
+            "line": self.document["line"],
+            "schedule_pins": self.document["schedule_pins"],
+            "per_assignment_limits": {
+                role: {row["block_id"]: {"calls": 2, "input_tokens": 10, "gpu_wall_ns": 100}
+                       for row in self.fixture.rows}
+                for role in self.document["schedule_pins"] if role != "splits"
+            },
+        }
+
+    def test_pinned_limits_distinguish_observed_coverage_from_eligible_pairs(self):
+        inputs = self.evidence()
+        first, second, third = [row["roles"]["recalibrated"] for row in self.document["rows"]]
+        first["technique"]["usage"].update(calls=3, input_tokens=11, gpu_wall_ns=20)
+        second["technique"].update(state="stopped")
+        second["technique"]["usage"].update(calls=3, input_tokens=None, gpu_wall_ns=20)
+        third["technique"]["usage"].update(calls=2, input_tokens=10, gpu_wall_ns=100)
+        self.document["rows"][2]["roles"]["reference"]["comparator"]["usage"]["gpu_wall_ns"] = None
+        witness = self.fixture._pin("limits", json.dumps(self.limits()))
+        inputs.update(coverage=self.pinned(), limits=witness)
+        args = [sys.executable, "-B", "-m", "lab.replication_coverage", "--line", inputs["line"]]
+        for field in ("splits", "unchanged", "recalibrated", "reference", "coverage", "limits"):
+            path, pin = inputs[field]
+            args.extend((f"--{field}", str(path), pin))
+        result = subprocess.run(args, check=True, capture_output=True, text=True)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["per_assignment_limits_sha256"], witness[1])
+        cluster, = report["linked_clusters"]
+        self.assertEqual(cluster["complete_pairs"]["recalibrated"], 2)
+        self.assertEqual(cluster["observed_pairs_within_limits"]["recalibrated"], 1)
+        self.assertEqual(cluster["complete_pairs"]["reference"], 3)
+        self.assertEqual(cluster["observed_pairs_within_limits"]["reference"], 2)
+        checks = [row["per_assignment_limit_checks"]["recalibrated"]["technique"]
+                  for row in cluster["assignments"]]
+        self.assertEqual(checks, [
+            {"exceeded": ["calls", "input_tokens"], "unavailable": [], "eligible": False},
+            {"exceeded": ["calls"], "unavailable": ["input_tokens"], "eligible": False},
+            {"exceeded": [], "unavailable": [], "eligible": True},
+        ])
+        usage = report["usage_by_role_and_arm"]["recalibrated"]["technique"]
+        self.assertEqual(usage["calls"]["complete_total"], 8)
+        self.assertIsNone(usage["input_tokens"]["complete_total"])
+        self.assertFalse(report["scientific_acceptance"])
+
+    def test_limits_must_bind_the_exact_schedule_and_all_blocks(self):
+        inputs = self.evidence()
+        limits = self.limits()
+        limits["per_assignment_limits"]["reference"].pop("block-case-a")
+        witness = self.fixture._pin("limits", json.dumps(limits))
+        with self.assertRaisesRegex(ValueError, "invalid limit blocks fields"):
+            audit.verify(**inputs, coverage=self.pinned(), limits=witness)
+        limits["schedule_pins"] = {**limits["schedule_pins"], "reference": "f" * 64}
+        witness = self.fixture._pin("limits", json.dumps(limits))
+        with self.assertRaisesRegex(ValueError, "limits refer to different pairing evidence"):
+            audit.verify(**inputs, coverage=self.pinned(), limits=witness)
+
     def test_missing_duplicate_and_crossed_coverage_refused(self):
         inputs = self.evidence()
         missing = self.document["rows"].pop()
