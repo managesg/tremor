@@ -2,6 +2,7 @@
 
 import argparse
 from fractions import Fraction
+from hashlib import sha256
 import json
 from math import comb
 from pathlib import Path
@@ -35,6 +36,30 @@ def _table(case, split, marginal, rate):
     return table
 
 
+def _threshold_fit_rates(case):
+    fit = case["fit"]
+    raw = json.dumps(fit, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    _require(sha256(raw).hexdigest() == case["plan_sha256"], "inner plan digest differs from threshold fit")
+    _require(_rational(fit["target_false_positive_rate"]) == TARGET, "threshold-fit target differs")
+    identifiers = fit["threshold_fit_clean_ids"]
+    _require(type(identifiers) is list and identifiers
+             and all(type(identifier) is str and identifier.strip() for identifier in identifiers)
+             and len(set(identifiers)) == len(identifiers), "invalid threshold-fit clean inventory")
+    fit_arms = _object(fit["arms"], ARMS, "threshold-fit arms")
+    rates = []
+    for arm in ARMS:
+        count = fit_arms[arm]["threshold_fit_false_positives"]
+        reported = case["arms"][arm]
+        copy = reported["threshold_fit_false_positives"]
+        _require(type(count) is int and 0 <= count <= len(identifiers)
+                 and type(copy) is int and copy == count, "threshold-fit count differs from the pinned fit")
+        rate = Fraction(count, len(identifiers))
+        _require(_rational(reported["threshold_fit_false_positive_rate"]) == rate,
+                 "threshold-fit rate differs from the verified count and denominator")
+        rates.append(rate)
+    return rates
+
+
 def conditional_two_sided(top_only, selected_only):
     """Exact two-sided sign tail under independent exchangeable discordant pairs."""
     _require(all(type(count) is int and count >= 0 for count in (top_only, selected_only)),
@@ -57,8 +82,10 @@ def verify(report, *, report_sha256):
         _object(case["arms"], ARMS, "L3 monitor arms")
         clean = _table(case, "clean", "heldout_false_positives", "heldout_false_positive_rate")
         failure = _table(case, "failure", "heldout_catches", "heldout_catch_rate")
-        matched = all(_rational(case["arms"][arm][field]) == TARGET for arm in ARMS
-                      for field in ("threshold_fit_false_positive_rate", "heldout_false_positive_rate"))
+        fit_rates = _threshold_fit_rates(case)
+        matched = all(rate == TARGET for rate in fit_rates) and all(
+            Fraction(clean["both"] + clean[f"{arm}_only"], case["heldout_clean_count"]) == TARGET for arm in ARMS
+        )
         _require(case["heldout_target_matched"] is matched, "reported matched operating point differs")
         gain = Fraction(failure["selected_only"] - failure["top_only"], case["heldout_failure_count"])
         if matched:

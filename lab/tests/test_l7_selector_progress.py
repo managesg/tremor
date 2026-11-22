@@ -77,3 +77,30 @@ class SelectorProgressTests(unittest.TestCase):
         self.assertEqual(result["selection_charge"], 0)
         self.assertEqual(result["review_charges_unavailable"], 1)
         self.assertIsNone(result["complete_review_cost"])
+
+    def test_fresh_pins_do_not_allow_duplicate_verified_task_credit(self):
+        duplicate_tasks = ["sum-a", "sum-a"]
+        self.base["reviewed"][0]["verified_tasks"] = duplicate_tasks
+        self.reviews[0]["verified_tasks"] = list(duplicate_tasks)
+        self.base["utility"] = 2
+        with self.assertRaisesRegex(ValueError, "verified tasks must be distinct nonempty strings"):
+            self.verify({"started": True, "terminal": "completed",
+                         "selected": self.base["selected"], "charge": 1})
+
+    def test_every_replayed_candidate_needs_valid_ids_even_without_a_review(self):
+        for invalid in ([""], [" "], [1], ["sum-a", "sum-a"]):
+            with self.subTest(invalid=invalid):
+                self.base["reviewed"][1]["verified_tasks"] = invalid
+                with self.assertRaisesRegex(ValueError, "verified tasks must be distinct nonempty strings"):
+                    self.verify(count=1)
+
+    def test_distinct_tasks_count_and_empty_candidate_remains_valid(self):
+        tasks = ["sum-a", "sum-b"]
+        self.base["reviewed"][0]["verified_tasks"] = tasks
+        self.reviews[0]["verified_tasks"] = list(tasks)
+        self.base["utility"] = 2
+        result = self.verify({"started": True, "terminal": "completed",
+                              "selected": self.base["selected"], "charge": 1})
+        self.assertEqual(result["utility"], 2)
+        self.assertEqual(result["selected"]["verified_tasks"], tasks)
+        self.assertEqual(result["complete_review_cost"], 2)

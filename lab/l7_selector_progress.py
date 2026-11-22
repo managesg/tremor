@@ -62,6 +62,10 @@ def verify(replay, witness, *, replay_sha256, witness_sha256):
              and type(baseline.get("reviewed")) is list and baseline["reviewed"],
              "a completed public score replay is required")
     expected = baseline["reviewed"]
+    for row in expected:
+        tasks = row["verified_tasks"]
+        _require(type(tasks) is list and all(type(task) is str and task.strip() for task in tasks)
+                 and len(tasks) == len(set(tasks)), "verified tasks must be distinct nonempty strings")
     identities = [row["candidate_id"] for row in expected]
     _require(len(identities) == len(set(identities)) and identities == baseline["candidate_order"]
              and baseline["selected"] == max(expected, key=lambda row: len(row["verified_tasks"]))

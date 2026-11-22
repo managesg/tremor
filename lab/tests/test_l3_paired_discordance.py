@@ -24,13 +24,23 @@ class PairedDiscordanceTests(unittest.TestCase):
             "arms": {
                 arm: {
                     "heldout_false_positives": 1, "heldout_false_positive_rate": goal,
-                    "threshold_fit_false_positive_rate": goal, "heldout_catches": catches,
+                    "threshold_fit_false_positives": 1, "threshold_fit_false_positive_rate": goal, "heldout_catches": catches,
                     "heldout_catch_rate": {"numerator": catches, "denominator": 4},
                 }
                 for arm, catches in (("top", 2), ("selected", 3))
             },
         }
+        self.case["fit"] = {
+            "threshold_fit_clean_ids": [f"fit-{i}" for i in range(20)],
+            "target_false_positive_rate": goal,
+            "arms": {arm: {"threshold_fit_false_positives": 1} for arm in audit.ARMS},
+        }
+        self.pin_fit()
         self.zero = zero
+
+    def pin_fit(self):
+        content = json.dumps(self.case["fit"], sort_keys=True, separators=(",", ":"), allow_nan=False)
+        self.case["plan_sha256"] = sha256(content.encode()).hexdigest()
 
     def replay(self):
         report = self.directory / "report.json"
@@ -74,4 +84,35 @@ class PairedDiscordanceTests(unittest.TestCase):
         table.update(selected_only=0, top_only=1)
         self.case["paired_failure_flags"] = table
         with self.assertRaisesRegex(ValueError, "differs from the reported margin"):
+            self.replay()
+
+    def test_re_pinned_zero_fit_count_cannot_be_reported_as_one_twentieth(self):
+        for arm in audit.ARMS:
+            self.case["fit"]["arms"][arm]["threshold_fit_false_positives"] = 0
+            self.case["arms"][arm]["threshold_fit_false_positives"] = 0
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "threshold-fit rate differs"):
+            self.replay()
+
+        for arm in audit.ARMS:
+            self.case["arms"][arm]["threshold_fit_false_positive_rate"] = self.zero
+        self.case.update(heldout_target_matched=False, heldout_catch_gain=None)
+        self.assertIsNone(self.replay()["catch_gain_at_matched_target"])
+
+    def test_refuses_crossed_inner_pin_and_disagreement_between_fit_copies(self):
+        fit = self.case["fit"]
+        original = fit["threshold_fit_clean_ids"][0]
+        fit["threshold_fit_clean_ids"][0] = "changed"
+        with self.assertRaisesRegex(ValueError, "inner plan digest"):
+            self.replay()
+        fit["threshold_fit_clean_ids"][0] = original
+        self.case["arms"]["selected"]["threshold_fit_false_positives"] = 0
+        with self.assertRaisesRegex(ValueError, "threshold-fit count differs"):
+            self.replay()
+
+    def test_re_pinned_threshold_fit_denominator_cannot_repeat_a_clean_id(self):
+        ids = self.case["fit"]["threshold_fit_clean_ids"]
+        ids[1] = ids[0]
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "threshold-fit clean inventory"):
             self.replay()
