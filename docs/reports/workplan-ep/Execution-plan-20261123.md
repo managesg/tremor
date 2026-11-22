@@ -283,6 +283,15 @@ byte-identical legacy replay. The isolated source and script are at
 an author decision on the primary and fallback, and matched actual
 call evidence remain open.
 
+The exact discordance check reconciles each paired table with its
+reported margins. The positive fixture's 1/4 gain comes from a
+single discordant failure pair. Its illustrative two-sided sign
+tail is 1, and even four discordances all favoring the same policy
+would give 1/8. The copied-view null has no discordance. These
+values describe the finite scripted fixture under independent,
+exchangeable signs. They supply no inference for clustered
+held-out outcomes. See `runs/l3-exact-discordance.BOnO2F`.
+
 ## L5 carrier parity and public grader custody
 
 The current public instrument rebuilt and verified the 200-arm
