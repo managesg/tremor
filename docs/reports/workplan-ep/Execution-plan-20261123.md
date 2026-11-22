@@ -2513,7 +2513,7 @@ authenticated release behavior remain open.
 
 ## M2 arithmetic readback and order-gate stop
 
-The [detached gate review](../../../runs/m2-gate5-duplicate-stop.QcKTpJ/OWNER.md)
+The [revised gate review](../../../runs/m2-gate5-void-compat.69ZMmD/OWNER.md)
 regrades each archived episode with both Python scorers. They agree
 on 65 admitted core work events in each complete mock and 61 in each
 cap-stop mock, with zero wrong answers. The proposed order-gate patch
@@ -2521,5 +2521,9 @@ applies the registered operational stop when a code-arm episode has
 an executed duplicate. The predecessor could still return a picked
 order. The candidate refuses that case before choosing either order
 and reproduces the genuine historical Pilot 3 decision byte for byte.
-Clean stopped and incomplete outcomes remain distinct. Actual Pilot
+The first draft incorrectly treated a void score summary as evidence.
+The revision preserves ordinary void exclusion and refuses explicit
+executed violations. All seven original order tests pass unchanged
+against both the working-copy and tracked test inputs. Clean stopped
+and incomplete outcomes remain distinct. Actual Pilot
 4 clearance and the scripted bracket still need their own reviews.
