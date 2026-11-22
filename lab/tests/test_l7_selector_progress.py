@@ -88,6 +88,10 @@ class SelectorProgressTests(unittest.TestCase):
                          "selected": self.base["selected"], "charge": 1})
 
     def test_every_replayed_candidate_needs_valid_ids_even_without_a_review(self):
+        winner_tasks = ["sum-a", "sum-b", "sum-c"]
+        self.base["reviewed"][0]["verified_tasks"] = winner_tasks
+        self.reviews[0]["verified_tasks"] = list(winner_tasks)
+        self.base["utility"] = 3
         for invalid in ([""], [" "], [1], ["sum-a", "sum-a"]):
             with self.subTest(invalid=invalid):
                 self.base["reviewed"][1]["verified_tasks"] = invalid
