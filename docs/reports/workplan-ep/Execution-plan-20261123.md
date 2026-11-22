@@ -1278,3 +1278,10 @@ and Pilot 3 chart. The local accounting replay passed six tests.
 See `runs/wednesday-combined-current.y5ahz3/OWNER.md` for source
 attachment and release-owner dependencies. Protected outcomes and
 authenticated acceptance remain open.
+
+Commit 7db8403 closes the clean checkout dependencies found during
+that integration. The shared recovery classifier is now tracked and
+byte-identical to the reviewed implementation. The R3-L5 tests use
+tracked copies of the three public pinned receipts. The integrated
+rerun passed the same 419 tests without those four compatibility
+attachments. See `runs/m3-m5-clean-source-closure.jK0kFD/OWNER.md`.
