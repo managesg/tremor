@@ -103,6 +103,36 @@ class ControllerClusterAuditTests(unittest.TestCase):
         self.assertEqual(report["fully_observed_pair_clusters"], 1)
         self.assertEqual(report["clusters"][0]["complete_pairs"], 2)
 
+    def test_missing_outcome_bounds_preserve_known_other_arm_and_stopped_status(self):
+        result = audit.verify(**self.freeze(), missing_outcome_bounds=True)
+        cluster, = result["missing_outcome_bounds"]["by_cluster"]
+        self.assertEqual(cluster["mean_paired_delta_bounds"], ["-1/12", "1/4"])
+        self.assertEqual(cluster["missing_pairs"], 1)
+        self.assertEqual(cluster["blocks"], [
+            {"block_id": "paired-clean", "delta_bounds": ["1/6", "1/6"]},
+            {"block_id": "paired-disrupted", "delta_bounds": ["-1/3", "1/3"]},
+        ])
+        self.assertIsNone(result["clusters"][0]["blocks"][1]["paired_delta"])
+        self.assertEqual(result["paired_audit"]["arm_resource_receipts"]["combined"]["unknown_usage_attempts"], 1)
+        self.assertFalse(result["scientific_acceptance"])
+
+    def test_bounds_expand_for_two_missing_arms_and_collapse_for_completed_pair(self):
+        stopped = self.pair.rows[3]
+        plain = self.pair.rows[2]
+        plain["terminal"] = "void"
+        result = audit.verify(**self.freeze(), missing_outcome_bounds=True)
+        cluster, = result["missing_outcome_bounds"]["by_cluster"]
+        self.assertEqual(cluster["blocks"][1]["delta_bounds"], ["-2/3", "2/3"])
+        self.assertEqual(cluster["mean_paired_delta_bounds"], ["-1/4", "5/12"])
+
+        plain["terminal"] = "completed"
+        stopped["terminal"] = "completed"
+        stopped["attempts"] = deepcopy(self.pair.rows[1]["attempts"])
+        result = audit.verify(**self.freeze(), missing_outcome_bounds=True)
+        cluster, = result["missing_outcome_bounds"]["by_cluster"]
+        self.assertEqual(cluster["mean_paired_delta_bounds"], ["1/6", "1/6"])
+        self.assertEqual(cluster["missing_pairs"], 0)
+
     def test_policy_witness_preserves_an_all_disabled_cluster_as_diagnostic(self):
         common, references = self.pair.policy_files(combined={}, plain={})
         inputs = self.freeze()

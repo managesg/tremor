@@ -1,6 +1,7 @@
 """Join scripted controller pair outcomes to independently pinned holdout clusters."""
 
 import argparse
+from fractions import Fraction
 import json
 from pathlib import Path
 
@@ -9,9 +10,41 @@ from lab import controller_pair_audit as pairs
 from lab import controller_selection as selection
 
 
+def _block_bounds(pair, slots):
+    eligible = pair["eligible_count"]
+    counts = {row["arm"]: row["distinct_passing"] for row in pair["arms"]}
+    for count in counts.values():
+        selection._require(count is None or 0 <= count <= slots, "passing count outside frozen work slots")
+    combined, plain = counts["combined"], counts["plain"]
+    combined_low, combined_high = (0, slots) if combined is None else (combined, combined)
+    plain_low, plain_high = (0, slots) if plain is None else (plain, plain)
+    return Fraction(combined_low - plain_high, eligible), Fraction(combined_high - plain_low, eligible)
+
+
+def _missing_bounds(clusters, pairs_by_id, slots_by_id):
+    """Bound each cluster's equal-block diagnostic without filling in missing scores."""
+    by_cluster = []
+    for cluster in clusters:
+        ids = [block["block_id"] for block in cluster["blocks"]]
+        bounds = [_block_bounds(pairs_by_id[identifier], slots_by_id[identifier]) for identifier in ids]
+        low = sum(row[0] for row in bounds) / len(bounds)
+        high = sum(row[1] for row in bounds) / len(bounds)
+        by_cluster.append({
+            "cluster_id": cluster["cluster_id"],
+            "missing_pairs": len(bounds) - cluster["complete_pairs"],
+            "mean_paired_delta_bounds": [str(low), str(high)],
+            "blocks": [
+                {"block_id": identifier, "delta_bounds": [str(lo), str(hi)]}
+                for identifier, (lo, hi) in zip(ids, bounds, strict=True)
+            ],
+        })
+    return {"scope": "descriptive_equal_block_bounds_within_each_declared_cluster",
+            "missing_arm_count_range": "zero_to_frozen_work_slots", "by_cluster": by_cluster}
+
+
 def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_witness, *,
            manifest_sha256, evidence_index_sha256, trace_sha256, witness_sha256, release_witness,
-           prior_inventory=None, policy_witness=None):
+           prior_inventory=None, policy_witness=None, missing_outcome_bounds=False):
     """Retain each scheduled pair in its verified cluster, including stopped pairs."""
     selection._require(release_witness is not None, "cluster audit requires a V2 release witness")
     freeze = {"manifest_sha256": manifest_sha256, "evidence_index_sha256": evidence_index_sha256}
@@ -34,7 +67,7 @@ def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_wit
          "complete_pairs": sum(block["paired_delta"] is not None for block in blocks)}
         for identifier, blocks in clusters.items()
     ]
-    return {
+    report = {
         "evidence": "scripted_cpu_controller_cluster_audit",
         "scientific_acceptance": False,
         "exposure": exposure,
@@ -43,6 +76,13 @@ def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_wit
                                        for cluster in summaries),
         "clusters": summaries,
     }
+    if missing_outcome_bounds:
+        inventory = selection._pinned_json(task_inventory, exposure["task_inventory_sha256"])
+        report["missing_outcome_bounds"] = _missing_bounds(
+            summaries, {pair["block_id"]: pair for pair in outcomes["pairs"]},
+            {block["block_id"]: block["taskset"]["n_agents"] for block in inventory["blocks"]},
+        )
+    return report
 
 
 def main():
@@ -54,6 +94,8 @@ def main():
     parser.add_argument("--release-witness", nargs=2, metavar=("PATH", "SHA256"), required=True)
     parser.add_argument("--prior-inventory", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--missing-outcome-bounds", action="store_true",
+                        help="report descriptive paired score bounds within each declared cluster")
     try:
         report = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:

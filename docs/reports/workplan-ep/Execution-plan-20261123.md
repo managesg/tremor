@@ -460,6 +460,14 @@ Thirty-seven focused tests passed, and the historical paired archive
 replayed byte for byte. Rehearsal evidence is in
 `runs/controller-holdout-current.IjlqqN`.
 
+The optional cluster diagnostic bounds the missing arm's passing work
+by the frozen work slots and keeps the eligible-work denominator. In
+the public two-block fixture the clean pair is +1/6 and the disrupted
+pair remains unobserved. Observed plain work and four available slots
+bound the equal-block cluster mean to [−1/12, +1/4]. This range comes
+from missing outcomes and supplies no confidence interval or finding
+of budget compliance. See `runs/m9-cluster-missing-bounds.VjM2n6`.
+
 The independent custodian still needs to supply the actual prior exposure
 inventory. This checker validates its metadata and pinned joins.
 Observed arm exposure and hidden-scorer isolation need independently
