@@ -2326,3 +2326,17 @@ them was refused. Twenty tests passed and the earlier ancestry
 report reproduced byte for byte. The storage operator and independent
 reviewer still need to supply and authenticate actual captures and
 custody through cleanup. No launch or reservation decision changes.
+
+
+## M2 installed writer through all four mock cases
+
+The [four-case replay](../../../runs/m2-installed-four-case.8YOr4q/OWNER.md)
+uses the installed lifecycle candidate for both request and response
+writers. Both full aggregates reproduce byte for byte under an outer
+socket guard. Each unselected draft retains 260 intents and 240 exact
+charged replies at cap or 239 in the crossing case. All retain 20
+retry replies and refuse substitution of a different fixture reply.
+Only the pinned offline scorer executes as a subprocess. This reuses
+the earlier synthetic driver and its fixture spend loader. No native
+registration, actual criterion 7 review, Console evidence or pricing
+coverage follows from the replay.
