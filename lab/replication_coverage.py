@@ -10,6 +10,7 @@ from lab.replication_inventory import _metadata, _object, _require
 
 SCHEMA = "replication_pair_coverage_v1"
 LIMIT_SCHEMA = "replication_pair_limits_v1"
+CUMULATIVE_LIMIT_SCHEMA = "replication_cumulative_limits_v1"
 ARMS = ("technique", "comparator")
 STATES = ("observed", "stopped", "void", "unavailable")
 RESOURCES = ("calls", "input_tokens", "output_tokens", "gpu_wall_ns")
@@ -99,7 +100,40 @@ def _limit_result(record, limits):
             "eligible": record["state"] == "observed" and not exceeded and not unavailable}
 
 
-def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None):
+def _cumulative_scope(limits, allowed, receipts):
+    _require(type(limits) is dict and limits.keys() <= set(allowed), "invalid cumulative resource limits")
+    report = {}
+    for resource, cap in limits.items():
+        _require(type(cap) is int and cap >= 0, "invalid cumulative resource limit")
+        known = sum(row[resource]["known_subtotal"] for row in receipts)
+        unavailable = sum(row[resource]["unavailable_records"] for row in receipts)
+        if known > cap:
+            status = "exceeded"
+        elif unavailable:
+            status = "unavailable"
+        else:
+            status = "within_limit"
+        report[resource] = {"limit": cap, "known_subtotal": known, "unavailable_records": unavailable,
+                            "complete_total": None if unavailable else known, "status": status}
+    return report
+
+
+def _cumulative_limits(witness, line, pins, totals):
+    """Sum supplied assignment receipts. Shared work and charges need separate attribution."""
+    document = _metadata(Path(witness[0]), witness[1])
+    _object(document, ("schema", "line", "schedule_pins", "line_limits", "role_limits"), "cumulative limits")
+    _require(document["schema"] == CUMULATIVE_LIMIT_SCHEMA and document["line"] == line
+             and document["schedule_pins"] == pins, "cumulative limits refer to different pairing evidence")
+    by_role = _object(document["role_limits"], totals.keys(), "cumulative limit roles")
+    line_receipts = [usage for role in totals.values() for usage in role.values()]
+    line_limits = _cumulative_scope(document["line_limits"], ("calls", "gpu_wall_ns"), line_receipts)
+    role_limits = {role: _cumulative_scope(limits, RESOURCES, list(totals[role].values()))
+                   for role, limits in by_role.items()}
+    _require(line_limits or any(role_limits.values()), "expected at least one cumulative resource limit")
+    return {"limits_sha256": witness[1], "line": line_limits, "by_role": role_limits}
+
+
+def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
                             reference=reference)
@@ -154,6 +188,8 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
     }
     if limits is not None:
         report["per_assignment_limits_sha256"] = limits[1]
+    if cumulative_limits is not None:
+        report["cumulative_limits"] = _cumulative_limits(cumulative_limits, line, pins, totals)
     return report
 
 
@@ -164,6 +200,8 @@ def main():
         parser.add_argument(f"--{name}", nargs=2, metavar=("PATH", "SHA256"), required=name != "reference")
     parser.add_argument("--limits", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned per-assignment limits shared by both arms of each role and block")
+    parser.add_argument("--cumulative-limits", nargs=2, metavar=("PATH", "SHA256"),
+                        help="independently pinned limits on total declared usage by line and role")
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, ValueError, TypeError, KeyError) as error:

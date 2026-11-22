@@ -154,6 +154,56 @@ class ReplicationCoverageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "limits refer to different pairing evidence"):
             audit.verify(**inputs, coverage=self.pinned(), limits=witness)
 
+    def test_cumulative_limits_preserve_charges_from_stopped_and_incomplete_arms(self):
+        inputs = self.evidence()
+        for row in self.document["rows"]:
+            for arms in row["roles"].values():
+                for record in arms.values():
+                    record["usage"].update(calls=2, input_tokens=10, gpu_wall_ns=100)
+        stopped = self.document["rows"][0]["roles"]["recalibrated"]["technique"]
+        stopped["state"] = "stopped"
+        stopped["usage"]["gpu_wall_ns"] = None
+        plan = {
+            "schema": audit.CUMULATIVE_LIMIT_SCHEMA,
+            "line": self.document["line"],
+            "schedule_pins": self.document["schedule_pins"],
+            "line_limits": {"calls": 35, "gpu_wall_ns": 1800},
+            "role_limits": {"reference": {}, "unchanged": {}, "recalibrated": {"input_tokens": 60}},
+        }
+        inputs["coverage"] = self.pinned()
+        witness = self.fixture._pin("cumulative", json.dumps(plan))
+        args = [sys.executable, "-B", "-m", "lab.replication_coverage", "--line", inputs["line"]]
+        for field in ("splits", "unchanged", "recalibrated", "reference", "coverage"):
+            path, pin = inputs[field]
+            args.extend((f"--{field}", str(path), pin))
+        args.extend(("--cumulative-limits", str(witness[0]), witness[1]))
+        process = subprocess.run(args, check=True, capture_output=True, text=True)
+        report = json.loads(process.stdout)["cumulative_limits"]
+        self.assertEqual(report["limits_sha256"], witness[1])
+        self.assertEqual(report["line"]["calls"],
+                         {"limit": 35, "known_subtotal": 36, "unavailable_records": 0,
+                          "complete_total": 36, "status": "exceeded"})
+        self.assertEqual(report["line"]["gpu_wall_ns"],
+                         {"limit": 1800, "known_subtotal": 1700, "unavailable_records": 1,
+                          "complete_total": None, "status": "unavailable"})
+        self.assertEqual(report["by_role"]["recalibrated"]["input_tokens"]["status"], "within_limit")
+
+        plan["line_limits"] = {"calls": 36, "gpu_wall_ns": 1699}
+        witness = self.fixture._pin("cumulative", json.dumps(plan))
+        updated = audit.verify(**inputs, cumulative_limits=witness)["cumulative_limits"]["line"]
+        self.assertEqual(updated["calls"]["status"], "within_limit")
+        self.assertEqual(updated["gpu_wall_ns"]["status"], "exceeded")
+        self.assertIsNone(updated["gpu_wall_ns"]["complete_total"])
+
+        plan["line_limits"]["input_tokens"] = 180
+        witness = self.fixture._pin("cumulative", json.dumps(plan))
+        with self.assertRaisesRegex(ValueError, "invalid cumulative resource limits"):
+            audit.verify(**inputs, cumulative_limits=witness)
+        plan["schedule_pins"] = {**plan["schedule_pins"], "reference": "f" * 64}
+        witness = self.fixture._pin("cumulative", json.dumps(plan))
+        with self.assertRaisesRegex(ValueError, "cumulative limits refer to different pairing evidence"):
+            audit.verify(**inputs, cumulative_limits=witness)
+
     def test_missing_duplicate_and_crossed_coverage_refused(self):
         inputs = self.evidence()
         missing = self.document["rows"].pop()
