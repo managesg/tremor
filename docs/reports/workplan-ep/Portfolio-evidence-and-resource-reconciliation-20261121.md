@@ -74,11 +74,12 @@ then check Pilot 3, realized traversal, the controller pairs and Grover
 against the exact retained receipts.
 
 ```bash
-bash runs/portfolio-claim-join.qyQrUG/verify.sh
+bash runs/tremor-workplan-reconcile.9pWmmW/replay-prior.sh
 ```
 
-The verifier checks the current report and its pinned sources. The
-earlier 21-receipt archive retains the public replay for each L1–L8
+The verifier restores the report and execution plan from the original
+local commit and rechecks their pinned sources. A separate 21-receipt
+archive retains the public replay for each L1–L8
 line. Its broader inventory can be checked separately.
 
 ```bash
