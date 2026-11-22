@@ -2668,7 +2668,8 @@ opening placement and inspection pins before attachment. The metrics
 reader joins independent preflight and admission pins with the same
 container and terminal output. Fresh host pins cannot hide crossed,
 omitted or reordered events. Cancellation before recheck retains no
-attachment and the v3 accounting replay keeps its reserve held. The
+attachment. The v3 accounting reader also rejects a byte-different
+reserve carrying the same ID and keeps the matching reserve held. The
 85 predecessor and seven targeted tests passed, including allocator
 and deadline controls. Both historical mock reports and the R2 audit
 digest reproduced. Authentic worker backing, image compatibility,
