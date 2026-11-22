@@ -1,9 +1,11 @@
 """Check pinned stage and sample bindings in an L8-D runtime capture."""
 
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 import re
+import struct
 
 from lab.controller_selection import _match_artifact, _reference
 from lab.replication_inventory import _hex, _metadata, _object, _require
@@ -16,7 +18,9 @@ SAMPLE_FIELDS = ("sample_id", "prompt_sha256", "token_indices")
 PLAN_SCHEMA = "tremor.l8d_runtime_plan.v1"
 CAPTURE_SCHEMA = "tremor.l8d_runtime_capture.v1"
 RAW_WITNESS_SCHEMA = "tremor.l8d_dense_capture_witness.v1"
+TENSOR_CONTRACT_SCHEMA = "tremor.l8d_dense_tensor_contract.v1"
 DTYPE_BYTES = {"f32": 4, "f16": 2, "bf16": 2}
+EXPONENTS = {"f32": ("<I", 0x7F800000), "f16": ("<H", 0x7C00), "bf16": ("<H", 0x7F80)}
 
 
 def _identifier(value):
@@ -50,13 +54,43 @@ def _raw_observations(reference, plan_pin, samples, expected):
                  and all(type(size) is int and size > 0 for size in shape)
                  and shape[0] == len(samples[key[0]][1]),
                  "raw observation needs an exact dense token-by-feature tensor shape")
-        observations[key] = _hex(row["raw_sha256"], 64), shape[0] * shape[1] * DTYPE_BYTES[dtype]
+        observations[key] = (_hex(row["raw_sha256"], 64), shape[0] * shape[1] * DTYPE_BYTES[dtype], dtype, shape[1])
     _require(observations.keys() == expected, "raw capture witness must cover every sample and stage")
     return observations
 
 
-def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_witness=None):
-    """Verify the declared join and raw bytes without decoding activation values."""
+def _tensor_layout(reference, plan_pin):
+    path, pin = reference
+    contract = _object(_metadata(Path(path), pin), ("schema", "plan_sha256", "encoding", "dtype", "features"),
+                       "L8-D tensor contract")
+    _require(contract["schema"] == TENSOR_CONTRACT_SCHEMA and contract["plan_sha256"] == plan_pin,
+             "tensor contract refers to a different runtime plan")
+    dtype, features = contract["dtype"], contract["features"]
+    _require(contract["encoding"] == "little_endian_row_major" and type(dtype) is str and dtype in DTYPE_BYTES
+             and type(features) is int and features > 0, "invalid L8-D tensor layout")
+    return dtype, features
+
+
+def _finite_capture(path, expected_size, expected_digest, dtype):
+    """Check the floating-point exponent bits and hash the same bytes."""
+    word_format, exponent = EXPONENTS[dtype]
+    digest = sha256()
+    remaining = expected_size
+    with path.open("rb") as stream:
+        while remaining:
+            length = min(remaining, 65536)
+            chunk = stream.read(length)
+            _require(len(chunk) == length, "raw capture length changed during tensor scan")
+            _require(all(bits & exponent != exponent for (bits,) in struct.iter_unpack(word_format, chunk)),
+                     "nonfinite L8-D activation value")
+            digest.update(chunk)
+            remaining -= length
+        _require(not stream.read(1), "raw capture length changed during tensor scan")
+    _require(digest.hexdigest() == expected_digest, "raw capture digest differs during tensor scan")
+
+
+def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_witness=None, tensor_contract=None):
+    """Verify the declared receipt and optionally check finite values in its stated encoding."""
     root = Path(bundle).resolve(strict=True)
     plan = _object(_metadata(Path(plan_path), plan_sha256), ("schema", *BINDINGS, "stages", "samples"),
                    "L8-D runtime plan")
@@ -88,7 +122,10 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
     _require(type(capture["rows"]) is list, "expected L8-D activation rows")
     expected = {(identifier, stage) for identifier in samples for stage in STAGES}
     observations = _raw_observations(raw_witness, plan_sha256, samples, expected) if raw_witness is not None else None
+    _require(tensor_contract is None or observations is not None, "tensor contract requires an independent raw witness")
+    layout = _tensor_layout(tensor_contract, plan_sha256) if tensor_contract is not None else None
     seen, raw_files = set(), set()
+    scalars = 0
     for row in capture["rows"]:
         _object(row, (*SAMPLE_FIELDS, *STAGE_FIELDS, "stage", "raw"), "L8-D activation row")
         identifier, sample = _sample(row)
@@ -104,10 +141,16 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
         file_identity = info.st_dev, info.st_ino
         _require(info.st_size > 0, "raw L8-D capture must not be empty")
         _require(file_identity not in raw_files, "raw L8-D capture file reused across rows")
-        _match_artifact(root, raw)
         if observations is not None:
-            _require((raw["sha256"], info.st_size) == observations[key],
+            _require((raw["sha256"], info.st_size) == observations[key][:2],
                      "raw capture bytes differ from the independently witnessed sample and stage")
+        if layout is None:
+            _match_artifact(root, raw)
+        else:
+            _require(observations[key][2:] == layout, "raw observation differs from the pinned dtype or feature width")
+            dtype, features = layout
+            _finite_capture(path, info.st_size, raw["sha256"], dtype)
+            scalars += len(sample[1]) * features
         raw_files.add(file_identity)
         seen.add(key)
     _require(seen == expected, "runtime capture does not cover every frozen sample and stage")
@@ -121,6 +164,9 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
     if observations is not None:
         report["raw_capture_witness_sha256"] = raw_witness[1]
         report["witnessed_raw_rows"] = len(observations)
+    if tensor_contract is not None:
+        report["tensor_contract_sha256"] = tensor_contract[1]
+        report["finite_encoded_scalars"] = scalars
     return report
 
 
@@ -131,6 +177,7 @@ def main():
     parser.add_argument("--plan-sha256", required=True)
     parser.add_argument("--capture-sha256", required=True)
     parser.add_argument("--raw-witness", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--tensor-contract", nargs=2, metavar=("PATH", "SHA256"))
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, TypeError, ValueError) as error:

@@ -181,5 +181,55 @@ class L8RuntimeJoinTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "token-by-feature tensor shape"):
             self.verify(raw_witness=(path, self.write(path, witness)))
 
+    def tensor_contract(self, dtype):
+        path = self.root / "tensor-contract.json"
+        return path, self.write(path, {"schema": l8_runtime_join.TENSOR_CONTRACT_SCHEMA,
+                                      "plan_sha256": self.pins()["plan_sha256"],
+                                      "encoding": "little_endian_row_major", "dtype": dtype, "features": 1})
+
+    def test_layout_contract_refuses_same_byte_count_with_different_dtype(self):
+        witness = self.dense_witness()
+        witness["rows"][0].update(dtype="f16", shape=[2, 2])
+        path = self.root / "witness.json"
+        raw_witness = path, self.write(path, witness)
+        self.assertEqual(self.verify(raw_witness=raw_witness)["verified_capture_rows"], 4)
+        contract = self.tensor_contract("f32")
+        with self.assertRaisesRegex(ValueError, "differs from the pinned dtype or feature width"):
+            self.verify(raw_witness=raw_witness, tensor_contract=contract)
+        with self.assertRaisesRegex(ValueError, "requires an independent raw witness"):
+            self.verify(tensor_contract=contract)
+
+    def test_tensor_contract_checks_finiteness_of_f32_f16_and_bf16(self):
+        values = (
+            ("f32", "<2I", 0x3F800000, (0x7F800000, 0xFFC00000)),
+            ("f16", "<2H", 0x3C00, (0x7C00, 0xFE00)),
+            ("bf16", "<2H", 0x3F80, (0x7F80, 0xFFC0)),
+        )
+        witness = self.dense_witness()
+        path = self.root / "witness.json"
+
+        def update(index, data, dtype):
+            raw = self.capture["rows"][index]["raw"]
+            (self.root / raw["path"]).write_bytes(data)
+            raw["sha256"] = sha256(data).hexdigest()
+            witness["rows"][index].update(raw_sha256=raw["sha256"], dtype=dtype)
+
+        for dtype, binary_format, finite, invalid in values:
+            with self.subTest(dtype=dtype):
+                for index in range(len(witness["rows"])):
+                    update(index, struct.pack(binary_format, finite, 0), dtype)
+                contract = self.tensor_contract(dtype)
+                result = self.verify(raw_witness=(path, self.write(path, witness)), tensor_contract=contract)
+                self.assertEqual(result["finite_encoded_scalars"], 8)
+                self.assertEqual(result["tensor_contract_sha256"], contract[1])
+                self.assertFalse(result["activation_values_verified"])
+                self.assertFalse(result["native_execution_verified"])
+                for nonfinite in invalid:
+                    update(0, struct.pack(binary_format, finite, nonfinite), dtype)
+                    witness_pin = path, self.write(path, witness)
+                    self.assertEqual(self.verify(raw_witness=witness_pin)["verified_capture_rows"], 4)
+                    with self.assertRaisesRegex(ValueError, "nonfinite L8-D activation value"):
+                        self.verify(raw_witness=witness_pin, tensor_contract=contract)
+
 if __name__ == "__main__":
     unittest.main()
