@@ -16,6 +16,16 @@ def _digest(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def _safetensors(records):
+    header, payload = {"__metadata__": {"fixture": "replication"}}, bytearray()
+    for name, dtype, shape, raw in records:
+        begin = len(payload)
+        payload.extend(raw)
+        header[name] = {"dtype": dtype, "shape": shape, "data_offsets": [begin, len(payload)]}
+    encoded = json.dumps(header).encode()
+    return len(encoded).to_bytes(8, "little") + encoded + payload
+
+
 class ReplicationInventoryTests(unittest.TestCase):
     def setUp(self):
         self.scratch = Path(self.enterContext(TemporaryDirectory()))
@@ -68,9 +78,99 @@ class ReplicationInventoryTests(unittest.TestCase):
             pins.append(_digest(raw))
         return *paths, *pins
 
-    def verify(self, limit=8192):
+    def verify(self, limit=8192, **options):
         plan, registry, p, r = self.pins()
-        return inventory.verify(self.bundle, plan, registry, plan_sha256=p, registry_sha256=r, max_snapshot_bytes=limit)
+        return inventory.verify(self.bundle, plan, registry, plan_sha256=p, registry_sha256=r,
+                                max_snapshot_bytes=limit, **options)
+
+    def stage_tensor_pair(self, *, transfer_tail=b"\x05\x06", index=None, duplicate=False, trailing=b""):
+        first = ("first", "U8", [4], b"\x01\x02\x03\x04")
+        second = ("second", "BF16", [], b"\x05\x06")
+        empty = ("empty", "F32", [0, 2], b"")
+        self.write_tensor_files("reference", {"model.safetensors": _safetensors((first, empty, second))})
+        part, tail = "shards/part.safetensors", "shards/tail.safetensors"
+        if index is None:
+            index = {"first": tail, "second": part, "empty": tail}
+        changed = second[:3] + (transfer_tail,)
+        self.write_tensor_files("transfer", {
+            part: _safetensors((changed, first) if duplicate else (changed,)) + trailing,
+            tail: _safetensors((empty, first)),
+            inventory.INDEX: json.dumps({"weight_map": index}).encode(),
+        })
+
+    def write_tensor_files(self, role, files):
+        folder = self.bundle / role
+        manifest = json.loads((folder / inventory.MANIFEST).read_bytes())
+        for name, raw in files.items():
+            digest = _digest(raw)
+            (folder / name).write_bytes(raw)
+            if role == "reference":
+                manifest["files"][name] = {"size": len(raw), "sha256": digest,
+                                           "hf_lfs_sha256": digest, "lfs_match": True}
+            else:
+                rows = manifest["files"]
+                existing = next((row for row in rows if row["path"] == name), None)
+                if existing is None:
+                    existing = {"path": name}
+                    rows.append(existing)
+                existing.update(bytes=len(raw), sha256=digest, lfs_oid=digest)
+        self.manifest(role, manifest)
+
+    def test_repacked_identical_named_tensors_are_refused_with_exact_mode(self):
+        self.stage_tensor_pair()
+        self.assertTrue(self.verify()["inventory_verified"])
+        with self.assertRaisesRegex(ValueError, "identical named tensor payloads"):
+            self.verify(compare_tensors=True)
+        plan, registry, p, r = self.pins()
+        command = [sys.executable, "-B", "-m", "lab.replication_inventory", str(self.bundle), str(plan),
+                   str(registry), "--plan-sha256", p, "--registry-sha256", r, "--max-snapshot-bytes", "8192",
+                   "--compare-tensors"]
+        result = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("identical named tensor payloads", result.stderr)
+
+    def test_changed_tensor_is_reported_under_distinct_signatures(self):
+        self.stage_tensor_pair(transfer_tail=b"\x05\x07")
+        with patch.object(inventory, "CHUNK", 3):
+            result = self.verify(compare_tensors=True)
+        manifests = [item["named_tensor_payloads"] for item in result["snapshots"].values()]
+        self.assertEqual([item["count"] for item in manifests], [3, 3])
+        self.assertNotEqual(manifests[0]["sha256"], manifests[1]["sha256"])
+        self.assertFalse(result["loader_verified"])
+        self.assertFalse(result["scientific_acceptance"])
+
+    def test_tensor_index_and_payload_boundaries_are_checked(self):
+        for options, expected in (
+            ({"index": {"first": "shards/part.safetensors", "second": "shards/tail.safetensors"}},
+             "tensor-to-shard index mismatch"),
+            ({"duplicate": True}, "duplicate tensor across"),
+            ({"trailing": b"\x00"}, "offsets do not cover payload"),
+            ({"transfer_tail": b"\x05"}, "offsets do not match tensor size"),
+        ):
+            with self.subTest(expected=expected):
+                self.stage_tensor_pair(**options)
+                with self.assertRaisesRegex(ValueError, expected):
+                    self.verify(compare_tensors=True)
+
+    def test_aggregate_header_limit_applies_across_shards(self):
+        self.stage_tensor_pair(transfer_tail=b"\x05\x07")
+        reference = self.bundle / "reference" / "model.safetensors"
+        budget = int.from_bytes(reference.read_bytes()[:8], "little")
+        transfer = self.bundle / "transfer" / "shards"
+        lengths = [int.from_bytes(path.read_bytes()[:8], "little") for path in transfer.iterdir()]
+        self.assertLessEqual(max(lengths), budget)
+        self.assertGreater(sum(lengths), budget)
+        with patch.object(inventory, "TENSOR_HEADER_TOTAL_LIMIT", budget):
+            with self.assertRaisesRegex(ValueError, "exceeds Safetensors header byte limit"):
+                self.verify(compare_tensors=True)
+
+    def test_exact_mode_refuses_changed_payload_under_original_digest(self):
+        self.stage_tensor_pair(transfer_tail=b"\x05\x07")
+        path = self.bundle / "transfer" / "shards/part.safetensors"
+        original = path.read_bytes()
+        path.write_bytes(original[:-1] + b"\x08")
+        with self.assertRaisesRegex(ValueError, "snapshot file digest mismatch"):
+            self.verify(compare_tensors=True)
 
     def test_normalizes_legacy_and_list_and_only_verifies_structure(self):
         result = self.verify()

@@ -81,7 +81,13 @@ copy even under different shard paths and reviewed family labels.
 Twenty-two inventory and pairing tests passed, and the retained valid
 inventory replay matched byte for byte. This check compares weight-file
 digest multisets. Model family qualification and comparisons across
-repackaged tensors still require independent evidence.
+repackaged tensors can now be checked with the optional
+`--compare-tensors` inventory mode. It rejects identical named tensors
+across shard layouts and verifies the tensor-to-shard index. The
+synthetic comparison covered repacking, a changed byte, missing or
+misplaced index entries and original file digest enforcement. This
+checks exact named payloads. Family qualification and actual model
+comparison remain open. See `runs/m8-repacked-weights.8UkG5l`.
 
 ## R3 and L4-E to L8-D receipt checks
 

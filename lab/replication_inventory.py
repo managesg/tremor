@@ -3,6 +3,7 @@ import argparse
 from collections import defaultdict
 import hashlib
 import json
+from math import prod
 import os
 from pathlib import Path
 import re
@@ -14,6 +15,16 @@ ROLES = ("reference", "transfer")
 JSON_LIMIT = 8 * 1024 * 1024
 FILE_LIMIT = 4096
 CHUNK = 1024 * 1024
+TENSOR_LIMIT = 100_000
+TENSOR_HEADER_TOTAL_LIMIT = 64 * 1024 * 1024
+DTYPE_BITS = {
+    "F4": 4, "F6_E2M3": 6, "F6_E3M2": 6,
+    "BOOL": 8, "U8": 8, "I8": 8, "F8_E4M3": 8, "F8_E5M2": 8,
+    "F8_E8M0": 8, "F8_E4M3FNUZ": 8, "F8_E5M2FNUZ": 8,
+    "I16": 16, "U16": 16, "F16": 16, "BF16": 16,
+    "I32": 32, "U32": 32, "F32": 32,
+    "I64": 64, "U64": 64, "F64": 64, "C64": 64,
+}
 
 
 def _require(condition, message):
@@ -124,22 +135,78 @@ def _tree(folder, entries):
         _require(seen == expected, f"snapshot inventory incomplete in {parent}")
 
 
-def _file_digest(path, size):
+def _check_file(path, size):
     _require(path.is_file() and stat.S_ISREG(path.lstat().st_mode) and path.stat().st_size == size,
              f"snapshot file type or size mismatch: {path.name}")
-    digest = hashlib.sha256()
-    remaining = size
-    with path.open("rb") as stream:
-        while remaining:
-            data = stream.read(min(CHUNK, remaining))
-            _require(bool(data), f"snapshot file shortened: {path.name}")
+
+
+def _hash_bytes(stream, size, path, *digests):
+    while size:
+        data = stream.read(min(CHUNK, size))
+        _require(bool(data), f"snapshot file shortened: {path.name}")
+        for digest in digests:
             digest.update(data)
-            remaining -= len(data)
+        size -= len(data)
+
+
+def _file_digest(path, size):
+    _check_file(path, size)
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        _hash_bytes(stream, size, path, digest)
         _require(not stream.read(1), f"snapshot file grew: {path.name}")
     return digest.hexdigest()
 
 
-def _snapshot(folder, identity, entries, family, manifest_sha):
+def _tensor_regions(raw):
+    _require(raw.startswith(b"{"), "invalid Safetensors header")
+    header = _json(raw.decode("utf-8"))
+    metadata = header.pop("__metadata__", {})
+    _require(type(metadata) is dict and all(type(value) is str for value in metadata.values()),
+             "invalid Safetensors metadata")
+    _require(0 < len(header) <= TENSOR_LIMIT, "invalid Safetensors tensor count")
+    regions = []
+    for name, row in header.items():
+        _name(name)
+        _object(row, ("dtype", "shape", "data_offsets"), "Safetensors tensor")
+        dtype, shape, offsets = row["dtype"], row["shape"], row["data_offsets"]
+        _require(type(dtype) is str and dtype in DTYPE_BITS, "unsupported Safetensors dtype")
+        _require(type(shape) is list and len(shape) <= 64
+                 and all(type(dim) is int and 0 <= dim < 2**64 for dim in shape),
+                 "invalid Safetensors shape")
+        _require(type(offsets) is list and len(offsets) == 2
+                 and all(type(offset) is int for offset in offsets), "invalid Safetensors offsets")
+        start, end = offsets
+        _require(0 <= start <= end and prod(shape) * DTYPE_BITS[dtype] == (end - start) * 8,
+                 "Safetensors offsets do not match tensor size")
+        regions.append((start, end, name, dtype, shape))
+    return sorted(regions)
+
+
+def _tensor_shard(path, size, expected, header_budget):
+    _check_file(path, size)
+    tensors = {}
+    with path.open("rb") as stream:
+        prefix = stream.read(8)
+        length = int.from_bytes(prefix, "little")
+        _require(0 < length <= min(JSON_LIMIT, size - 8), "invalid Safetensors header length")
+        _require(length <= header_budget, "snapshot exceeds Safetensors header byte limit")
+        raw = stream.read(length)
+        _require(len(raw) == length, f"snapshot file shortened: {path.name}")
+        file_digest = hashlib.sha256(prefix + raw)
+        cursor, payload_size = 0, size - 8 - length
+        for start, end, name, dtype, shape in _tensor_regions(raw):
+            _require(start == cursor and end <= payload_size, "Safetensors offsets do not cover payload")
+            tensor_digest = hashlib.sha256()
+            _hash_bytes(stream, end - start, path, file_digest, tensor_digest)
+            tensors[name] = (dtype, shape, tensor_digest.hexdigest())
+            cursor = end
+        _require(cursor == payload_size and not stream.read(1), "Safetensors offsets do not cover payload")
+    _require(file_digest.hexdigest() == expected, f"snapshot file digest mismatch: {path.name}")
+    return tensors, length
+
+
+def _snapshot(folder, identity, entries, family, manifest_sha, *, compare_tensors=False):
     _tree(folder, entries)
     weight_files = {path for path in entries if path.suffix == ".safetensors"}
     index = Path(INDEX)
@@ -162,20 +229,35 @@ def _snapshot(folder, identity, entries, family, manifest_sha):
     _require(type(architectures) is list and architectures, "snapshot must declare architectures")
     for architecture in architectures:
         _name(architecture)
+    tensors, tensor_paths = {}, {}
+    header_budget = TENSOR_HEADER_TOTAL_LIMIT
     for path, (size, sha) in entries.items():
+        if compare_tensors and path in shards:
+            observed, header_size = _tensor_shard(folder / path, size, sha, header_budget)
+            header_budget -= header_size
+            _require(not observed.keys() & tensors.keys(), "duplicate tensor across Safetensors shards")
+            _require(len(tensors) + len(observed) <= TENSOR_LIMIT, "snapshot exceeds tensor count limit")
+            tensors.update(observed)
+            tensor_paths.update(dict.fromkeys(observed, path.as_posix()))
+            continue
         _require(_file_digest(folder / path, size) == sha, f"snapshot file digest mismatch: {path}")
     loader_names = ("config.json", "tokenizer.json", "tokenizer.model", "tokenizer_config.json",
                     "chat_template.jinja", "LICENSE")
-    return {
+    result = {
         "repo": identity[0], "revision": identity[1], "family_id": family,
         "manifest_sha256": manifest_sha, "file_count": len(entries),
         "bytes": sum(size for size, _ in entries.values()), "model_type": model_type, "architectures": architectures,
         "weight_shards": [path.as_posix() for path in sorted(shards)],
         "loader_artifact_sha256": {name: entries[Path(name)][1] for name in loader_names if Path(name) in entries},
     }
+    if compare_tensors:
+        _require(index not in entries or tensor_paths == weight_map, "Safetensors tensor-to-shard index mismatch")
+        signature = json.dumps(tensors, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode()
+        result["named_tensor_payloads"] = {"count": len(tensors), "sha256": hashlib.sha256(signature).hexdigest()}
+    return result
 
 
-def verify(bundle, plan, registry, *, plan_sha256, registry_sha256, max_snapshot_bytes):
+def verify(bundle, plan, registry, *, plan_sha256, registry_sha256, max_snapshot_bytes, compare_tensors=False):
     """Check pinned files under quiescent custody. This check does not load a model."""
     _require(type(max_snapshot_bytes) is int and max_snapshot_bytes > 0, "positive snapshot byte limit required")
     root = Path(bundle).resolve(strict=True)
@@ -209,8 +291,12 @@ def verify(bundle, plan, registry, *, plan_sha256, registry_sha256, max_snapshot
         _require(sum(size for size, _ in entries.values()) <= max_snapshot_bytes,
                  "declared snapshot exceeds the byte limit")
 
-    snapshots = {role: _snapshot(folder, identity, entries, families[identity], candidates[role]["manifest_sha256"])
+    snapshots = {role: _snapshot(folder, identity, entries, families[identity], candidates[role]["manifest_sha256"],
+                                 compare_tensors=compare_tensors)
                  for role, (folder, identity, entries) in normalized.items()}
+    if compare_tensors:
+        _require(snapshots["reference"]["named_tensor_payloads"] != snapshots["transfer"]["named_tensor_payloads"],
+                 "reference and transfer checkpoints have identical named tensor payloads")
     return {
         "evidence": "structural_snapshot_inventory_only", "inventory_verified": True,
         "loader_verified": False, "scientific_acceptance": False,
@@ -226,10 +312,13 @@ def main():
     parser.add_argument("--plan-sha256", required=True)
     parser.add_argument("--registry-sha256", required=True)
     parser.add_argument("--max-snapshot-bytes", type=int, required=True)
+    parser.add_argument("--compare-tensors", action="store_true",
+                        help="stream exact named tensor payloads independently of shard layout")
     args = parser.parse_args()
     try:
         result = verify(args.bundle, args.plan, args.registry, plan_sha256=args.plan_sha256,
-                        registry_sha256=args.registry_sha256, max_snapshot_bytes=args.max_snapshot_bytes)
+                        registry_sha256=args.registry_sha256, max_snapshot_bytes=args.max_snapshot_bytes,
+                        compare_tensors=args.compare_tensors)
     except (KeyError, OSError, RecursionError, TypeError, ValueError) as error:
         parser.error(str(error))
     print(json.dumps(result, sort_keys=True))
