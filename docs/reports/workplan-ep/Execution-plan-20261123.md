@@ -1804,3 +1804,31 @@ norm, and recovery reports remained byte-identical. Source owner adoption
 and independent content custody remain open. Native M5 still requires the
 settled checkpoint pair, independently scored matched control, and the
 subsequent held-out actual hook evidence.
+
+## M8 scoring artifacts and M9 terminal cleanup
+
+The [M8 scoring-artifact check](../../../runs/m8-scoring-artifact-custody.u5DSic/OWNER.md)
+now verifies the pinned scorer, truth and scoring opportunity bytes
+for every scheduled assignment, including an unattempted one. It
+retains the historical grading output when the optional witness is
+absent. Local source commit `1c56f84` passed 79 replication tests.
+The public output verified nine files across three assignments.
+Protected custody and actual grader execution remain separate.
+
+The [M9 terminal check](../../../runs/m9-terminal-cleanup.CjMBF0/OWNER.md)
+rejects a completed arm after failed or refused final cleanup. Stopped
+arms retain usage and missing outcomes. Retried cleanup retains both
+charges. The detached 73-test replay preserved both prior reports and
+39 focused tests passed on the tracked source at `ff0287d`.
+Physical cleanup and protected matched execution remain unverified.
+
+## M10 current source and browser readback
+
+The [current evidence reconciliation](Portfolio-evidence-and-resource-reconciliation-20261121.md)
+records the exact clean source replay with 512 lab tests and 34 focused
+package tests. The detached release passed 60 tests and 12 offline
+browser views. The M5 outputs, historical R2 result and 432-arm public
+coordination report reproduced byte for byte. The source replay covers
+`ff0287d` and its pinned overlays. The later M8 source commit has its
+separate targeted evidence. Native scientific acceptance, publication
+and authenticated rendering await their applicable evidence.
