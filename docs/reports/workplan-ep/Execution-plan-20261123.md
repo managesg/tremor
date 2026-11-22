@@ -2092,3 +2092,15 @@ and checked their teardown against the retained arm receipts. The
 offline replay and three crossed-evidence controls passed. A held-out
 active controller, native resource accounting and shared-state
 reset remain unverified.
+
+## M7 independent public instrument review
+
+The [event-level review](../../../runs/m7-independent-event-review.Ja9bBb/OWNER.md)
+reconstructed accepted stages, operation charges and stops from
+each of 1,024 scripted arm views across 32 caps. All entries and 44
+focused tests matched. In 317 stopped views the verified stage set
+already equaled the full-cap set. Completion and verified work
+therefore remain separate readouts. The same public cases recur at
+each cap. This is an independent public instrument check. EP-1,
+the prospective protected comparison and scorer custody, and actual
+admission and accounting still gate milestone acceptance.
