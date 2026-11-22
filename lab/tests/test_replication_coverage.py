@@ -37,6 +37,22 @@ class ReplicationCoverageTests(unittest.TestCase):
     def pinned(self):
         return self.fixture._pin("coverage", json.dumps(self.document))
 
+    def test_bound_schedules_flow_through_coverage_cli(self):
+        inputs = self.fixture.bind_inventory(self.evidence())
+        for role in ("reference", "unchanged", "recalibrated"):
+            self.document["schedule_pins"][role] = inputs[role][1]
+        args = [sys.executable, "-B", "-m", "lab.replication_coverage", "--line", inputs["line"]]
+        for field, pair in {**inputs, "coverage": self.pinned()}.items():
+            if field != "line":
+                args.extend((f"--{field}", str(pair[0]), pair[1]))
+        process = subprocess.run(args, capture_output=True, text=True)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        report = json.loads(process.stdout)
+        self.assertEqual(report["declared_roles"], ["unchanged", "recalibrated", "reference"])
+        self.assertEqual(report["pairing"]["scheduled_snapshot_binding"]["reference"]["inventory_sha256"],
+                         inputs["inventory"][1])
+        self.assertFalse(report["scientific_acceptance"])
+
     def test_cli_reports_one_cluster_and_keeps_partial_cost_unavailable(self):
         inputs = self.evidence()
         arm = self.document["rows"][1]["roles"]["recalibrated"]["comparator"]

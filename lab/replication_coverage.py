@@ -133,10 +133,11 @@ def _cumulative_limits(witness, line, pins, totals):
     return {"limits_sha256": witness[1], "line": line_limits, "by_role": role_limits}
 
 
-def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None):
+def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None,
+           inventory=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
-                            reference=reference)
+                            reference=reference, inventory=inventory)
     pins = paired["manifest_sha256"]
     declared = _metadata(Path(coverage[0]), coverage[1])
     _object(declared, ("schema", "line", "schedule_pins", "rows"), "replication coverage witness")
@@ -146,7 +147,8 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
     task_splits = pairing._splits(inventory)
     group_by_task = {row["task_id"]: row["group_id"] for row in inventory["members"]}
     schedule = pairing._schedule(_metadata(Path(unchanged[0]), unchanged[1]), role="unchanged",
-                                 line=line, task_splits=task_splits)
+                                 line=line, task_splits=task_splits,
+                                 snapshot=paired.get("scheduled_snapshot_binding", {}).get("unchanged"))
     roles = tuple(role for role in pins if role != "splits")
     rows, totals = _coverage(declared["rows"], schedule, roles)
     limits_by_role = _limits(limits, line, pins, roles, schedule) if limits is not None else None
@@ -202,6 +204,8 @@ def main():
                         help="independently pinned per-assignment limits shared by both arms of each role and block")
     parser.add_argument("--cumulative-limits", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned limits on total declared usage by line and role")
+    parser.add_argument("--inventory", nargs=2, metavar=("PATH", "SHA256"),
+                        help="independently pinned structural inventory for snapshot-bound schedules")
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, ValueError, TypeError, KeyError) as error:

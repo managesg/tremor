@@ -55,6 +55,76 @@ class ReplicationPairingTests(unittest.TestCase):
             **{role: self._schedule(role, line=line) for role in ("unchanged", "recalibrated", "reference")},
         }
 
+    def bind_inventory(self, inputs, inventory=None, override=None):
+        if inventory is None:
+            inventory = {
+                "evidence": "structural_snapshot_inventory_only",
+                "inventory_verified": True, "loader_verified": False, "scientific_acceptance": False,
+                "snapshots": {
+                    role: {"manifest_sha256": _digest(f"manifest:{role}"),
+                           "named_tensor_payloads": {"count": 2, "sha256": _digest(f"tensors:{role}")}}
+                    for role in ("reference", "transfer")
+                },
+            }
+        pinned = self._pin("inventory", json.dumps(inventory))
+        for role in ("reference", "unchanged", "recalibrated"):
+            if role not in inputs:
+                continue
+            snapshot = inventory["snapshots"]["reference" if role == "reference" else "transfer"]
+            schedule = json.loads(inputs[role][0].read_bytes())
+            schedule["schema"] = "replication_holdout_schedule_v2"
+            schedule["snapshot"] = {
+                "inventory_sha256": pinned[1],
+                "model_manifest_sha256": snapshot["manifest_sha256"],
+                "named_tensor_sha256": snapshot["named_tensor_payloads"]["sha256"],
+            }
+            if override is not None and override[0] == role:
+                schedule["snapshot"].update(override[1])
+            inputs[role] = self._pin(role, json.dumps(schedule))
+        inputs["inventory"] = pinned
+        return inputs
+
+    def test_snapshot_binding_uses_transfer_for_both_transfer_schedules(self):
+        inputs = self.bind_inventory(self._inputs())
+        result = replication_pairing.verify(**inputs)
+        bindings = result["scheduled_snapshot_binding"]
+        self.assertEqual(bindings["unchanged"], bindings["recalibrated"])
+        self.assertNotEqual(bindings["reference"]["model_manifest_sha256"],
+                            bindings["unchanged"]["model_manifest_sha256"])
+        self.assertNotIn("inventory", result["manifest_sha256"])
+        self.assertFalse(result["scientific_acceptance"])
+        del inputs["reference"]
+        result = replication_pairing.verify(**inputs)
+        self.assertNotIn("reference", result["scheduled_snapshot_binding"])
+        self.assertEqual(result["cross_family_pairing"], "withheld_missing_reference_holdout")
+
+    def test_snapshot_bound_schedules_refuse_missing_inventory_and_mixed_schema(self):
+        inputs = self.bind_inventory(self._inputs())
+        pinned = inputs.pop("inventory")
+        with self.assertRaisesRegex(ValueError, "snapshot-bound schedule requires pinned inventory"):
+            replication_pairing.verify(**inputs)
+        inputs["inventory"] = pinned
+        inputs["reference"] = self._schedule("reference")
+        with self.assertRaisesRegex(ValueError, "pinned inventory requires snapshot-bound schedules"):
+            replication_pairing.verify(**inputs)
+
+    def test_fresh_schedule_pins_do_not_allow_crossed_model_or_inventory(self):
+        for key, value in (("model_manifest_sha256", _digest("manifest:reference")),
+                           ("named_tensor_sha256", _digest("tensors:reference")),
+                           ("inventory_sha256", _digest("other inventory"))):
+            with self.subTest(key=key):
+                inputs = self.bind_inventory(self._inputs(), override=("recalibrated", {key: value}))
+                with self.assertRaisesRegex(ValueError, "recalibrated schedule snapshot does not match"):
+                    replication_pairing.verify(**inputs)
+
+    def test_structural_receipt_without_named_tensors_is_refused(self):
+        inputs = self.bind_inventory(self._inputs())
+        inventory = json.loads(inputs["inventory"][0].read_bytes())
+        del inventory["snapshots"]["reference"]["named_tensor_payloads"]
+        inputs["inventory"] = self._pin("structural-only", json.dumps(inventory))
+        with self.assertRaisesRegex(ValueError, "invalid named tensor inventory fields"):
+            replication_pairing.verify(**inputs)
+
     def test_three_schedules_pair_for_each_line_regardless_of_manifest_order(self):
         for line in replication_pairing.LINES:
             with self.subTest(line=line):
