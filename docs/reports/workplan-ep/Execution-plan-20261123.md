@@ -1557,3 +1557,23 @@ memory warnings. These establish UTC timestamps but supply no identity
 join between the named attempts and the deletion records. Additional
 measured occupancy remains unavailable, so retain the provisional
 4.0 GPU-hour hold. [Private journal replay](../../../runs/t7-dated-daemon.oo7Qwv/OWNER.md)
+
+## M8 launch-time opening balance and M3 typed settlement
+
+The detached launch candidate binds the independently pinned replication
+placement to the R2 ledger and guard capture, admission, and reservation.
+It replays the opening before create and before attachment. Repinned
+reserves and a matching rewritten ledger cannot clear the unresolved
+T7 hold or restore the measured R2 hours. Current ledger-head
+verification, adoption and native admission remain with their owners.
+[Opening candidate](../../../runs/m8-smoke-bound-opening.xlu84i/OWNER.md)
+
+The independent R3 candidate rejects substitutions such as numeric
+zero for Boolean false and decimal 12.0 for a 12-byte integer in a
+settlement copy of an exact host capture. It preserves equivalent
+representations of finite durations. Binding the capture to the
+authoritative reservation and batch still needs the resource owner.
+The two candidates compose over the pinned baseline with 78 tests
+passing. The historical calibration, mocked completion and mocked
+cancellation reports reproduce.
+[Typed settlement candidate](../../../runs/r3-typed-settlement.9SOuV4/OWNER.md)

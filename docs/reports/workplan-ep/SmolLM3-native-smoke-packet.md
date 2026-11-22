@@ -182,3 +182,22 @@ through the launcher. The 0.1 GPU-hour hold survived the stopped attempt
 and cleared only when an exact synthetic cancellation was supplied.
 Its SHA-256 is
 `923ea122e151dc96ac0cd1c29bf74e12e189cf9331961871c87e2baf9eb114ad`.
+
+## Candidate for binding the launch to the ledger opening
+
+The current detached review patch uses the independent opening verifier
+both before Docker creation and after exact container inspection, before
+attachment. It matches the placement to the actual R2 ledger and guard
+capture, the admission and the reserve. The verification retains the
+0.023123 GPU-hour R2 settlement and the provisional 4.0 GPU-hour T7 hold.
+The launch command adds
+`--opening-balance LEDGER R2_GUARD PLACEMENT PLACEMENT_SHA256`.
+The placement pin must come from the resource owner, who also checks the
+current ledger head. This patch specifically supports the first smoke
+against a reviewed R2-only cut.
+
+The detached candidate passed 75 tests. With the R3 typed-settlement
+patch it passed 78. The prior mocked launch and cancellation outputs
+and exact archived R2 digest all reproduce. Native GPU admission,
+source adoption and actual technical results remain open.
+[Source and verification](../../../runs/m8-smoke-bound-opening.xlu84i/OWNER.md)
