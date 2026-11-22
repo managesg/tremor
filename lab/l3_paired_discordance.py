@@ -103,7 +103,7 @@ def _threshold_fit_rates(case):
         _require(all(type(calls[field]) is int and calls[field] == expected for field, expected in expected_calls.items()),
                  "scripted call charge differs from the planned view and sample counts")
         count, copy = point["threshold_fit_false_positives"], reported["threshold_fit_false_positives"]
-        _require(type(count) is int and 0 <= count <= len(identifiers)
+        _require(type(count) is int and 0 <= count <= int(len(identifiers) * TARGET)
                  and type(copy) is int and copy == count, "threshold-fit count differs from the pinned fit")
         _require(cutoff < 2 or count == reported["heldout_false_positives"] == reported["heldout_catches"] == 0,
                  "maximum binary cutoff cannot produce flags")
@@ -112,6 +112,18 @@ def _threshold_fit_rates(case):
                  "threshold-fit rate differs from the verified count and denominator")
         rates.append(rate)
     return rates
+
+
+def _shared_pair_consistency(arms, clean, failure, fit_rates):
+    if set(arms["top"]["pair"]) != set(arms["selected"]["pair"]):
+        return
+    cutoffs = [arms[arm]["cutoff"] for arm in ARMS]
+    # A stricter cutoff can only discard flags from the same pair of views.
+    for index, arm in enumerate(ARMS):
+        other = 1 - index
+        if cutoffs[index] >= cutoffs[other]:
+            _require(clean[f"{arm}_only"] == failure[f"{arm}_only"] == 0 and fit_rates[index] <= fit_rates[other],
+                     "identical views have flags inconsistent with their cutoffs")
 
 
 def conditional_two_sided(top_only, selected_only):
@@ -137,6 +149,7 @@ def verify(report, *, report_sha256):
         clean = _table(case, "clean", "heldout_false_positives", "heldout_false_positive_rate")
         failure = _table(case, "failure", "heldout_catches", "heldout_catch_rate")
         fit_rates = _threshold_fit_rates(case)
+        _shared_pair_consistency(case["arms"], clean, failure, fit_rates)
         matched = all(rate == TARGET for rate in fit_rates) and all(
             Fraction(clean["both"] + clean[f"{arm}_only"], case["heldout_clean_count"]) == TARGET for arm in ARMS
         )

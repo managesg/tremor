@@ -167,3 +167,25 @@ class PairedDiscordanceTests(unittest.TestCase):
         self.pin_fit()
         with self.assertRaisesRegex(ValueError, "maximum binary cutoff cannot produce flags"):
             self.replay()
+
+    def test_same_views_cannot_report_discordance_at_equal_cutoffs(self):
+        fit = self.case["fit"]
+        next(row for row in fit["calibration_joint_misses"] if row["pair"] == ["A", "C"])["misses"] = 2
+        fit["arms"]["selected"] = deepcopy(fit["arms"]["top"])
+        self.case["arms"]["selected"].update(fit["arms"]["selected"])
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "identical views have flags inconsistent"):
+            self.replay()
+
+        fit["arms"]["selected"]["cutoff"] = 1
+        self.case["arms"]["selected"]["cutoff"] = 1
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "identical views have flags inconsistent"):
+            self.replay()
+
+    def test_fit_threshold_cannot_exceed_false_positive_allowance(self):
+        self.case["fit"]["arms"]["top"]["threshold_fit_false_positives"] = 2
+        self.case["arms"]["top"]["threshold_fit_false_positives"] = 2
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "threshold-fit count differs"):
+            self.replay()
