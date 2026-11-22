@@ -1206,3 +1206,11 @@ research generator independently reproduced all four Board and generation
 tapes, and the detached release passed 24 tests. See
 `runs/m10-relay-raw-board-release.YFaSjS/OWNER.md`. Public release adoption
 and held-out acceptance remain open.
+
+The M6 realized-cost replay verifies 432 scripted arms against both
+baselines in 54 matched blocks. Of 121 strict count gains, 41 spent no more
+than either baseline and 25 matched both realized costs. The fixed-share
+review and union costs remain charged. Both the task-set and cost
+dimensions are preserved, with separate coverage for the 12 blocks at
+exact cost. See `runs/m6-realized-cost-frontier.3kIqzZ/OWNER.md`. Protected
+actual-delivery and resource acceptance remain open.

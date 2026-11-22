@@ -118,3 +118,27 @@ Track these evidence paths alongside the two baseline differences in the
 held-out comparison. The public replay describes engineered dependencies
 and supplies no causal or held-out model estimate.
 [Reproduction and scope](../../../runs/m6-complementary-lineage.odFNO3/OWNER.md)
+
+## Realized cost and the two baselines
+
+A separate audit recomputed event costs and rejoined both baselines within
+each of the 54 fixture, planned traversal and ceiling blocks. It compared
+verified task sets as well as counts.
+
+| Observation | Scripted arms | Blocks represented |
+| --- | ---: | ---: |
+| More verified tasks than both baselines | 121 | 36 |
+| More tasks at no higher realized cost than either baseline | 41 | 26 |
+| More tasks at exactly the realized cost of both baselines | 25 | 12 |
+| Strict improvement against both on cost and verified task-set inclusion | 47 | 26 |
+
+All 41 gains without a higher cost preserved both baseline task sets. The
+six additional improvements verified the same tasks as both baselines
+and spent 15 units versus 16. These were the shared peer arms for the
+six traversals of the complementary fixture at the 16-unit ceiling.
+The redundant fixture had no count gain against both baselines.
+
+The equal-ceiling design is primary. The equal-realized-cost slice is
+descriptive because realized spending depends on the policy. These
+operation units do not measure model tokens or native cost. Review the
+[proof and reproduction packet](../../../runs/m6-realized-cost-frontier.3kIqzZ/OWNER.md).
