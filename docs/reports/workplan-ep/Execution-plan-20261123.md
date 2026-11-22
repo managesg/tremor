@@ -1787,3 +1787,20 @@ and retains a separate T7 input to reserve arithmetic.
 21 bound and typed tests and byte-exact historical R2 readback. This is
 source and fixture evidence. The current ledger head, T7 hold, protected
 admission and actual R3 measurements still need independent evidence.
+
+## M5 event-time parity linked to matched outcomes
+
+The [event-time follow-up](../../../runs/m5-event-time-parity.IdIlGZ/OWNER.md)
+rebuilds the entire pinned trainer plan and compares the event-time report
+bytes to the outcome digest. The four-slot fixture preserves identical
+eligible content at each cutoff and six adapter versus five context
+visits. The exact chronology rejects a swap between steps 0 and 4 even
+though their payload digests agree. Wrong protocol, exclusions,
+projection bytes, or report bytes also fail verification.
+
+`bash runs/m5-event-time-parity.IdIlGZ/verify.sh` exited zero with 37
+tests. The opt-in report reproduced byte for byte and the earlier static,
+norm, and recovery reports remained byte-identical. Source owner adoption
+and independent content custody remain open. Native M5 still requires the
+settled checkpoint pair, independently scored matched control, and the
+subsequent held-out actual hook evidence.
