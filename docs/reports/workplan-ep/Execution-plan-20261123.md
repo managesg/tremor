@@ -2104,3 +2104,24 @@ therefore remain separate readouts. The same public cases recur at
 each cap. This is an independent public instrument check. EP-1,
 the prospective protected comparison and scorer custody, and actual
 admission and accounting still gate milestone acceptance.
+
+## M2 full charged text and M4 fixed comparator replay
+
+The [Pilot 4 response custody patch](../../../runs/m2-response-text-custody.yqRXB6/OWNER.md)
+retains exact visible decoded text by charged attempt in a bounded
+private artifact. It preserves the existing preview and excludes
+hidden reasoning and headers. A 1,201-byte retry and a charged void
+replay correctly. Failed custody retains the recorded charge and
+stops without another provider request. Thirteen socket-denied tests
+passed. Both draft and cap replays stayed byte-exact with the optional
+hook disabled. Exact driver and data owner adoption and the changed
+source pricing review precede any release.
+
+The [L6 fixed-policy check](../../../runs/m4-l6-fixed-policy-intake.vFNQTY/OWNER.md)
+replays the two-safe-outcome rule and deadline from the scripted
+registration. It refuses an early opening that changed the apparent
+relative exposure reduction from 0% to 50%. The 26-test candidate
+reproduced both truthful archives. A [cross-check](../../../runs/m4-l6-comparator-combined.u7EzMj/OWNER.md)
+confirmed that the staged candidate also rejects all three earlier
+revocation variants. Source owner adoption and protected outcomes
+remain open.
