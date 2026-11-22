@@ -80,9 +80,82 @@ class ReplicationCoverageTests(unittest.TestCase):
             "executions": executions,
         }
 
-    def verify_execution(self, inputs, document):
+    def verify_execution(self, inputs, document, **options):
         witness = self.fixture._pin("execution", json.dumps(document))
-        return audit.verify(**inputs, execution_observation=witness)
+        return audit.verify(**inputs, execution_observation=witness, **options)
+
+    def capture_fixture(self, change_terminal=None, change_loader=None):
+        inputs, document = self.execution_fixture()
+        root = self.fixture.root / "captures"
+        root.mkdir(exist_ok=True)
+
+        def store(kind, text):
+            folder = root / kind
+            folder.mkdir(exist_ok=True)
+            digest = fixtures._digest(text)
+            (folder / digest).write_bytes(text.encode())
+            return digest
+
+        usage = {
+            (row["task_id"], row["replicate_id"], role, arm): record["usage"]
+            for row in self.document["rows"] for role, arms in row["roles"].items()
+            for arm, record in arms.items()
+        }
+        output = store("output", "identical output from separate attempts")
+        for index, event in enumerate(document["executions"]):
+            role = event["role"]
+            observed = event["state"] == "observed"
+            run_id = f"run-{role}"
+            loader = {"schema": "replication_loader_capture_v1", "run_id": run_id,
+                      "snapshot": event["snapshot"], "worker_sha256": fixtures._digest("worker")}
+            if change_loader is not None and index == 1:
+                change_loader(loader)
+            assignment = {key: event[key] for key in ("task_id", "replicate_id", "role", "arm", "attempt_id")}
+            terminal = {
+                "schema": "replication_terminal_capture_v1", "line": inputs["line"],
+                "coverage_sha256": inputs["coverage"][1], "assignment": assignment, "state": event["state"],
+                "usage": deepcopy(usage[event["task_id"], event["replicate_id"], role, event["arm"]]),
+                "run_id": run_id, "reason": None if observed else "watchdog stop",
+                "loader_sha256": store("loader", json.dumps(loader)) if observed else None,
+                "output_sha256": output if observed else None,
+            }
+            if change_terminal is not None and index == 1:
+                change_terminal(terminal)
+            event["observer_capture_sha256"] = store("terminal", json.dumps(terminal))
+        return inputs, document, root, output
+
+    def test_raw_capture_verifies_reused_loader_and_identical_output(self):
+        inputs, document, root, _ = self.capture_fixture()
+        result = self.verify_execution(inputs, document, capture_root=root)["execution_observation"]
+        self.assertEqual(result["checked_capture_bytes"], {"terminals": 16, "loaders": 3, "outputs": 15})
+        self.assertFalse(result["native_execution_verified"])
+
+    def test_repinned_capture_rejects_changed_identity_or_boolean_usage(self):
+        for change, message in (
+            (lambda row: row["assignment"].update(attempt_id="foreign"), "differs from observed assignment"),
+            (lambda row: row["usage"].update(calls=False), "captured usage differs"),
+            (lambda row: row.update(output_sha256=None), "requires a loader capture and output"),
+        ):
+            with self.subTest(message=message):
+                inputs, document, root, _ = self.capture_fixture(change_terminal=change)
+                with self.assertRaisesRegex(ValueError, message):
+                    self.verify_execution(inputs, document, capture_root=root)
+
+    def test_repinned_loader_requires_bound_run(self):
+        inputs, document, root, _ = self.capture_fixture(change_loader=lambda row: row.update(run_id="foreign"))
+        with self.assertRaisesRegex(ValueError, "loader capture differs from the observed run"):
+            self.verify_execution(inputs, document, capture_root=root)
+
+    def test_stale_output_bytes_and_linked_captures_are_refused(self):
+        inputs, document, root, output = self.capture_fixture()
+        path = root / "output" / output
+        path.write_bytes(b"changed")
+        with self.assertRaisesRegex(ValueError, "captured output digest mismatch"):
+            self.verify_execution(inputs, document, capture_root=root)
+        path.rename(root / "target")
+        path.symlink_to(root / "target")
+        with self.assertRaisesRegex(ValueError, "missing or inaccessible output capture"):
+            self.verify_execution(inputs, document, capture_root=root)
 
     def test_execution_observations_keep_stopped_void_and_unavailable_distinct(self):
         inputs, document = self.execution_fixture()
