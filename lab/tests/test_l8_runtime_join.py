@@ -4,6 +4,7 @@ from copy import deepcopy
 from hashlib import sha256
 import json
 import os
+import struct
 from pathlib import Path
 import subprocess
 import sys
@@ -144,6 +145,41 @@ class L8RuntimeJoinTests(unittest.TestCase):
         path.write_bytes(first_path.read_bytes())
         self.assertEqual(self.verify()["verified_capture_rows"], 4)
 
+    def dense_witness(self):
+        rows = []
+        for row in self.capture["rows"]:
+            value = 4.0 if row["stage"] == "before" else 8.0
+            raw = struct.pack("<2f", value, value)
+            (self.root / row["raw"]["path"]).write_bytes(raw)
+            digest = sha256(raw).hexdigest()
+            row["raw"]["sha256"] = digest
+            rows.append({"sample_id": row["sample_id"], "stage": row["stage"], "raw_sha256": digest,
+                         "dtype": "f32", "shape": [2, 1]})
+        return {"schema": l8_runtime_join.RAW_WITNESS_SCHEMA, "plan_sha256": self.pins()["plan_sha256"],
+                "rows": rows}
+
+    def test_independent_raw_witness_refuses_rehashed_stage_swap(self):
+        witness = self.dense_witness()
+        path = self.root / "raw-witness.json"
+        pin = self.write(path, witness)
+        report = self.verify(raw_witness=(path, pin))
+        self.assertEqual(report["witnessed_raw_rows"], 4)
+        self.assertFalse(report["activation_values_verified"])
+        first, second = self.capture["rows"][:2]
+        first["raw"], second["raw"] = second["raw"], first["raw"]
+        self.assertEqual(self.verify()["verified_capture_rows"], 4)
+        with self.assertRaisesRegex(ValueError, "independently witnessed sample and stage"):
+            self.verify(raw_witness=(path, pin))
+
+    def test_dense_witness_checks_tensor_size_across_selected_tokens(self):
+        witness = self.dense_witness()
+        path = self.root / "raw-witness.json"
+        witness["rows"][0]["shape"] = [2, 2]
+        with self.assertRaisesRegex(ValueError, "independently witnessed sample and stage"):
+            self.verify(raw_witness=(path, self.write(path, witness)))
+        witness["rows"][0]["shape"] = [1, 2]
+        with self.assertRaisesRegex(ValueError, "token-by-feature tensor shape"):
+            self.verify(raw_witness=(path, self.write(path, witness)))
 
 if __name__ == "__main__":
     unittest.main()
