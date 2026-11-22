@@ -2350,3 +2350,17 @@ Only the pinned offline scorer executes as a subprocess. This reuses
 the earlier synthetic driver and its fixture spend loader. No native
 registration, actual criterion 7 review, Console evidence or pricing
 coverage follows from the replay.
+
+
+## M2 planned and observed reply-format denominators
+
+The [exact denominator replay](../../../runs/m2-format-denominators.6O7WQU/OWNER.md)
+joins each archived episode turn to its logical charge, including
+retried attempts and request and response pins. In each complete mock,
+all 144 core turns were charged and classified and one was malformed.
+In each cap-stop mock, 144 were planned, 143 were charged and 140
+had terminal classifications. One malformed turn remained observed.
+The missing charge and three charged but unclassified turns belong
+to the interrupted per-agent code cell. They remain separate from
+the classified denominator. The replay reports archived statuses.
+The prospective format rule and actual Pilot 4 clearance remain open.
