@@ -2643,3 +2643,18 @@ genuine rerouting under a fixed roster and refuses a clone that would
 inflate within-holdout counts. All 25 tests and both legacy CLI reports
 reproduce. The protocol author decides prospectively whether roster
 labels are interchangeable. Protected custody and admission follow EP-1.
+
+## M8 admission and placement bind the exact worker
+
+The [detached admission integration](../../../runs/m8-worker-admission-binding.pjntRG/OWNER.md)
+shows that replacing only the preflight worker manifest constant lets
+the original admission and opening placement pass against changed worker
+bytes. The plan and checkpoint pins are identical across versions. The
+successor pairs the original receipt with the original closure and
+requires a v2 receipt with the exact date-fixed closure. The old opening
+placement refuses the v2 admission. Fresh synthetic admission and
+placement pass while preserving the ledger and reserve. All 75 existing
+and three additive tests passed. Historical completion and cancellation
+reports reproduce byte for byte. The adoption review still needs the
+actual image's Transformers 5.2.0 renderer, independently reissued
+storage-phase pins and worker identity evidence through cleanup.
