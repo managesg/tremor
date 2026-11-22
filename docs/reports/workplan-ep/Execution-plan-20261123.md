@@ -2697,3 +2697,38 @@ substituting a separately valid reserve, or changing either independent
 pin refuses. Both parent seals and the fresh artifacts match. Storage
 observations end at pre-start. Authentic and continuous backing custody
 through cleanup remain independent acceptance criteria.
+
+## M5 bind activation rows to frozen token positions
+
+The [detached row-order witness](../../../runs/m5-hook-token-row-order.6MuW5l/OWNER.md)
+checks each encoded row against its independently supplied sample, stage,
+token position, token ID and digest. After a same-shape reversal and
+fresh array pins, the prior verifier still counted all finite values.
+The row-order check refuses the reversal and four other invalid witness
+controls. The healthy control binds four rows. All 34 predecessor tests
+and exact archived checks pass. The real tokenization, hook observer and
+native evidence remain separate.
+
+## M9 durable reservation across processes
+
+The [detached local-file gate](../../../runs/m9-durable-call-budget.SsmpgL/OWNER.md)
+uses separate ledgers for the two arms and reserves under an exclusive
+lock before dispatch. In each arm two subprocesses contest the last
+slot and dispatch exactly once. A deliberate post-reservation process
+exit keeps the slot reserved. A new process does not redispatch the
+same attempt or create capacity. Four invalid ledger controls refuse
+before dispatch and a failed sync prevents dispatch. Three targeted
+tests and the deterministic subprocess report pass. This is evidence
+for the local fixture. Actual multidimensional accounting, production
+storage recovery and adoption remain open.
+
+## M4 L7 validate leadership independently of worker traversal
+
+The [detached authority check](../../../runs/m4-l7-authority-prefix.VquDMX/OWNER.md)
+rejects a rotating-lead receipt labeled fixed and a substituted handoff
+recipient and planner. The previous verifier accepted both with the same
+three verified tasks, 28 cost units and 12 opportunities. The new option
+checks each round's handoff and planning prefix and reconciles the completed
+handoff count. It keeps genuine cap stops and both traversal policies
+valid. All 40 tests and four archived report comparisons passed. Frozen
+held-out assignments and measured outcomes remain independent criteria.
