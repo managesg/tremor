@@ -69,6 +69,18 @@ def _calibration_selection(fit, views, count):
     return {"top": [first, second], "selected": [first, alternate]}, joint
 
 
+def _check_calibration_triples(catches, joint_misses, count):
+    """Check exact three-view tables, a necessary condition for larger panels."""
+    misses = {view: count - caught for view, caught in catches.items()}
+    for first, second, third in combinations(sorted(misses), 3):
+        a, b, c = misses[first], misses[second], misses[third]
+        ab, ac, bc = (joint_misses[pair] for pair in combinations((first, second, third), 2))
+        # All eight cells must stay nonnegative for an integer triple overlap.
+        lower = max(0, ab + ac - a, ab + bc - b, ac + bc - c)
+        upper = min(ab, ac, bc, count - a - b - c + ab + ac + bc)
+        _require(lower <= upper, "no feasible three-view calibration for declared joint misses")
+
+
 def _threshold_fit_rates(case):
     fit = case["fit"]
     raw = json.dumps(fit, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -111,7 +123,7 @@ def _threshold_fit_rates(case):
         _require(_rational(reported["threshold_fit_false_positive_rate"]) == rate,
                  "threshold-fit rate differs from the verified count and denominator")
         rates.append(rate)
-    return rates
+    return rates, joint_misses
 
 
 def _shared_pair_consistency(arms, clean, failure, fit_rates):
@@ -148,8 +160,10 @@ def verify(report, *, report_sha256):
         _object(case["arms"], ARMS, "L3 monitor arms")
         clean = _table(case, "clean", "heldout_false_positives", "heldout_false_positive_rate")
         failure = _table(case, "failure", "heldout_catches", "heldout_catch_rate")
-        fit_rates = _threshold_fit_rates(case)
+        fit_rates, joint_misses = _threshold_fit_rates(case)
         _shared_pair_consistency(case["arms"], clean, failure, fit_rates)
+        fit = case["fit"]
+        _check_calibration_triples(fit["calibration_individual_catches"], joint_misses, len(fit["calibration_failure_ids"]))
         matched = all(rate == TARGET for rate in fit_rates) and all(
             Fraction(clean["both"] + clean[f"{arm}_only"], case["heldout_clean_count"]) == TARGET for arm in ARMS
         )

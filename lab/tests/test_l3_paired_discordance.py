@@ -1,7 +1,7 @@
 from copy import deepcopy
 from fractions import Fraction
 from hashlib import sha256
-from itertools import product
+from itertools import combinations, product
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -189,3 +189,25 @@ class PairedDiscordanceTests(unittest.TestCase):
         self.pin_fit()
         with self.assertRaisesRegex(ValueError, "threshold-fit count differs"):
             self.replay()
+
+    def test_repinned_fit_cannot_combine_impossible_joint_misses(self):
+        fit = self.case["fit"]
+        next(row for row in fit["calibration_joint_misses"] if row["pair"] == ["A", "C"])["misses"] = 0
+        fit["arms"]["selected"]["calibration_joint_misses"] = 0
+        self.case["arms"]["selected"]["calibration_joint_misses"] = 0
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "no feasible three-view calibration"):
+            self.replay()
+
+    def test_feasible_complementary_and_constant_view_corners(self):
+        audit._check_calibration_triples({"A": 2, "B": 2, "C": 2}, {
+            ("A", "B"): 2, ("A", "C"): 0, ("B", "C"): 0,
+        }, 4)
+        audit._check_calibration_triples({"A": 0, "B": 2, "C": 4}, {
+            ("A", "B"): 2, ("A", "C"): 0, ("B", "C"): 0,
+        }, 4)
+
+    def test_triple_checks_are_not_global_panel_validation(self):
+        # Every three miss sets can occupy separate rows, while four cannot.
+        joint = dict.fromkeys(combinations("ABCD", 2), 0)
+        audit._check_calibration_triples(dict.fromkeys("ABCD", 2), joint, 3)
