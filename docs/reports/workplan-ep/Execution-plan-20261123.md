@@ -38,6 +38,15 @@ For M10, local static frontend proof covers the staged explainer and
 scripted backend commands. Any live, authenticated or native conditions
 need their applicable evidence from their established owners.
 
+The current clean integration cut `9a611c0` plus the pinned detached
+owners' sources passed 372 lab tests and 767 package tests. The package
+suite retained its one Torch-dependent skip. The same test passed in
+the earlier pinned CPU environment on identical test and implementation
+files. The staged release passed 12 simulator tests, reproduced all
+four relay outcomes, and matched the explainer's chart at both checked
+browser sizes. See `runs/wednesday-current-integrated.kzSQSv`. This
+rehearsal leaves source adoption and protected acceptance open.
+
 ## First execution checkpoint
 
 From the pinned L5 CPU closure, the first public environment delivery
