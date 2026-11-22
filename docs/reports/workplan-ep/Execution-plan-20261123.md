@@ -2674,3 +2674,26 @@ reserve carrying the same ID and keeps the matching reserve held. The
 and deadline controls. Both historical mock reports and the R2 audit
 digest reproduced. Authentic worker backing, image compatibility,
 measured execution and independent native approval remain open.
+
+## M2 raw command receipts for Table A
+
+The [indexed readback](../../../runs/m2-coordinator-log-binding.QCl7gB/OWNER.md)
+addresses the missing raw command logs at Spark outbox lines 2891 and
+2913. Both exact offline commands exited 0. The installed-writer
+replay reproduced both aggregates with 124 pinned scorer invocations
+and zero socket constructions. All six reply-format denominator tests
+passed. The evidence seals stdout, stderr and exit code for each
+command alongside the original logs and parent manifests. Pricing,
+preregistration, source adoption and actual clearance stay open.
+
+## M8 saved storage and terminal share exact identity
+
+The [detached joint verifier](../../../runs/m8-storage-runtime-join.VYrWcB/OWNER.md)
+compares five input fields, three created-container identity fields and
+the reviewed mount paths. It invokes the existing storage and terminal
+validators and retains the independently supplied admission and preflight
+pins. Two synthetic pairs accept. Crossing the two valid attempts,
+substituting a separately valid reserve, or changing either independent
+pin refuses. Both parent seals and the fresh artifacts match. Storage
+observations end at pre-start. Authentic and continuous backing custody
+through cleanup remain independent acceptance criteria.
