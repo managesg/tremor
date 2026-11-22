@@ -71,6 +71,52 @@ def _tensor_layout(reference, plan_pin):
     return dtype, features
 
 
+def _lineage_binding(root, reference, freeze_path, pinned, stages, samples):
+    receipt_path, receipt_pin = reference
+    receipt = _metadata(Path(receipt_path), receipt_pin)
+    _require(receipt.get("evidence") == "l8_native_base_manifest_binding"
+             and receipt.get("plan_sha256") == pinned["freeze_sha256"]
+             and receipt.get("base_manifest_sha256") == pinned["base_manifest_sha256"],
+             "lineage receipt does not bind the runtime freeze and base manifest")
+    freeze = _metadata(Path(freeze_path), pinned["freeze_sha256"])
+    _require(freeze.get("prediction") == "L8-D" and freeze.get("base_revision") == receipt.get("base_revision"),
+             "lineage freeze does not bind the reviewed L8-D base revision")
+    revision = _hex(freeze["base_revision"], 40)
+    protocol = freeze["activation_protocol"]
+    _match_artifact(root, protocol)
+    _require(protocol["sha256"] == pinned["protocol_sha256"], "activation protocol differs from approved lineage")
+    l4_ref = freeze["l4_receipt"]
+    _require(l4_ref["sha256"] == receipt.get("l4_receipt_sha256"), "lineage receipt refers to different L4-E evidence")
+    l4 = _metadata(_reference(root, l4_ref), l4_ref["sha256"])
+    _require(l4.get("line") == "L4-E" and l4.get("status") == "settled"
+             and l4.get("base_revision") == revision
+             and l4["model_manifest"]["sha256"] == pinned["base_manifest_sha256"],
+             "L4-E declared settlement or base differs from the approved lineage")
+    checkpoints = _object(freeze["checkpoints"], STAGES, "frozen lineage checkpoints")
+    _require(checkpoints == l4.get("checkpoints"), "lineage freeze and L4-E checkpoints differ")
+    for stage in STAGES:
+        artifact = checkpoints[stage]
+        _match_artifact(root, artifact)
+        _require(artifact["sha256"] == receipt.get(f"{stage}_sha256") == stages[stage]["checkpoint_sha256"],
+                 "runtime checkpoint differs from approved lineage stage")
+    holdout = freeze["heldout"]
+    heldout = _metadata(_reference(root, holdout), holdout["sha256"])
+    rows = heldout.get("samples")
+    _require(type(rows) is list and rows, "expected frozen lineage holdout")
+    prompts = {}
+    for row in rows:
+        identifier = _identifier(row["sample_id"])
+        _require(identifier not in prompts, "duplicate lineage holdout sample")
+        _match_artifact(root, row["content"])
+        prompts[identifier] = row["content"]["sha256"]
+    count = receipt["split_sizes"]["heldout"]
+    _require(prompts == {identifier: sample[0] for identifier, sample in samples.items()}
+             and type(count) is int and count == len(prompts),
+             "runtime sample inventory differs from the lineage holdout")
+    return {"lineage_receipt_sha256": receipt_pin, "l4_receipt_sha256": l4_ref["sha256"],
+            "base_revision": revision, "heldout_size": len(prompts)}
+
+
 def _finite_capture(path, expected_size, expected_digest, dtype):
     """Check the floating-point exponent bits and hash the same bytes."""
     word_format, exponent = EXPONENTS[dtype]
@@ -89,9 +135,12 @@ def _finite_capture(path, expected_size, expected_digest, dtype):
     _require(digest.hexdigest() == expected_digest, "raw capture digest differs during tensor scan")
 
 
-def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_witness=None, tensor_contract=None):
+def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_witness=None, tensor_contract=None,
+           lineage_receipt=None, lineage_plan=None):
     """Verify the declared receipt and optionally check finite values in its stated encoding."""
     root = Path(bundle).resolve(strict=True)
+    _require((lineage_receipt is None) == (lineage_plan is None),
+             "lineage receipt and freeze plan must be supplied together")
     plan = _object(_metadata(Path(plan_path), plan_sha256), ("schema", *BINDINGS, "stages", "samples"),
                    "L8-D runtime plan")
     capture = _object(_metadata(Path(capture_path), capture_sha256), ("schema", *BINDINGS, "rows"),
@@ -118,6 +167,8 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
         identifier, sample = _sample(_object(row, SAMPLE_FIELDS, "L8-D sample"))
         _require(identifier not in samples, "duplicate frozen L8-D sample")
         samples[identifier] = sample
+    lineage = (_lineage_binding(root, lineage_receipt, lineage_plan, pinned, stages, samples)
+               if lineage_receipt is not None else None)
 
     _require(type(capture["rows"]) is list, "expected L8-D activation rows")
     expected = {(identifier, stage) for identifier in samples for stage in STAGES}
@@ -167,6 +218,8 @@ def verify(bundle, plan_path, capture_path, *, plan_sha256, capture_sha256, raw_
     if tensor_contract is not None:
         report["tensor_contract_sha256"] = tensor_contract[1]
         report["finite_encoded_scalars"] = scalars
+    if lineage is not None:
+        report["approved_lineage_binding"] = lineage
     return report
 
 
@@ -178,9 +231,11 @@ def main():
     parser.add_argument("--capture-sha256", required=True)
     parser.add_argument("--raw-witness", nargs=2, metavar=("PATH", "SHA256"))
     parser.add_argument("--tensor-contract", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--lineage-receipt", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--lineage-plan", type=Path)
     try:
         result = verify(**vars(parser.parse_args()))
-    except (OSError, TypeError, ValueError) as error:
+    except (KeyError, OSError, TypeError, ValueError) as error:
         parser.error(str(error))
     print(json.dumps(result, sort_keys=True, allow_nan=False))
 

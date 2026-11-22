@@ -48,6 +48,86 @@ class L8RuntimeJoinTests(unittest.TestCase):
     def verify(self, **overrides):
         return l8_runtime_join.verify(self.root, self.plan_path, self.capture_path, **(self.pins() | overrides))
 
+    def lineage(self, *, change=None):
+        def artifact(name, body):
+            path = self.root / name
+            path.write_bytes(body)
+            return {"path": name, "sha256": sha256(body).hexdigest()}
+
+        def document(name, value):
+            return artifact(name, json.dumps(value, sort_keys=True).encode())
+
+        protocol = artifact("activation-protocol", b"fixture protocol")
+        manifest = artifact("base-manifest", b"fixture manifest")
+        stages = {stage: artifact(f"{stage}.checkpoint", stage.encode()) for stage in self.plan["stages"]}
+        revision = "a" * 40
+        l4 = document("l4.json", {
+            "line": "L4-E", "status": "settled", "base_revision": revision,
+            "model_manifest": manifest, "checkpoints": stages,
+        })
+        holdout = document("heldout.json", {"samples": [
+            {"sample_id": row["sample_id"], "family_id": f"family-{row['sample_id']}",
+             "content": artifact(f"{row['sample_id']}.prompt", row["sample_id"].encode())}
+            for row in self.plan["samples"]
+        ]})
+        freeze = document("lineage-plan.json", {"prediction": "L8-D", "base_revision": revision,
+                                                  "l4_receipt": l4, "checkpoints": stages,
+                                                  "activation_protocol": protocol, "heldout": holdout})
+        receipt = {"evidence": "l8_native_base_manifest_binding", "plan_sha256": freeze["sha256"],
+                   "base_manifest_sha256": manifest["sha256"], "base_revision": revision,
+                   "l4_receipt_sha256": l4["sha256"], "before_sha256": stages["before"]["sha256"],
+                   "after_sha256": stages["after"]["sha256"], "split_sizes": {"heldout": 2}}
+        binding = {"freeze_sha256": freeze["sha256"], "base_manifest_sha256": manifest["sha256"],
+                   "protocol_sha256": protocol["sha256"]}
+        self.plan.update(binding)
+        self.capture.update(binding)
+        for stage in stages:
+            self.plan["stages"][stage]["checkpoint_sha256"] = stages[stage]["sha256"]
+        for row in self.capture["rows"]:
+            row.update(self.plan["stages"][row["stage"]])
+        if change is not None:
+            change(receipt)
+        saved = document("lineage-receipt.json", receipt)
+        return {"lineage_receipt": (self.root / saved["path"], saved["sha256"]),
+                "lineage_plan": self.root / freeze["path"]}
+
+    def test_joins_lineage_freeze_checkpoint_pair_and_exact_heldout_prompts(self):
+        report = self.verify(**self.lineage())
+        self.assertEqual(report["approved_lineage_binding"]["heldout_size"], 2)
+        self.assertFalse(report["settlement_verified"])
+        self.assertFalse(report["native_execution_verified"])
+
+    def test_reviewed_stage_binding_refuses_repinned_runtime_checkpoint(self):
+        inputs = self.lineage()
+        self.plan["stages"]["after"]["checkpoint_sha256"] = "9" * 64
+        for row in self.capture["rows"]:
+            row.update(self.plan["stages"][row["stage"]])
+        self.assertEqual(self.verify()["verified_capture_rows"], 4)
+        with self.assertRaisesRegex(ValueError, "runtime checkpoint differs from approved lineage"):
+            self.verify(**inputs)
+
+    def test_exact_holdout_binding_refuses_replacement_prompt_and_tampered_bytes(self):
+        inputs = self.lineage()
+        prompt_pin = self.plan["samples"][0]["prompt_sha256"]
+        self.plan["samples"][0]["prompt_sha256"] = "f" * 64
+        for row in self.capture["rows"][:2]:
+            row["prompt_sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "sample inventory differs from the lineage holdout"):
+            self.verify(**inputs)
+        self.plan["samples"][0]["prompt_sha256"] = prompt_pin
+        for row in self.capture["rows"][:2]:
+            row["prompt_sha256"] = prompt_pin
+        (self.root / "p1.prompt").write_bytes(b"changed")
+        with self.assertRaisesRegex(ValueError, "digest mismatch: p1.prompt"):
+            self.verify(**inputs)
+
+    def test_exact_lineage_receipt_cannot_be_crossed_or_supplied_alone(self):
+        inputs = self.lineage(change=lambda receipt: receipt.update(plan_sha256="f" * 64))
+        with self.assertRaisesRegex(ValueError, "does not bind the runtime freeze"):
+            self.verify(**inputs)
+        with self.assertRaisesRegex(ValueError, "must be supplied together"):
+            self.verify(lineage_receipt=inputs["lineage_receipt"])
+
     def test_exact_join_is_order_independent_and_declares_no_scientific_acceptance(self):
         self.capture["rows"].reverse()
         result = self.verify()

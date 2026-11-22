@@ -136,6 +136,15 @@ The synthetic CLI and regression tests passed with only tracked
 dependencies. A real capture still needs independent runtime custody,
 verification of the activation values, and the settled L4-E pair.
 
+The optional lineage join now checks the runtime freeze against the
+independently pinned base-manifest receipt, the L4-E declaration and
+both checkpoint files. It also checks the exact held-out prompt bytes.
+The local rehearsal reproduced the earlier base receipt, then refused a
+substituted checkpoint under fresh runtime and capture digests. The
+source prompt must already be the runtime prompt for this check.
+Protocol interpretation, settlement and installed-state evidence
+remain separate checks. See `runs/m5-runtime-lineage-link.GsDUCK`.
+
 ## R1 and L4-B independent checks
 
 The archived three R1 CPU suite receipts reproduced exactly. A separate
