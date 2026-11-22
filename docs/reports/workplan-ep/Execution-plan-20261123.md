@@ -1249,3 +1249,12 @@ terminal can retain matching policy evidence without inventing a
 completed output. The 67-test suite preserved both earlier V1 reports
 byte for byte. Independent native custody and actual policy application
 remain open. See `runs/m8-execution-policy-join.wNXnq6/OWNER.md`.
+
+The M5 matched recovery verifier now supports a pinned V2 confirmation
+hold and exact per-arm night histories. Both prior outcome reports
+remain exact. The public complete case retains its 5/3 recovery ratio
+and 1/2 norm difference. A stopped case withholds recovery while
+preserving its norm result. The 37-test suite includes gap, zero-observed
+night and post-confirmation stop controls. See
+`runs/m5-observed-recovery-witness.aWkr2W/OWNER.md`. Actual training,
+independent observation and the L8-D freeze remain open.
