@@ -1,6 +1,7 @@
 import unittest
 
 from lab import r1_quiet_evidence
+from lab.r1_bench_receipts import SKIP, _passing_test_ids
 
 
 SAMPLE = b"""2026-11-21T15:11:13Z
@@ -32,3 +33,23 @@ class R1QuietEvidenceTests(unittest.TestCase):
         time_and_memory = SAMPLE.split(b"procs ---", 1)[0]
         sample, = r1_quiet_evidence._samples(time_and_memory)
         self.assertIsNone(sample["vmstat_interval"])
+
+    def test_vmstat_refuses_impossible_cpu_percentages_and_negative_swap(self):
+        for invalid in (
+            SAMPLE.replace(b"3  2 95  0", b"3  2 199  0"),
+            SAMPLE.replace(b"3  2 95  0", b"3  2 95 -7"),
+            SAMPLE.replace(b"136    0   136", b"-1    0   136"),
+        ):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "invalid vmstat interval"):
+                r1_quiet_evidence._samples(invalid)
+
+    def test_contradictory_status_refused_even_with_a_passing_footer(self):
+        labels = ["test_first (test_bench.Checks.test_first)", "test_second (test_bench.Checks.test_second)"]
+        log = (f"{labels[0]} ... /src/check.py:21: ResourceWarning: context\n"
+               "  verify()\nok\n"
+               f"{labels[1]}\nChecks the test description ... ok\n"
+               f"{SKIP}\n\nRan 3 tests in 1.0s\n\nOK (skipped=1)\n")
+        self.assertEqual(_passing_test_ids(log, 3), [*labels, SKIP.split(" ... ", 1)[0]])
+        for replacement in ("FAIL", "ERROR", "expected failure", "unexpected success", "", "FAIL\nok"):
+            with self.subTest(status=replacement), self.assertRaisesRegex(ValueError, "missing or nonpassing status"):
+                _passing_test_ids(log.replace("\nok\n", f"\n{replacement}\n"), 3)

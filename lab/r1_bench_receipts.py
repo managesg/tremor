@@ -15,6 +15,29 @@ SKIP = "test_local_hf_fails_cleanly (test_runner.RunnerTests.test_local_hf_fails
 TEST_ID = re.compile(r"^(\S+ \([\w.]+\))(?= \.\.\.|$)", re.MULTILINE)
 
 
+TEST_STATUS = re.compile(
+    r"(?:^| \.\.\. )(ok|FAIL|ERROR|expected failure|unexpected success|skipped '[^\n]*')$", re.MULTILINE,
+)
+
+
+def _passing_test_ids(log, expected_count):
+    """Require one passing status per test, including unittest's continuation format."""
+    labels = list(TEST_ID.finditer(log))
+    identities = [label[1] for label in labels]
+    if len(identities) != expected_count or len(set(identities)) != expected_count:
+        raise ValueError("suite does not list the expected distinct test identities")
+    skip_label, skip_status = SKIP.split(" ... ", 1)
+    if skip_label not in identities:
+        raise ValueError("suite omits the allowed skip")
+    for index, label in enumerate(labels):
+        end = labels[index + 1].start() if index + 1 < len(labels) else len(log)
+        statuses = TEST_STATUS.findall(log, label.end(), end)
+        expected = skip_status if label[1] == skip_label else "ok"
+        if statuses != [expected]:
+            raise ValueError(f"suite test has a missing or nonpassing status: {label[1]}")
+    return identities
+
+
 def _digest_path(path):
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -37,9 +60,7 @@ def _verify_logs(bundle, log_sha256):
         skips = [line for line in lines if re.search(r" \.\.\. skipped ", line)]
         if status.read_text().strip() != "0" or lines[-1:] != ["OK (skipped=1)"] or not match or skips != [SKIP]:
             raise ValueError(f"bench run {index} does not have the expected passing receipt")
-        identities = TEST_ID.findall(log_text)
-        if len(identities) != EXPECTED_TESTS or len(set(identities)) != EXPECTED_TESTS:
-            raise ValueError(f"bench run {index} does not list the expected distinct test identities")
+        identities = _passing_test_ids(log_text, EXPECTED_TESTS)
         if expected_ids is not None and identities != expected_ids:
             raise ValueError(f"bench run {index} used a different ordered test inventory")
         expected_ids = identities

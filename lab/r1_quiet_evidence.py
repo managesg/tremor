@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 
 from lab import adapter_lineage
-from lab.r1_bench_receipts import SKIP, TEST_ID
+from lab.r1_bench_receipts import SKIP, _passing_test_ids
 
 
 SCHEMA = "r1_cpu_host_capture_v1"
@@ -62,6 +62,8 @@ def _samples(raw):
             baseline, delta = (lines[start + i].split() for i in (1, 2))
             _require(len(baseline) == len(delta) == len(keys), "incomplete vmstat baseline or delta")
             fields = dict(zip(keys, map(int, delta), strict=True))
+            _require(all(0 <= fields[key] <= 100 for key in ("id", "wa"))
+                     and all(fields[key] >= 0 for key in ("si", "so")), "invalid vmstat interval values")
             sample["vmstat_interval"] = {name: fields[key] for name, key in (
                 ("idle_percent", "id"), ("io_wait_percent", "wa"), ("swap_in", "si"), ("swap_out", "so")
             )}
@@ -90,8 +92,8 @@ def _joined_run(root, index, run, files, command_samples):
     raw = _pinned(root, prefix + ".log", run["sha256"]).decode()
     _require(_pinned(root, prefix + ".exit", files[prefix + ".exit"]).strip() == b"0", "R1 run did not exit zero")
     match = re.findall(r"^Ran ([0-9]+) tests in ([0-9]+\.[0-9]+)s$", raw, re.MULTILINE)
-    identities = TEST_ID.findall(raw)
-    _require(match == [(str(run["tests"]), run["seconds"])] and len(identities) == len(set(identities)) == run["tests"]
+    identities = _passing_test_ids(raw, run["tests"])
+    _require(match == [(str(run["tests"]), run["seconds"])]
              and raw.splitlines()[-1:] == ["OK (skipped=1)"]
              and [line for line in raw.splitlines() if " ... skipped " in line] == [SKIP]
              and run["skips"] == 1, "R1 test output differs from the pinned suite receipt")
