@@ -2391,3 +2391,31 @@ The exact public replay showed the choice could erase an apparent
 lead advantage. The draft preserves cap-complete outcomes separately
 from unresolved interrupted prefixes. The primary contrast, decision
 bounds, held-out custody and measured cost rules remain prospective.
+
+
+## M6 public local-selection implementation
+
+The [detached worker replay](../../../runs/m6-pinned-local-selection.EdEvdA/OWNER.md)
+pins eligibility by round and stable rank by worker ID. Both proposed
+rules filter the same delivered task inventory. The worker preserves
+a valid host assignment and explicitly acknowledges an empty eligible
+intersection without fabricating work. Six checks passed. All twelve
+public capture and scorer artifacts plus the sensitivity report
+reproduced byte for byte. The retained fixture has eligible work in
+every completed visit. The no-choice case is exercised at the worker
+boundary and still needs an agreed end-to-end runner and scorer
+contract for held-out use.
+
+
+## M5 L4-E prospective author decisions
+
+The [author decision draft](../../../runs/m5-l4e-author-decision.7RqSkv/OWNER.md)
+keeps the published 10-percentage-point norm and twofold recovery-time
+proposals. It separates the choice of correction clock, confirmation
+hold, horizon, pair roster, uncertainty and equivalence margins.
+Replaying the archived public data gives complete matched recovery
+means of five and three nights. The stopped case retains one of two
+pairs and withholds the ratio. The author still needs to select the
+prospective endpoint and inference rules before real outcomes are
+read. Actual training, checkpoint settlement and held-out custody
+remain separate.
