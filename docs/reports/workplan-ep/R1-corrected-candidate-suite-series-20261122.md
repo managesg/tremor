@@ -34,13 +34,16 @@ The Coordinator nominated this exact source and designated the Assistant
 to review each window. The Assistant reported insufficient evidence
 for all three, with zero eligible for the three-run gate. The archived
 counters could not distinguish benchmark activity from unrelated host
-work under the policy. The Coordinator specified
+work under the policy. The Coordinator agreed to a prospective
+workload-attribution rule for preparation. Fresh windows require the
+owner-adopted exact source and named admission. The Coordinator specified
 a separate, fresh-context bench reviewer. The bench review has yet to
 start. The protected N2 predicate, examples and separation review remain
 with the author and independent custodian.
 [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) ·
 [X42 reviewer designation](../../../coordinator-outbox/pc-x42-r1-reviewer-designation-1355Z.md) ·
-[Host disposition and readback](../../../runs/r1-quiet-host-disposition-readback.INk0uV/OWNER.md)
+[Host disposition and readback](../../../runs/r1-quiet-host-disposition-readback.INk0uV/OWNER.md) ·
+[Prospective X42 agreement](../../../coordinator-outbox/pc-x42-prospective-host-rule-agreement-1406Z.md)
 
 The independent technical pre-review found that `pairwise_miss`
 silently truncates mismatched monitor rows and reports zero correlation

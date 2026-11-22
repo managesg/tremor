@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | DONE | 1. Spark calibration | Guarded native Qwen run, exact removal, and audited settlement. R2 charged 0.023123 GPU-hours. [Local receipt](Spark-readiness.md#calibration-result-and-settlement) |
 | BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) · [Enabled B4 reply custody replay](../../../runs/m2-enabled-response-custody.cHx1kP/OWNER.md) |
-| IN PROGRESS | 3. CPU benchmark and first R3 slices | The Coordinator nominated the exact R1 source for review. The independent host review reported insufficient evidence for all three windows. The formal bench verdict remains open. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) · [Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md) · [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
+| IN PROGRESS | 3. CPU benchmark and first R3 slices | The Coordinator nominated the exact R1 source for review. The independent host review reported insufficient evidence for all three windows. The Coordinator agreed to a prospective host-evidence rule for preparation. Any fresh window needs the owner-adopted exact source and named admission. The formal bench verdict remains open. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) · [Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md) · [Prospective X42 agreement](../../../coordinator-outbox/pc-x42-prospective-host-rule-agreement-1406Z.md) · [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
 | IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) · [L7 combined backend replay](../../../runs/m4-l7-combined-rotation.X5jf6W/OWNER.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
 | IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
@@ -2832,3 +2832,20 @@ are byte-identical. One L8 scripted field moves from floating-point
 residue to exact zero. The patch retains the defined correlation and
 represents unavailable Kish as null with a reason. Source adoption,
 quiet-host qualification, full package and bench evidence stay open.
+
+## R1 prospective host evidence and offline intake
+
+The Coordinator agreed to the prospective workload-attribution rule
+in the coordinator seat for preparation. The three historical windows
+remain insufficient. Any fresh window needs an owner-adopted exact
+source and named admission. The designated reviewer still decides each
+window, and the independent bench verdict remains open. [Prospective X42 agreement](../../../coordinator-outbox/pc-x42-prospective-host-rule-agreement-1406Z.md)
+
+The detached intake checks an independently pinned plan and saved
+window against the recorded source, image, arguments, suite roster
+and exact-ID cleanup. It uses same-clock host and suite CPU and I/O
+acquisition spans and keeps mixed intervals, gaps, missing counters
+and unlisted workloads explicit. It ties raw counters to the exact
+plan and window, preventing reuse under another container or cgroup
+instance. Sixteen public tests pass. The tool provides evidence to a reviewer and leaves quietness, capture
+provenance, and authority unverified. [Prospective intake](../../../runs/r1-prospective-host-intake.H9RCTa/OWNER.md)
