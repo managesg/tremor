@@ -2377,3 +2377,17 @@ valid parses with no dispatch result and one turn with no charge
 or reply. The last four do not fill the terminal denominator.
 The replay uses archived mock replies and establishes no wording
 effect, new parser policy or actual Pilot 4 clearance.
+
+
+## M6 prospective comparison for author review
+
+The [detached design draft](../../../runs/m6-prospective-authority-access.VMP4tJ/OWNER.md)
+retains all four authority policies crossed with own and shared
+evidence. It distinguishes the total policy comparison from authority
+under identical evidence delivery and retains the independent union
+baseline. It proposes stable worker-rank selection among eligible
+unassigned tasks, with first-visible as a separate sensitivity.
+The exact public replay showed the choice could erase an apparent
+lead advantage. The draft preserves cap-complete outcomes separately
+from unresolved interrupted prefixes. The primary contrast, decision
+bounds, held-out custody and measured cost rules remain prospective.
