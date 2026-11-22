@@ -1197,3 +1197,12 @@ responses, with one attempted response unavailable and one opportunity
 never attempted. Its relay estimate remains undefined. The original CLI
 output is byte-identical. See `runs/m10-relay-usage-release.lHeXvd/OWNER.md`
 for the 18-test suite, browser verification and owner patch.
+
+The public L2 archive now has a detached strict read-to-post replay.
+Across four published fixtures it verifies 23 read and prompt witnesses,
+22 raw response dispositions, and seven worker posts. The two interrupted
+posts are attributable and do not produce a completed estimate. The
+research generator independently reproduced all four Board and generation
+tapes, and the detached release passed 24 tests. See
+`runs/m10-relay-raw-board-release.YFaSjS/OWNER.md`. Public release adoption
+and held-out acceptance remain open.
