@@ -2039,3 +2039,21 @@ Own-access outcomes and the stopped missing comparisons stay the same.
 Two controls passed, and both rules' fresh outputs reproduced exactly.
 This is a test of the scripted baseline choice, with held-out policy
 comparisons and native measurements still pending.
+
+## M3 qualification intake and M8 storage readback
+
+The [R1 reviewer intake](../../../runs/r1-quiet-review-intake.Kd1OIs/OWNER.md)
+pins the corrected source and policy, each archived host capture,
+window, exact container ID, test log and cleanup receipt. The supplied
+policy requires a quiet machine and provides no qualification rule.
+All three review rows remain pending. The Coordinator owns nomination
+and the designated independent reviewer owns the three dispositions.
+The intake, three controls and measured counter replay passed.
+
+The latest metadata-only M8 readback verified the expected model,
+worker and plan digests. Both reviewed staging roots have mode 775,
+are writable by UID 1000 and are on the same read-write ext4 mount.
+The [existing storage handoff](../../../runs/smol-mount-custody.p7a4zR/coordinator-packet.md)
+still requires the storage operator to return two disjoint backing
+paths with custody from preflight through cleanup. The exact ledger
+placement and one-use native admission remain separate.
