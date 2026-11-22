@@ -220,3 +220,23 @@ the candidate comparison.
 sha256sum -c runs/r1-nomination-ready.w0D3vn/evidence.sha256
 python3 -B runs/r1-nomination-ready.w0D3vn/replay.py | cmp - runs/r1-nomination-ready.w0D3vn/report.json
 ```
+
+## Public sibling-review parity on the patched candidate
+
+A second reviewer executed the same archived Python and Lean predicates
+over 360 normalized public four-worker states. The state grid varies
+claim ownership, reviewer identity, task and worker matching, timing,
+and a second review. The predicates and independent per-state
+expectations agreed on all 360 states, with 63 allowed and 297 rejected.
+The replay rechecks all 351 archived files and their modes.
+
+```bash
+bash runs/r1-public-sibling-grid.mgt1Uk/verify.sh
+```
+
+The ordered verdict digest is
+`3e328675e2eeeaf04e224c41de50a804ec22c4f0a61a80239831a11fdc13e8ac`.
+This result supports the public predicate review for candidate nomination.
+Protected N2 still needs its independently sealed rule and carrier
+evidence. The nomination, quiet-host qualification, and full-bench
+verdict remain pending.
