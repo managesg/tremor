@@ -1233,3 +1233,11 @@ of actual policy artifacts and verification of normalization and fit
 execution remain distinct. Fifty-three tests passed and both earlier
 capture reports reproduced byte for byte. See
 `runs/m8-policy-portability.Z70VMn/OWNER.md`.
+
+The M8 CLIs now join the portability declaration to the exact bytes of
+every referenced policy artifact, prior input and scheduled holdout
+input. They refuse exact input reuse across splits and separately count
+unscheduled holdout tasks. The scripted audit verified 13 policy
+artifacts, three prior inputs and three scheduled assignments. All 61
+focused tests passed. Runtime application and semantic leakage remain
+separate checks. See `runs/m8-policy-exact-artifacts.UE3JI0/OWNER.md`.

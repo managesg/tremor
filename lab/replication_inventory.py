@@ -79,6 +79,25 @@ def _metadata(path, digest):
     return _json(raw)
 
 
+def _capture_bytes(root, kind, digest):
+    name = _hex(digest, 64)
+    try:
+        directory = os.open(root / kind, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        finally:
+            os.close(directory)
+    except OSError as error:
+        raise ValueError(f"missing or inaccessible {kind} capture file") from error
+    with os.fdopen(descriptor, "rb") as stream:
+        info = os.fstat(stream.fileno())
+        _require(stat.S_ISREG(info.st_mode) and info.st_size <= JSON_LIMIT, f"invalid {kind} capture file")
+        raw = stream.read(JSON_LIMIT + 1)
+    _require(len(raw) == info.st_size and hashlib.sha256(raw).hexdigest() == digest,
+             f"captured {kind} digest mismatch")
+    return raw
+
+
 def _normalized(root, candidate):
     _object(candidate, ("root", "manifest_sha256", "repo", "revision"), "candidate")
     folder = root / _relative(candidate["root"])

@@ -1,14 +1,11 @@
 """Report outcome and resource coverage for matched replication schedules."""
 
 import argparse
-import hashlib
 import json
-import os
 from pathlib import Path
-import stat
 
 from lab import replication_pairing as pairing
-from lab.replication_inventory import JSON_LIMIT, _hex, _json, _metadata, _object, _require
+from lab.replication_inventory import _capture_bytes, _hex, _json, _metadata, _object, _require
 
 
 SCHEMA = "replication_pair_coverage_v1"
@@ -139,25 +136,6 @@ def _cumulative_limits(witness, line, pins, totals):
     return {"limits_sha256": witness[1], "line": line_limits, "by_role": role_limits}
 
 
-def _capture_bytes(root, kind, digest):
-    name = _hex(digest, 64)
-    try:
-        directory = os.open(root / kind, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        try:
-            descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
-        finally:
-            os.close(directory)
-    except OSError as error:
-        raise ValueError(f"missing or inaccessible {kind} capture file") from error
-    with os.fdopen(descriptor, "rb") as stream:
-        info = os.fstat(stream.fileno())
-        _require(stat.S_ISREG(info.st_mode) and info.st_size <= JSON_LIMIT, f"invalid {kind} capture file")
-        raw = stream.read(JSON_LIMIT + 1)
-    _require(len(raw) == info.st_size and hashlib.sha256(raw).hexdigest() == digest,
-             f"captured {kind} digest mismatch")
-    return raw
-
-
 def _check_capture(root, event, record, line, coverage_pin, loaders, runs):
     digest = event["observer_capture_sha256"]
     terminal = _json(_capture_bytes(root, "terminal", digest))
@@ -251,12 +229,14 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
 
 
 def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None,
-           inventory=None, execution_observation=None, capture_root=None, policy_witness=None):
+           inventory=None, execution_observation=None, capture_root=None, policy_witness=None,
+           policy_artifacts=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     _require(capture_root is None or execution_observation is not None,
              "capture root requires an execution observation pin")
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
-                            reference=reference, inventory=inventory, policy_witness=policy_witness)
+                            reference=reference, inventory=inventory, policy_witness=policy_witness,
+                            policy_artifacts=policy_artifacts)
     pins = paired["manifest_sha256"]
     declared = _metadata(Path(coverage[0]), coverage[1])
     _object(declared, ("schema", "line", "schedule_pins", "rows"), "replication coverage witness")
@@ -330,6 +310,8 @@ def main():
                         help="independently pinned structural inventory for snapshot-bound schedules")
     parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned frozen policy and calibration scope")
+    parser.add_argument("--policy-artifacts", nargs=3, metavar=("BUNDLE", "PATH", "SHA256"),
+                        help="verify content-addressed policy and task input artifacts")
     parser.add_argument("--execution-observation", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned execution observations for covered arms")
     parser.add_argument("--capture-root", type=Path,

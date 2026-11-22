@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 
-from lab.replication_inventory import ROLES, _hex, _metadata, _object, _require
+from lab.replication_inventory import ROLES, _capture_bytes, _hex, _metadata, _object, _require
 
 
 LINES = ("L1", "L2", "L3")
@@ -14,6 +14,7 @@ IDENTITY_FIELDS = ("task_id", "replicate_id", "block_id")
 SCHEDULE_V1 = "replication_holdout_schedule_v1"
 SCHEDULE_V2 = "replication_holdout_schedule_v2"
 PORTABILITY = "replication_policy_portability_v1"
+POLICY_ARTIFACTS = "replication_policy_artifacts_v1"
 PORTABILITY_ARMS = ("technique", "comparator")
 MECHANICS = ("chat_template", "token_accounting", "normalization")
 MATCH_FIELDS = (
@@ -120,7 +121,39 @@ def _policy(config):
     return mechanical, arms
 
 
-def _portability(witness, *, line, pins, task_splits):
+def _artifact_custody(witness, portability_pin, artifact_pins, task_splits, schedule):
+    root, witness_path, pin = witness
+    bundle = Path(root).resolve(strict=True)
+    _require(bundle.is_dir(), "policy artifact bundle must be a directory")
+    record = _metadata(Path(witness_path), pin)
+    _object(record, ("schema", "policy_witness_sha256", "prior_inputs"), "policy artifact witness")
+    _require(record["schema"] == POLICY_ARTIFACTS and record["policy_witness_sha256"] == portability_pin,
+             "policy artifact witness does not bind the pinned portability declaration")
+    prior = record["prior_inputs"]
+    expected = {task for task, split in task_splits.items() if split != "holdout"}
+    _object(prior, expected, "prior task input roster")
+    inputs = {}
+    for task, digest in prior.items():
+        digest = _hex(digest, 64)
+        split = task_splits[task]
+        _require(inputs.setdefault(digest, split) == split, "same task input bytes cross split boundaries")
+    for _, task_input, *_ in schedule.values():
+        _require(inputs.setdefault(task_input, "holdout") == "holdout",
+                 "same task input bytes cross split boundaries")
+    for digest in sorted(inputs):
+        _require(_capture_bytes(bundle, "input", digest), "empty task input artifact")
+    for digest in sorted(artifact_pins):
+        _require(_capture_bytes(bundle, "policy", digest), "empty policy artifact")
+    scheduled_tasks = {task for task, _ in schedule}
+    unscheduled = sum(split == "holdout" and task not in scheduled_tasks for task, split in task_splits.items())
+    return {"artifact_witness_sha256": pin, "verified_policy_artifacts": len(artifact_pins),
+            "verified_distinct_input_artifacts": len(inputs), "verified_prior_tasks": len(prior),
+            "verified_holdout_assignments": len(schedule),
+            "unscheduled_holdout_tasks": unscheduled,
+            "exact_checked_input_bytes_disjoint_across_splits": True}
+
+
+def _portability(witness, *, line, pins, task_splits, schedule, artifact_witness):
     path, pin = witness
     document = _metadata(Path(path), pin)
     _object(document, ("schema", "line", "schedule_pins", "roles",
@@ -157,13 +190,23 @@ def _portability(witness, *, line, pins, task_splits):
         differences = {key for key in parameters if parameters[key] != new["parameters"][key]}
         _require(differences <= eligible, "calibration changed an unauthorized parameter")
         changed[arm] = sorted(differences)
-    return {"evidence": "pinned_policy_declarations_only", "witness_sha256": pin,
+    report = {"evidence": "pinned_policy_declarations_only", "witness_sha256": pin,
             "mechanical_changes": sorted(changes), "recalibrated_parameter_changes": changed,
             "declared_second_family_calibration_tasks": len(tasks),
             "runtime_policy_verified": False, "calibration_execution_verified": False}
+    if artifact_witness is not None:
+        artifact_pins = {fit["procedure_sha256"], fit["allowance_sha256"]}
+        for config in roles.values():
+            artifact_pins.update(config["mechanical"].values())
+            for arm in config["arms"].values():
+                artifact_pins.add(arm["method_sha256"])
+                artifact_pins.update(arm["parameters"].values())
+        report["artifact_custody"] = _artifact_custody(artifact_witness, pin, artifact_pins, task_splits, schedule)
+    return report
 
 
-def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=None, policy_witness=None):
+def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=None, policy_witness=None,
+           policy_artifacts=None):
     """Compare pinned metadata. Each input is a (path, SHA-256) pair.
 
     Split group IDs represent the custodian's reviewed canonical groupings.
@@ -175,6 +218,7 @@ def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=N
     snapshot receipts. It supplies declared identity and no runtime attestation.
     """
     _require(line in LINES, "expected one of L1, L2 or L3")
+    _require(policy_artifacts is None or policy_witness is not None, "policy artifacts require a portability witness")
     schedules = {"unchanged": unchanged, "recalibrated": recalibrated}
     if reference is not None:
         schedules["reference"] = reference
@@ -207,7 +251,10 @@ def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=N
     if bindings is not None:
         result["scheduled_snapshot_binding"] = snapshots
     if policy_witness is not None:
-        result["policy_portability"] = _portability(policy_witness, line=line, pins=pins, task_splits=task_splits)
+        result["policy_portability"] = _portability(
+            policy_witness, line=line, pins=pins, task_splits=task_splits, schedule=baseline,
+            artifact_witness=policy_artifacts,
+        )
     return result
 
 
@@ -220,6 +267,8 @@ def main():
                         help="independently pinned structural inventory for snapshot-bound schedules")
     parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned frozen policy and calibration scope")
+    parser.add_argument("--policy-artifacts", nargs=3, metavar=("BUNDLE", "PATH", "SHA256"),
+                        help="verify content-addressed policy and task input artifacts")
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, ValueError) as error:
