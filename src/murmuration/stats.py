@@ -1,6 +1,9 @@
 """Statistics per SCIENCE.md section 5. Stdlib only."""
 import random
 from collections import defaultdict
+from decimal import Decimal
+from fractions import Fraction
+from numbers import Rational, Real
 
 from .manifest import tree_hash
 
@@ -20,8 +23,19 @@ def paired_bootstrap(rows, cluster, metric, n=10000, seed=0):
     return metric(rows), vals[int(0.025 * (n - 1))], vals[int(0.975 * (n - 1))]
 
 
+def _validate_probability(value, label):
+    if (isinstance(value, bool) or not isinstance(value, (Real, Decimal))
+            or (isinstance(value, Decimal) and not value.is_finite()) or not 0 <= value <= 1):
+        raise ValueError(f"{label} must be a finite probability in [0, 1]")
+
+
 def holm(pvals, alpha=0.05):
-    """Holm step-down; returns reject flags in input order."""
+    """Holm step-down with finite inputs in [0, 1]. Reject flags retain input order."""
+    _validate_probability(alpha, "alpha")
+    for i, pval in enumerate(pvals):
+        _validate_probability(pval, f"pvals[{i}]")
+    if isinstance(alpha, (Decimal, Rational)):
+        alpha = Fraction(alpha)  # Keep exact alpha values exact through division.
     m = len(pvals)
     reject = [False] * m
     for rank, i in enumerate(sorted(range(m), key=lambda j: pvals[j])):

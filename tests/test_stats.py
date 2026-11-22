@@ -2,6 +2,8 @@ import os
 import sys
 import tempfile
 import unittest
+from decimal import Decimal, localcontext
+from fractions import Fraction
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from murmuration import stats  # noqa: E402
@@ -36,6 +38,40 @@ class T(unittest.TestCase):
         # p == alpha/(m-rank) is not "greater than", so it still rejects
         self.assertEqual(stats.holm([0.025, 0.9]), [True, False])
         self.assertEqual(stats.holm([0.05]), [True])
+
+    def test_holm_refuses_any_invalid_p_value_before_step_down(self):
+        invalid = (float("nan"), float("inf"), float("-inf"), Decimal("NaN"),
+                   Decimal("sNaN"), Decimal("Infinity"), Fraction(-1, 10),
+                   Decimal("1.0000000000000000000001"), True, "0.05", None)
+        for value in invalid:
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "pvals\\[1\\]"):
+                stats.holm([0.5, value])
+
+    def test_holm_validates_alpha_even_for_an_empty_family(self):
+        invalid = (float("nan"), float("inf"), Decimal("sNaN"), Fraction(-1, 7),
+                   Decimal("1.0000000000000000000001"), True, "0.05")
+        for value in invalid:
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "alpha"):
+                stats.holm([], alpha=value)
+        self.assertEqual(stats.holm([]), [])
+        self.assertEqual(stats.holm([1, 0], alpha=0), [False, True])
+        self.assertEqual(stats.holm([1], alpha=1), [True])
+
+    def test_holm_preserves_exact_nonfloat_thresholds_and_input_order(self):
+        exact = Fraction(1, 60)
+        self.assertEqual(stats.holm([Fraction(1, 2), exact, Fraction(1, 40)], alpha=Fraction(1, 20)),
+                         [False, True, True])
+        with localcontext() as context:
+            context.prec = 2
+            self.assertEqual(stats.holm([Decimal("0.24"), 0.8, Fraction(1, 4)], alpha=Decimal("0.75")),
+                             [True, False, True])
+            self.assertEqual(stats.holm([Decimal("0.017"), 0.5, Fraction(1, 4)], alpha=Decimal("0.05")),
+                             [False, False, False])
+
+    def test_holm_integer_alpha_keeps_an_exact_fraction_cutoff(self):
+        values = [Fraction(1, 2), Fraction(1, 3), Fraction(2, 3)]
+        self.assertEqual(stats.holm(values, alpha=1), [True, True, True])
+        self.assertEqual(stats.holm(values, alpha=1.0), [False, False, False])
 
     def test_bootstrap_seed_is_honoured(self):
         rows = [{"c": i, "d": float(i * i)} for i in range(12)]
