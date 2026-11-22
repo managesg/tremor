@@ -2313,3 +2313,16 @@ retains mode-0700 separate sinks, exact mode-0600 initial and retry
 bytes, and exclusive writes. Import creates no files. Pilot 4
 registration, native contexts under an approved custody root,
 prospective wording, pricing and release remain with their owners.
+
+
+## M8 manifest members and mount scope
+
+The [saved evidence join](../../../runs/m8-storage-member-join.S9EmBQ/OWNER.md)
+ties both manifest rosters to the reviewed mount and records each
+root and regular member's device and inode. It links the approved
+preflight inputs to the exact prestart inspection and prior receipt.
+Both intact synthetic bundles passed. Exchanging either phase between
+them was refused. Twenty tests passed and the earlier ancestry
+report reproduced byte for byte. The storage operator and independent
+reviewer still need to supply and authenticate actual captures and
+custody through cleanup. No launch or reservation decision changes.
