@@ -554,6 +554,15 @@ audit. See [the exposure and fixed-share results](Topology-matched-traversal.md#
 The protocol author and independent custodian still need to freeze
 the protected estimand and retain actual delivered inputs and scores.
 
+The capped delivery analysis found that 102 of the 240 stopped
+arms had already verified every eligible task. The other 138 still
+had unverified work at cutoff. Under a sensitivity assumption that
+stopped arms may continue while keeping all sealed verified work,
+24 of 34 observed shared-peer gains over pooled own access remain
+strictly positive across the bounds. Against fixed shares the count
+is 12 of 46. Both comparisons retain all budget stops. No post-cap
+continuation was observed. See `runs/m6-cap-stop-endpoints.OHWltY`.
+
 ## M7 Grover role projection and dispatch completeness
 
 A solver that holds only part of the marked set now receives a
