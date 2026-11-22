@@ -2018,3 +2018,10 @@ has 240 metered and 20 unresolved attempts. The cap-stop has 239
 metered, 21 unresolved attempts and one missing reply. All three
 targeted controls passed. The actual prospective wording, dated
 pricing, authenticated human reviews and Console evidence remain open.
+
+The independent review found that a positive cache-write continuation
+could pass after reissuing a matching wire amount and conflicting
+write durations. The [zero-write intake follow-up](../../../runs/m2-cache-write-intake.wYLd2w/OWNER.md)
+rejects positive write tokens in both charge and turn. All four tests
+passed and both exact no-write archives reproduced unchanged. A
+write-triggered stop requires separate settlement review.
