@@ -1396,3 +1396,23 @@ bounds. Both 260-attempt offline scenarios reproduce the prior
 request-custody report. Driver adoption, restart quarantine review,
 author disposition, pricing and live acceptance remain separate.
 [Full mock replay](../../../runs/m2-budget-full-replay.WIysEl/OWNER.md)
+
+## M3 typed completion and M9 independently metered attempts
+
+The detached R3-L2 completion candidate now distinguishes JSON booleans,
+integers and decimal representations when comparing exact receipt semantics.
+All three completed archive results and both stopped results retain their
+dispositions. The source owner still needs to adopt the candidate under
+the existing ownership and protected admission plan.
+[Receipt replay](../../../runs/r3-l2-typed-completion.HLHaY0/OWNER.md)
+
+The M9 cluster audit optionally checks independently pinned meter
+observations against the full attempt and charge rosters. Reassignment
+between equal-usage attempts fails when the independent observation is
+present. Existing reports reproduce byte for byte. Native observer
+identity and the unresolved usage still need separate evidence.
+[Meter replay](../../../runs/m9-independent-meter.7YAkPm/OWNER.md)
+
+All 434 integrated lab tests passed. The exact roster retained all
+432 prior cases and added the two meter-witness regressions.
+[Isolated integration](../../../runs/m9-meter-integration.wGqKoo/OWNER.md)
