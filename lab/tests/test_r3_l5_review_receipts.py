@@ -2,6 +2,7 @@
 
 from hashlib import sha256
 import json
+from shutil import copyfile
 from pathlib import Path
 import subprocess
 import sys
@@ -11,9 +12,16 @@ import unittest
 from lab import r3_l5_intake as intake
 
 
+PUBLIC_FIXTURES = Path(__file__).with_name("fixtures") / "r3_l5_intake"
+
+
 class R3L5ReviewReceiptTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(self.enterContext(TemporaryDirectory()))
+        for name, (relative, _, _) in intake.PUBLIC_EVIDENCE.items():
+            target = self.root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            copyfile(PUBLIC_FIXTURES / f"{name}.json", target)
         self.reviews = self.root / "review"
         self.reviews.mkdir()
         self.plan = "a" * 64
@@ -39,7 +47,7 @@ class R3L5ReviewReceiptTests(unittest.TestCase):
         payload = json.dumps(self.index).encode()
         path.write_bytes(payload)
         result = subprocess.run(
-            [sys.executable, "-B", "-m", "lab.r3_l5_intake", "--review-index", str(path),
+            [sys.executable, "-B", "-m", "lab.r3_l5_intake", "--root", str(self.root), "--review-index", str(path),
              "--review-index-sha256", sha256(payload).hexdigest(), "--review-root", str(self.root)],
             text=True, capture_output=True, timeout=10, check=False,
         )
@@ -52,7 +60,7 @@ class R3L5ReviewReceiptTests(unittest.TestCase):
         self.assertFalse(data["authorizes_execution"])
 
     def verify(self):
-        return intake.inventory(intake.ROOT, self.index, review_root=self.root)
+        return intake.inventory(self.root, self.index, review_root=self.root)
 
     def test_attachment_digest_is_checked_before_disposition(self):
         digest = self.attach()
@@ -69,11 +77,11 @@ class R3L5ReviewReceiptTests(unittest.TestCase):
 
     def test_legacy_reference_alone_stays_metadata(self):
         self.attach()
-        legacy = intake.inventory(intake.ROOT, self.index)
+        legacy = intake.inventory(self.root, self.index)
         self.assertNotIn("review_receipt_bytes", legacy)
         self.assertEqual(legacy["review_references"][self.role]["disposition"], "reference_supplied")
         with self.assertRaisesRegex(ValueError, "pinned review index"):
-            intake.inventory(intake.ROOT, review_root=self.root)
+            intake.inventory(self.root, review_root=self.root)
 
     def test_complete_byte_inventory_does_not_authorize_execution(self):
         for role in intake.REVIEW_ROLES:

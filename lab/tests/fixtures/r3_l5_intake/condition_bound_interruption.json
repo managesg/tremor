@@ -1,0 +1,41 @@
+{
+  "attempts": [
+    {
+      "acknowledgment": true,
+      "cleanup_confirmed_by_host": true,
+      "container_id": "211eaf38abcfcb87306251395a55e3dee73db08c11db476f3443ee82dd5dd934",
+      "item": "p1",
+      "observed_requests": [
+        "own",
+        "foreign",
+        "unknown",
+        "bulk",
+        "forged"
+      ],
+      "worker": "a0"
+    },
+    {
+      "acknowledgment": null,
+      "cleanup_confirmed_by_host": true,
+      "container_id": "6c35ce0ab0eec221eb63c0cd90d06fa30cbe622da4088fb77d72226c6934e955",
+      "item": "p2",
+      "observed_requests": [
+        "own"
+      ],
+      "worker": "a1"
+    }
+  ],
+  "authenticated_host_custody": false,
+  "comparison": null,
+  "plan_sha256": "984910c0e890619646daa1e4f94558768759d89ba54186aa8404ab145cd38b7d",
+  "run_id": "13fb20912e6c4babb07070f340cc99ca",
+  "scientific_result": false,
+  "scope": "archived public scripted CPU interruption",
+  "stop_reason": "exchange timeout",
+  "unstarted": 94,
+  "wire_event_counts": {
+    "ack": 1,
+    "begin": 2,
+    "request": 6
+  }
+}

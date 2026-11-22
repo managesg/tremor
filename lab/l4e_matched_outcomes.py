@@ -5,7 +5,7 @@ from fractions import Fraction
 import json
 from pathlib import Path
 
-from lab.l4b_recovery_observation import classify
+from lab.recovery_observation import classify
 from lab.replication_inventory import _hex, _metadata, _object, _require
 from lab.replication_pairing import _identifier
 
