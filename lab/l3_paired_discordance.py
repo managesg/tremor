@@ -3,6 +3,7 @@
 import argparse
 from fractions import Fraction
 from hashlib import sha256
+from itertools import combinations
 import json
 from math import comb
 from pathlib import Path
@@ -36,23 +37,76 @@ def _table(case, split, marginal, rate):
     return table
 
 
+def _inventory(values, label, minimum=1):
+    _require(type(values) is list and len(values) >= minimum
+             and all(type(value) is str and value.strip() for value in values)
+             and len(set(values)) == len(values), f"invalid {label} inventory")
+    return values
+
+
+def _calibration_selection(fit, views, count):
+    catches = _object(fit["calibration_individual_catches"], views, "calibration catch inventory")
+    _require(all(type(value) is int and 0 <= value <= count for value in catches.values()),
+             "invalid calibration catch counts")
+    expected = set(combinations(sorted(views), 2))
+    joint = {}
+    rows = fit["calibration_joint_misses"]
+    _require(type(rows) is list, "invalid calibration pair inventory")
+    for row in rows:
+        _object(row, ("pair", "misses"), "calibration pair")
+        pair = tuple(_inventory(row["pair"], "calibration pair", minimum=2))
+        _require(pair in expected and pair not in joint, "invalid or duplicate calibration pair")
+        misses = row["misses"]
+        first, second = (catches[view] for view in pair)
+        _require(type(misses) is int and max(0, count - first - second) <= misses <= count - max(first, second),
+                 "calibration joint misses contradict the individual catches")
+        joint[pair] = misses
+    _require(joint.keys() == expected, "calibration pair inventory is incomplete")
+    ranked = sorted(views, key=lambda view: (-catches[view], view))
+    first, second = ranked[:2]
+    alternate = min((view for view in views if view != first),
+                    key=lambda view: (joint[tuple(sorted((first, view)))], view))
+    return {"top": [first, second], "selected": [first, alternate]}, joint
+
+
 def _threshold_fit_rates(case):
     fit = case["fit"]
     raw = json.dumps(fit, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     _require(sha256(raw).hexdigest() == case["plan_sha256"], "inner plan digest differs from threshold fit")
     _require(_rational(fit["target_false_positive_rate"]) == TARGET, "threshold-fit target differs")
-    identifiers = fit["threshold_fit_clean_ids"]
-    _require(type(identifiers) is list and identifiers
-             and all(type(identifier) is str and identifier.strip() for identifier in identifiers)
-             and len(set(identifiers)) == len(identifiers), "invalid threshold-fit clean inventory")
+    identifiers = _inventory(fit["threshold_fit_clean_ids"], "threshold-fit clean")
+    calibration = _inventory(fit["calibration_failure_ids"], "calibration failure")
+    _require(set(identifiers).isdisjoint(calibration), "calibration and clean fit inventories overlap")
+    views = _inventory(fit["view_ids"], "monitor view", minimum=2)
+    expected_pairs, joint_misses = _calibration_selection(fit, views, len(calibration))
     fit_arms = _object(fit["arms"], ARMS, "threshold-fit arms")
+    expected_calls = {
+        "calibration_failure": len(views) * len(calibration),
+        "threshold_fit_clean": 2 * len(identifiers),
+        "heldout_clean": 2 * case["heldout_clean_count"],
+        "heldout_failure": 2 * case["heldout_failure_count"],
+    }
+    expected_calls["total"] = sum(expected_calls.values())
     rates = []
     for arm in ARMS:
-        count = fit_arms[arm]["threshold_fit_false_positives"]
+        point = _object(fit_arms[arm], ("pair", "cutoff", "calibration_joint_misses",
+                                      "threshold_fit_false_positives"), "threshold-fit operating point")
         reported = case["arms"][arm]
-        copy = reported["threshold_fit_false_positives"]
+        pair, cutoff, misses = (point[field] for field in ("pair", "cutoff", "calibration_joint_misses"))
+        _require(pair == expected_pairs[arm] and type(cutoff) is int and 0 <= cutoff <= 2
+                 and type(misses) is int and misses == joint_misses[tuple(sorted(pair))],
+                 "threshold-fit point differs from the calibration selection or binary score range")
+        _require(all(type(reported[field]) is type(point[field]) and reported[field] == point[field]
+                     for field in ("pair", "cutoff", "calibration_joint_misses")),
+                 "reported operating point differs from the pinned fit")
+        calls = _object(reported["call_counts"], expected_calls, "scripted call charge")
+        _require(all(type(calls[field]) is int and calls[field] == expected for field, expected in expected_calls.items()),
+                 "scripted call charge differs from the planned view and sample counts")
+        count, copy = point["threshold_fit_false_positives"], reported["threshold_fit_false_positives"]
         _require(type(count) is int and 0 <= count <= len(identifiers)
                  and type(copy) is int and copy == count, "threshold-fit count differs from the pinned fit")
+        _require(cutoff < 2 or count == reported["heldout_false_positives"] == reported["heldout_catches"] == 0,
+                 "maximum binary cutoff cannot produce flags")
         rate = Fraction(count, len(identifiers))
         _require(_rational(reported["threshold_fit_false_positive_rate"]) == rate,
                  "threshold-fit rate differs from the verified count and denominator")

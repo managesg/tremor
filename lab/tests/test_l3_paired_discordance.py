@@ -30,10 +30,27 @@ class PairedDiscordanceTests(unittest.TestCase):
                 for arm, catches in (("top", 2), ("selected", 3))
             },
         }
+        points = {
+            "top": {"pair": ["A", "B"], "cutoff": 0, "calibration_joint_misses": 2},
+            "selected": {"pair": ["A", "C"], "cutoff": 0, "calibration_joint_misses": 1},
+        }
+        for arm in audit.ARMS:
+            self.case["arms"][arm].update(deepcopy(points[arm]), call_counts={
+                "calibration_failure": 12, "threshold_fit_clean": 40,
+                "heldout_clean": 40, "heldout_failure": 8, "total": 100,
+            })
         self.case["fit"] = {
             "threshold_fit_clean_ids": [f"fit-{i}" for i in range(20)],
+            "calibration_failure_ids": [f"cal-{i}" for i in range(4)],
+            "view_ids": ["A", "B", "C"],
+            "calibration_individual_catches": dict.fromkeys("ABC", 2),
+            "calibration_joint_misses": [
+                {"pair": ["A", "B"], "misses": 2},
+                {"pair": ["A", "C"], "misses": 1},
+                {"pair": ["B", "C"], "misses": 1},
+            ],
             "target_false_positive_rate": goal,
-            "arms": {arm: {"threshold_fit_false_positives": 1} for arm in audit.ARMS},
+            "arms": {arm: point | {"threshold_fit_false_positives": 1} for arm, point in points.items()},
         }
         self.pin_fit()
         self.zero = zero
@@ -115,4 +132,38 @@ class PairedDiscordanceTests(unittest.TestCase):
         ids[1] = ids[0]
         self.pin_fit()
         with self.assertRaisesRegex(ValueError, "threshold-fit clean inventory"):
+            self.replay()
+
+    def test_rehashed_outcome_cannot_override_fitted_point(self):
+        arm = self.case["arms"]["selected"]
+        for field, wrong in (("pair", ["A", "A"]), ("cutoff", 99), ("cutoff", False),
+                             ("calibration_joint_misses", 0)):
+            before = arm[field]
+            arm[field] = wrong
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "reported operating point differs"):
+                self.replay()
+            arm[field] = before
+
+    def test_rehashed_fit_cannot_choose_a_nonoptimal_pair(self):
+        point = {"pair": ["A", "B"], "calibration_joint_misses": 2}
+        self.case["fit"]["arms"]["selected"].update(point)
+        self.case["arms"]["selected"].update(point)
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "point differs from the calibration selection"):
+            self.replay()
+
+    def test_rehashed_outcome_cannot_zero_or_move_call_charges(self):
+        calls = self.case["arms"]["selected"]["call_counts"]
+        original = calls.copy()
+        for replacement in (dict.fromkeys(calls, 0),
+                            original | {"heldout_clean": 0, "threshold_fit_clean": 80}):
+            calls.update(replacement)
+            with self.subTest(replacement=replacement), self.assertRaisesRegex(ValueError, "scripted call charge differs"):
+                self.replay()
+
+    def test_maximum_binary_cutoff_cannot_report_positive_flags(self):
+        self.case["fit"]["arms"]["selected"]["cutoff"] = 2
+        self.case["arms"]["selected"]["cutoff"] = 2
+        self.pin_fit()
+        with self.assertRaisesRegex(ValueError, "maximum binary cutoff cannot produce flags"):
             self.replay()
