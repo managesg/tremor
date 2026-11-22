@@ -47,6 +47,10 @@ class PairedDiscordanceTests(unittest.TestCase):
                 expected = Fraction(sum(abs(value) >= cutoff for value in signs), len(signs))
                 self.assertEqual(audit.conditional_two_sided(discordance - selected, selected), expected)
 
+    def test_implausibly_large_count_is_refused_before_exact_calculation(self):
+        with self.assertRaisesRegex(ValueError, "too many scripted pairs"):
+            audit.conditional_two_sided(10**100, 0)
+
     def test_one_directional_discordance_and_fixture_floor(self):
         result = self.replay()
         self.assertEqual(result["failure_discordant_pairs"], 1)

@@ -12,6 +12,7 @@ from lab.replication_inventory import _metadata, _object, _require
 CELLS = ("both", "selected_only", "top_only", "neither")
 ARMS = ("top", "selected")
 TARGET = Fraction(1, 20)
+MAX_SCRIPTED_PAIRS = 4096
 
 
 def _rational(value):
@@ -36,7 +37,10 @@ def _table(case, split, marginal, rate):
 
 def conditional_two_sided(top_only, selected_only):
     """Exact two-sided sign tail under independent exchangeable discordant pairs."""
+    _require(all(type(count) is int and count >= 0 for count in (top_only, selected_only)),
+             "discordance counts must be nonnegative integers")
     discordant = top_only + selected_only
+    _require(discordant <= MAX_SCRIPTED_PAIRS, "too many scripted pairs for exact calculation")
     smaller = min(top_only, selected_only)
     tail = sum(comb(discordant, count) for count in range(smaller + 1))
     return min(Fraction(1), Fraction(2 * tail, 2**discordant))
