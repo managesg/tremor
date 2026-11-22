@@ -2125,3 +2125,23 @@ reproduced both truthful archives. A [cross-check](../../../runs/m4-l6-comparato
 confirmed that the staged candidate also rejects all three earlier
 revocation variants. Source owner adoption and protected outcomes
 remain open.
+
+## M2 enabled reply custody and M4 rotating traversal
+
+The [enabled private-capture replay](../../../runs/m2-enabled-response-custody.cHx1kP/OWNER.md)
+ran both unselected drafts and both retry-cap cases with the callback
+enabled. Each complete case matched 240 private reply hashes, and
+each stopped case matched 239 and retained one missing episode reply.
+Each case matched 20 charged retry files by exact identity. Four
+crossed-reply substitutions were refused and the zero-write intake
+matched prior output. No actual reviewer, Console evidence, reply
+effect, pricing re-gate or release is established.
+
+The [L7 rotating-order check](../../../runs/m4-l7-rotating-worker-order.21Th8K/OWNER.md)
+binds visits and read stops to the explicitly chosen rotating roster.
+The earlier audit accepted crossed inactive workers and a mislabeled
+stop with unchanged totals. The staged fix refuses both and preserves
+a rotating lead with deliberately fixed traversal as a separate valid
+configuration. All 34 focused tests passed and all four earlier
+reports reproduced byte for byte. Public source adoption, hub and
+activity definitions, and protected matched measurements remain open.
