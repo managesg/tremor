@@ -17,6 +17,10 @@ POLICY_EXECUTION_SCHEMA = "replication_execution_observation_v2"
 TERMINAL_SCHEMA = "replication_terminal_capture_v1"
 POLICY_TERMINAL_SCHEMA = "replication_terminal_capture_v2"
 LOADER_SCHEMA = "replication_loader_capture_v1"
+GRADE_SCHEMA = "replication_grade_witness_v1"
+SCORE_SCHEMA = "replication_score_capture_v1"
+ASSIGNMENT_FIELDS = ("task_id", "replicate_id", "role", "arm", "attempt_id")
+GRADE_CONTEXT = ("scorer_sha256", "hidden_truth_sha256", "scoring_opportunities_sha256")
 ARMS = ("technique", "comparator")
 STATES = ("observed", "stopped", "void", "unavailable")
 RESOURCES = ("calls", "input_tokens", "output_tokens", "gpu_wall_ns")
@@ -149,7 +153,7 @@ def _check_capture(root, event, record, line, coverage_pin, loaders, runs, expec
         fields += ("applied_input_policy",)
         schema = POLICY_TERMINAL_SCHEMA
     _object(terminal, fields, "terminal capture")
-    assignment = {field: event[field] for field in ("task_id", "replicate_id", "role", "arm", "attempt_id")}
+    assignment = {field: event[field] for field in ASSIGNMENT_FIELDS}
     _require(terminal["schema"] == schema and terminal["line"] == line
              and terminal["coverage_sha256"] == coverage_pin and terminal["assignment"] == assignment
              and terminal["state"] == record["state"], "terminal capture differs from observed assignment")
@@ -185,7 +189,7 @@ def _check_capture(root, event, record, line, coverage_pin, loaders, runs, expec
                  "loader capture differs from the observed run or checkpoint")
     if output_pin is not None:
         _capture_bytes(root, "output", output_pin)
-    return output_pin is not None, captured_policy is not None
+    return output_pin, captured_policy is not None
 
 
 def _configuration_pins(policy_witness):
@@ -201,7 +205,53 @@ def _configuration_pins(policy_witness):
     return pins
 
 
-def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_root, schedule, policy_witness):
+def _grade_receipts(witness, line, execution_pin, root, expected, roles):
+    path, pin = witness
+    document = _metadata(Path(path), pin)
+    _object(document, ("schema", "line", "execution_observation_sha256", "grades"), "grading witness")
+    _require(document["schema"] == GRADE_SCHEMA and document["line"] == line
+             and document["execution_observation_sha256"] == execution_pin,
+             "grading witness differs from the pinned execution observation")
+    _require(type(document["grades"]) is list, "expected grading receipt rows")
+    seen = set()
+    counts = dict.fromkeys(("scored", "invalid", "unavailable"), 0)
+    scored_arms = {}
+    for grade in document["grades"]:
+        _object(grade, ("assignment", "terminal_sha256", "output_sha256", *GRADE_CONTEXT,
+                        "state", "reason", "score_sha256"), "grading receipt")
+        assignment = _object(grade["assignment"], ASSIGNMENT_FIELDS, "graded assignment")
+        attempt = pairing._identifier(assignment["attempt_id"])
+        _require(attempt in expected and attempt not in seen,
+                 "grading receipts must match each observed attempt once")
+        binding = expected[attempt]
+        _require(all(grade[field] == value for field, value in binding.items()),
+                 "grading receipt differs from the observed assignment, capture or frozen scoring inputs")
+        state, score_pin, reason = grade["state"], grade["score_sha256"], grade["reason"]
+        _require(type(state) is str and state in counts, "invalid grading state")
+        if state == "scored":
+            _require(reason is None and score_pin is not None, "scored receipt requires exact score bytes")
+            score = _json(_capture_bytes(root, "score", _hex(score_pin, 64)))
+            _object(score, ("schema", *binding, "measurements"), "score capture")
+            _require(score["schema"] == SCORE_SCHEMA and all(score[field] == value for field, value in binding.items())
+                     and type(score["measurements"]) is dict and score["measurements"],
+                     "score capture differs from the grading receipt or has no measurements")
+            pair = assignment["role"], assignment["task_id"], assignment["replicate_id"]
+            scored_arms.setdefault(pair, set()).add(assignment["arm"])
+        else:
+            _require(score_pin is None and type(reason) is str and bool(reason.strip()),
+                     "unscored receipt requires a reason and no score")
+        counts[state] += 1
+        seen.add(attempt)
+    _require(seen == expected.keys(), "grading receipts must match each observed attempt once")
+    complete_pairs = dict.fromkeys(roles, 0)
+    for (role, _, _), arms in scored_arms.items():
+        complete_pairs[role] += len(arms) == len(ARMS)
+    return {"grading_witness_sha256": pin, "states": counts, "complete_graded_pairs_by_role": complete_pairs,
+            "scorer_execution_verified": False}
+
+
+def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_root, schedule, policy_witness,
+                           grade_witness):
     bindings = paired.get("scheduled_snapshot_binding")
     _require(bindings is not None, "execution observation requires snapshot-bound schedules")
     document = _metadata(Path(witness[0]), witness[1])
@@ -219,6 +269,8 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
     root = None if capture_root is None else Path(capture_root).resolve(strict=True)
     _require(root is None or root.is_dir(), "capture root must be a directory")
     policy_rows = {"observed": 0, "stopped_or_void": 0}
+    _require(grade_witness is None or policy_bound, "grading witness requires policy-bound execution captures")
+    grade_inputs = {}
     if policy_bound:
         portability = paired.get("policy_portability", {})
         custody = portability.get("artifact_custody")
@@ -251,9 +303,14 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
                 expected = {"policy_witness_sha256": document["policy_witness_sha256"],
                             "configuration_sha256": policy_pins[role][arm],
                             "task_input_sha256": task_input}
-            output, input_policy = _check_capture(root, event, rows[key][role][arm], paired["line"], coverage_pin,
-                                                  loaders, runs, expected)
-            outputs += output
+            output_pin, input_policy = _check_capture(root, event, rows[key][role][arm], paired["line"], coverage_pin,
+                                                      loaders, runs, expected)
+            outputs += output_pin is not None
+            if grade_witness is not None and state == "observed":
+                context = dict(zip(pairing.MATCH_FIELDS, schedule[key][1:], strict=True))
+                grade_inputs[attempt] = {"assignment": {field: event[field] for field in ASSIGNMENT_FIELDS},
+                                         "terminal_sha256": capture, "output_sha256": output_pin,
+                                         **{field: context[field] for field in GRADE_CONTEXT}}
             policy_rows["observed" if state == "observed" else "stopped_or_void"] += input_policy
         seen.add(assignment)
         attempts.add(attempt)
@@ -276,15 +333,19 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
     if policy_bound:
         result["input_policy_capture_rows"] = policy_rows
         result["native_policy_application_verified"] = False
+    if grade_witness is not None:
+        result["grading_receipts"] = _grade_receipts(grade_witness, paired["line"], witness[1], root, grade_inputs, roles)
     return result
 
 
 def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None,
            inventory=None, execution_observation=None, capture_root=None, policy_witness=None,
-           policy_artifacts=None):
+           policy_artifacts=None, grade_witness=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     _require(capture_root is None or execution_observation is not None,
              "capture root requires an execution observation pin")
+    _require(grade_witness is None or execution_observation is not None and capture_root is not None,
+             "grading witness requires exact execution capture bytes")
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
                             reference=reference, inventory=inventory, policy_witness=policy_witness,
                             policy_artifacts=policy_artifacts)
@@ -344,7 +405,8 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
         report["cumulative_limits"] = _cumulative_limits(cumulative_limits, line, pins, totals)
     if execution_observation is not None:
         report["execution_observation"] = _execution_observation(execution_observation, paired, coverage[1], rows,
-                                                                roles, capture_root, schedule, policy_witness)
+                                                                roles, capture_root, schedule, policy_witness,
+                                                                grade_witness)
     return report
 
 
@@ -365,6 +427,8 @@ def main():
                         help="verify content-addressed policy and task input artifacts")
     parser.add_argument("--execution-observation", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned execution observations for covered arms")
+    parser.add_argument("--grade-witness", nargs=2, metavar=("PATH", "SHA256"),
+                        help="bind separately pinned grading receipts to observed outputs and frozen scoring inputs")
     parser.add_argument("--capture-root", type=Path,
                         help="verify terminal, loader and output files named by content digest")
     try:

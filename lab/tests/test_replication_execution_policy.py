@@ -137,3 +137,79 @@ class ReplicationExecutionPolicyTests(unittest.TestCase):
         output = json.loads(result.stdout)["execution_observation"]
         self.assertEqual(output["input_policy_capture_rows"]["observed"], 15)
         self.assertFalse(output["native_policy_application_verified"])
+
+    def grading_fixture(self):
+        execution = self.pin()
+        observations = json.loads(execution[0].read_bytes())["executions"]
+        rows = {(row["task_id"], row["replicate_id"]): row
+                for row in json.loads(self.inputs["unchanged"][0].read_bytes())["rows"]}
+        folder = self.root / "score"
+        folder.mkdir()
+        grades = []
+        for event, terminal in zip(observations, self.terminals, strict=True):
+            if terminal["state"] != "observed":
+                continue
+            assignment = terminal["assignment"]
+            row = rows[assignment["task_id"], assignment["replicate_id"]]
+            binding = {"assignment": assignment, "terminal_sha256": event["observer_capture_sha256"],
+                       "output_sha256": terminal["output_sha256"],
+                       **{field: row[field] for field in audit.GRADE_CONTEXT}}
+            score = json.dumps({"schema": audit.SCORE_SCHEMA, **binding,
+                                "measurements": {"scripted_fixture_readout": 1}}).encode()
+            score_pin = sha256(score).hexdigest()
+            (folder / score_pin).write_bytes(score)
+            grades.append({**binding, "state": "scored", "reason": None, "score_sha256": score_pin})
+        for row, state in zip(grades[:2], ("invalid", "unavailable"), strict=True):
+            row.update(state=state, reason=f"scripted {state} disposition", score_sha256=None)
+        return execution, {"schema": audit.GRADE_SCHEMA, "line": self.inputs["line"],
+                           "execution_observation_sha256": execution[1], "grades": grades}
+
+    def test_cli_joins_independent_grading_to_exact_captures(self):
+        execution, declaration = self.grading_fixture()
+        witness = self.policy.fixture._pin("grading", json.dumps(declaration))
+        command = [sys.executable, "-B", "-m", "lab.replication_coverage", "--line", self.inputs["line"]]
+        for name, value in (self.inputs | {"execution_observation": execution, "grade_witness": witness}).items():
+            if name != "line":
+                values = value if isinstance(value, tuple) else (value,)
+                command.extend((f"--{name.replace('_', '-')}", *map(str, values)))
+        run = subprocess.run(command, capture_output=True, text=True, timeout=10, check=True)
+        result = json.loads(run.stdout)
+        grade = result["execution_observation"]["grading_receipts"]
+        self.assertEqual(grade["states"], {"scored": 13, "invalid": 1, "unavailable": 1})
+        self.assertEqual(sum(grade["complete_graded_pairs_by_role"].values()), 6)
+        self.assertFalse(grade["scorer_execution_verified"])
+        self.assertFalse(result["scientific_acceptance"])
+        self.assertEqual(result["execution_observation"]["checked_capture_bytes"]["outputs"], 15)
+
+    def test_fresh_grade_pins_cannot_cross_outputs_inputs_or_attempts(self):
+        execution, declaration = self.grading_fixture()
+        fixture = self.policy.fixture
+
+        def verify(document):
+            witness = fixture._pin("grading", json.dumps(document))
+            return audit.verify(**self.inputs, execution_observation=execution, grade_witness=witness)
+
+        with self.assertRaisesRegex(ValueError, "pinned execution observation"):
+            verify(declaration | {"execution_observation_sha256": "0" * 64})
+        for field in (*audit.GRADE_CONTEXT, "terminal_sha256", "output_sha256"):
+            wrong = deepcopy(declaration)
+            wrong["grades"][0][field] = "0" * 64
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, "frozen scoring inputs"):
+                verify(wrong)
+        for bad in (declaration["grades"][:-1], declaration["grades"] + declaration["grades"][:1]):
+            with self.assertRaisesRegex(ValueError, "each observed attempt once"):
+                verify(declaration | {"grades": bad})
+        stopped = next(row for row in self.terminals if row["state"] == "stopped")
+        altered = deepcopy(declaration)
+        altered["grades"].append(altered["grades"][-1] | {"assignment": stopped["assignment"]})
+        with self.assertRaisesRegex(ValueError, "each observed attempt once"):
+            verify(altered)
+        bad_score = deepcopy(declaration)
+        bad_score["grades"][-1]["score_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "score capture file"):
+            verify(bad_score)
+        crossed_score = deepcopy(declaration)
+        self.assertEqual(crossed_score["grades"][-1]["output_sha256"], crossed_score["grades"][-2]["output_sha256"])
+        crossed_score["grades"][-1]["score_sha256"] = crossed_score["grades"][-2]["score_sha256"]
+        with self.assertRaisesRegex(ValueError, "score capture differs from the grading receipt"):
+            verify(crossed_score)
