@@ -1756,3 +1756,20 @@ snapshot metadata against distinct pinned static artifacts and requires
 both actual counters to be null. Its verifier exited zero with 29 tests.
 Both earlier outcome archives still match byte for byte. Matching the
 event-time content parity report to the outcome remains a separate check.
+
+## M3 strict JSON for degenerate monitor correlation
+
+The earlier detached R1 monitor fix still returned infinity or large
+rounding artifacts for complementary and cancelling monitor traces. The
+[follow-up](../../../runs/r1-kish-wire.65UPjg/OWNER.md) calculates phi
+from contingency counts and keeps the measured correlation while reporting
+Kish as unavailable when the denominator falls within the rounding bound.
+The finite negative-correlation control still increases effective size.
+
+`bash runs/r1-kish-wire.65UPjg/verify.sh` exited zero with 23 focused tests
+and a separate 4,096-table check against variance of standardized monitor
+vectors. The old code raised a strict JSON error for one added case and
+failed five other subtests. The public L1, L3 and L7 controls reproduced
+byte for byte. This evidence is for a detached source cut. The Coordinator
+nomination, source owner adoption, qualified windows, protected N2 and
+formal bench verdict remain open.
