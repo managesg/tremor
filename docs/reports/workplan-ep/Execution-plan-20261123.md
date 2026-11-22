@@ -397,6 +397,13 @@ report byte for byte. The source is in
 `runs/l7-selector-terminal.GdEMM7`. Protected execution needs
 independently observed runtime and cost receipts.
 
+The public selector progress verifier also preserves incomplete
+candidate review and observed start without a terminal. A started
+selector may have a known charge while the selected result and
+utility remain unavailable. The archived completed empty selection
+still reports a measured zero and one selection charge.
+See `runs/l7-selector-progress.XZ03W1`.
+
 ## L4-C detached label verification
 
 The public scripted comparison replayed with its archived digest
