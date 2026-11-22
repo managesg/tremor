@@ -1371,3 +1371,28 @@ Seventeen focused tests pass and both retained public reports are
 byte-identical. Source-owner adoption, the matched protocol freeze and
 independent measured outcomes remain open.
 [Owner patch and replay](../../../runs/m4-l6-revoked-standing.d1A65E/OWNER.md)
+
+## M7 custody regime fidelity
+
+The public custody rehearsal now checks the declared coordination
+structure. Complementary work must combine marks from multiple sources,
+redundancy must include a shared direct stage and another worker's
+separate direct stage, and sequential work must depend on an earlier
+result. Overlapping shards remain valid. The genuine archived opening
+matches byte for byte. Independent replay verified the complementary
+boundary over 511 small stage allocations. All 432 integrated lab
+tests passed, including the three new structure cases. A protected task
+opening still needs to bind to the actual run and matched traces.
+[Custody evidence](../../../runs/m7-custody-regime.lpWB5b/OWNER.md) ·
+[Integration](../../../runs/m7-regime-integration.o4muid/OWNER.md)
+
+## M2 conservative episode allowance for unmetered attempts
+
+The detached client now retains an unmetered attempt's maximum tokens
+against the current episode allowance before a retry. The measured
+token total stays separate. Ten focused tests pass, including refusal
+at 479 tokens and admission at exactly 480 for two 240-token attempt
+bounds. Both 260-attempt offline scenarios reproduce the prior
+request-custody report. Driver adoption, restart quarantine review,
+author disposition, pricing and live acceptance remain separate.
+[Full mock replay](../../../runs/m2-budget-full-replay.WIysEl/OWNER.md)
