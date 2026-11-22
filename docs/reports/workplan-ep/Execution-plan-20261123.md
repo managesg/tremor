@@ -1214,3 +1214,12 @@ review and union costs remain charged. Both the task-set and cost
 dimensions are preserved, with separate coverage for the 12 blocks at
 exact cost. See `runs/m6-realized-cost-frontier.3kIqzZ/OWNER.md`. Protected
 actual-delivery and resource acceptance remain open.
+
+The M9 cluster audit now accepts a pinned planned weight profile and
+reports exact whole-cohort bounds without redistributing missing outcome
+mass. The three-block public fixture distinguishes equal cluster, equal
+scheduled block and illustrative 1:3 cluster weights. An independent
+exact completion enumeration and 63 controller tests passed, and
+three legacy report modes reproduce byte for byte. See
+`runs/m9-weighted-outcome-bounds.BRkj8K/OWNER.md`. The author still owns
+prospective weight choice, custody, protected outcomes and acceptance.
