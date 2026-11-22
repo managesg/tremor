@@ -1,6 +1,6 @@
 # TREMOR Spark execution plan
 
-`/goal Complete the full TREMOR workplan on Spark by Monday, November 23, 2026 at 09:00 UTC. Obtain independent acceptance of all ten milestones with reproducible evidence, settled resource use, verified local commits, and a coordinator handoff. Current score is 1/10.`
+`/goal Complete all ten TREMOR milestones on Spark by Wednesday morning, November 25, 2026. MET when each milestone has independent acceptance, applicable backend and frontend validation has command results, resource use is reconciled, and verified local commits and the Coordinator handoff exist. If a dependency blocks a row, record ONE evidence-backed blocker line, continue every independent row and report WAITING only when no ready row remains. Current score 1/10.`
 
 | Status | Milestone | Acceptance and next owner |
 | --- | --- | --- |
@@ -10,17 +10,33 @@
 | IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
 | IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
-| BLOCKED | 7. Grover transfer | After EP-1, obtain protected fixtures, independent custody, and exact resource admission. Verify matched quantum and topology outcomes with the pinned scorer. [Local custody checklist](Grover-holdout-custody-checklist.md) · [Public replay](Grover-topology-scripted.md) |
+| BLOCKED | 7. Grover transfer | After EP-1, obtain protected fixtures, independent custody, and exact resource admission. Verify matched quantum and topology outcomes with the pinned scorer. [Local custody checklist](Grover-holdout-custody-checklist.md) · [Public replay](Grover-topology-scripted.md) · [Matched caps and stops](../../../runs/grover-paired-frontier.dJrINF/OWNER.md) |
 | IN PROGRESS | 8. Second-family replication | Coordinator and resource owner route the named SmolLM3 smoke reserve and admission. On the chosen distinct family verify the protected L1–L3 unchanged-transfer and recalibrated comparisons against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Local pairing design](Second-model-replication-design.md) · [Local image and model check](../../../runs/smollm3-image-shape-readiness.VF1grj/OWNER.md) |
 | IN PROGRESS | 9. Combined controller | Author and claims reviewer freeze component eligibility, safeguards, baseline and resource limits. Independently verify held-out matched outcomes and accounting. [Local controller design](Combined-controller-design.md) · [Cluster coverage replay](../../../runs/controller-cluster-join.iJZn9z/OWNER.md) |
-| IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) |
+| IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) · [Local visual verification](../../../runs/tremor-static-frontend.QaGBGR/OWNER.md) |
 
 Links labeled local refer to coordination records retained on Spark.
 
 Use the Local Coding Agent Coordinator for cross-lane decisions. Keep
 verified changes in local commits, preserve existing runtime ownership,
-and record results in the evidence log and lane handoff. At the Monday
+and record results in the evidence log and lane handoff. At the Wednesday morning
 checkpoint, report each unmet acceptance criterion.
+
+## Wednesday overnight continuation
+
+The owner reports that Local Coordinator Manager session 7ce2c340,
+the Coordinator Assistant, and parallel workers are addressing blockers
+in Table A of `docs/reports/PC_ALL_BLOCKERS_WORKPLAN_V2_20261122.md`.
+That file and a direct manager terminal are unavailable on Spark.
+The lane outbox requests the current TREMOR rows and keeps independent
+work running. Existing named decisions on live providers, releases,
+new ports, credentials and protected execution remain in force.
+
+M7's local public pair verification is ready for review. Protected
+transfer remains blocked by the EP-1 dependency, custody and admission.
+For M10, local static frontend proof covers the staged explainer and
+scripted backend commands. Any live, authenticated or native conditions
+need their applicable evidence from their established owners.
 
 ## First execution checkpoint
 

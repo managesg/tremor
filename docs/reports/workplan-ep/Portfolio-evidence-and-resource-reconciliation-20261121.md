@@ -80,8 +80,14 @@ combined-controller fixture produced a single scripted delta of 1/6
 and retained an unavailable delta on the interrupted pair. With a
 single complete scripted pair, a paired uncertainty interval remains
 unavailable. The Grover public fixture's exact stage unions first match at
-27 abstract scripted cost units. [Coordination evidence](Topology-matched-traversal.md) ·
-[Controller design](Combined-controller-design.md) · [Grover evidence](Grover-topology-scripted.md)
+27 abstract scripted cost units. Across 1,024 public arm-by-cap
+views, 317 matched the full-cap stage union while budget-stopped.
+Three completed arms in the separate release roster recorded one
+verified fallback. A missing arm or stopped prefix leaves the complete
+roster total unavailable. Protected transfer remains outstanding.
+[Coordination evidence](Topology-matched-traversal.md) ·
+[Controller design](Combined-controller-design.md) · [Grover evidence](Grover-topology-scripted.md) ·
+[Local paired cap and stop replay](../../../runs/grover-paired-frontier.dJrINF/OWNER.md)
 
 **Uncertainty.** The final report needs the frozen matched unit and
 clustering, prespecified treatment of incomplete pairs, actual costs
