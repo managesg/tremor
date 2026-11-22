@@ -1623,3 +1623,17 @@ All 48 focused tests passed. Matched traversal, fixed-share and Grover
 archives reproduced byte for byte. The patch targets the current pinned
 owner copy. Owner adoption and held-out comparison remain open.
 [Local candidate](../../../runs/m6-matched-arithmetic-domain.V6iU7g/OWNER.md)
+
+## M4 L3 selection and per-stage call accounting
+
+The paired public monitor check now reconstructs the top and selected
+pairs from the fitted calibration summaries, binds the reported cutoffs
+and joint misses, and recomputes all stage-specific calls. A repinned
+report cannot substitute the pair or cutoff, reduce only the selected
+arm's calls, or reassign charges between phases at the same total.
+A cutoff equal to the maximum binary score cannot produce positive
+flags. The historical L3 and seven L7 reports remain byte-identical.
+
+The focused replay passed 34 tests and the integrated archive passed 453.
+Raw fit data, native execution and protected operating-point acceptance
+remain open. [Local evidence](../../../runs/m4-l3-operating-cost.yY2c1f/OWNER.md)
