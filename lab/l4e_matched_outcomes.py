@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from lab.recovery_observation import classify
-from lab.replication_inventory import _hex, _metadata, _object, _require
+from lab.replication_inventory import _capture_bytes, _hex, _json, _metadata, _object, _require
 from lab.replication_pairing import _identifier
 
 
@@ -14,6 +14,10 @@ PLAN_SCHEMA = "tremor.l4e_matched_outcome_plan.v1"
 RECOVERY_PLAN_SCHEMA = "tremor.l4e_matched_outcome_plan.v2"
 OBSERVATION_SCHEMA = "tremor.l4e_matched_outcome_observations.v1"
 RECOVERY_WITNESS_SCHEMA = "tremor.l4e_matched_recovery_witness.v1"
+NORM_WITNESS_SCHEMA = "tremor.l4e_norm_witness.v1"
+NORM_FRAME_SCHEMA = "tremor.l4e_norm_frame.v1"
+NORM_GRADE_SCHEMA = "tremor.l4e_norm_grade.v1"
+NORM_ENDPOINT = "proposal_norm_allows"
 ARMS = ("adapter", "context")
 IDENTITY = ("pair_id", "task_sha256", "seed_sha256")
 PINS = ("scorer_sha256", "l4e_receipt_sha256", "content_parity_sha256")
@@ -117,7 +121,54 @@ def _recovery_witness(reference, *, plan_sha256, observations_sha256, expected, 
             "histories": [matched[key] for key in expected], "native_capture_verified": False}
 
 
-def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, recovery_witness=None):
+def _norm_witness(reference, *, plan_sha256, observations_sha256, scorer_sha256, expected):
+    bundle, path, pin = reference
+    root = Path(bundle).resolve(strict=True)
+    _require(root.is_dir(), "norm capture root must be a directory")
+    witness = _metadata(Path(path), pin)
+    binding = {"plan_sha256": plan_sha256, "observations_sha256": observations_sha256,
+               "scorer_sha256": scorer_sha256, "endpoint": NORM_ENDPOINT}
+    _object(witness, ("schema", *binding, "rows"), "L4-E norm witness")
+    _require(witness["schema"] == NORM_WITNESS_SCHEMA and all(witness[key] == value for key, value in binding.items()),
+             "norm witness differs from the matched plan, observations or scorer")
+    _require(type(witness["rows"]) is list, "expected norm witness rows")
+    _require(_capture_bytes(root, "norm-scorer", scorer_sha256), "missing scorer artifact bytes")
+    seen = set()
+    verified = 0
+    for row in witness["rows"]:
+        _object(row, (*IDENTITY, "arm", "frame_sha256", "grade_sha256", "reason"), "L4-E norm witness row")
+        pair, match = _identity(row)
+        key = pair, _identifier(row["arm"])
+        _require(key in expected and key not in seen and expected[key][0] == match,
+                 "unexpected, duplicate or mismatched norm receipt")
+        seen.add(key)
+        declaration = expected[key][1]
+        frame_pin, grade_pin = row["frame_sha256"], row["grade_sha256"]
+        if declaration["passed"] is None:
+            _require(frame_pin is None and grade_pin is None and row["reason"] == declaration["reason"],
+                     "unavailable norm must retain its reason without a grade capture")
+            continue
+        _require(row["reason"] is None, "a captured norm grade cannot include an unavailable reason")
+        frame_pin, grade_pin = _hex(frame_pin, 64), _hex(grade_pin, 64)
+        scope = {field: row[field] for field in (*IDENTITY, "arm")} | {"plan_sha256": plan_sha256}
+        frame = _json(_capture_bytes(root, "norm-frame", frame_pin))
+        _object(frame, ("schema", *scope, "frame"), "L4-E norm frame")
+        _require(frame["schema"] == NORM_FRAME_SCHEMA and all(frame[field] == value for field, value in scope.items())
+                 and type(frame["frame"]) is dict and frame["frame"], "norm frame differs from the scheduled arm")
+        grade = _json(_capture_bytes(root, "norm-grade", grade_pin))
+        grade_scope = scope | {"scorer_sha256": scorer_sha256, "frame_sha256": frame_pin, "endpoint": NORM_ENDPOINT}
+        _object(grade, ("schema", *grade_scope, "norm"), "L4-E norm grade")
+        _require(grade["schema"] == NORM_GRADE_SCHEMA
+                 and all(grade[field] == value for field, value in grade_scope.items())
+                 and _norm(grade["norm"]) == declaration, "norm grade differs from the scoped frame or declaration")
+        verified += 1
+    _require(seen == expected.keys(), "norm witness must retain every scheduled arm")
+    return {"witness_sha256": pin, "endpoint": NORM_ENDPOINT, "verified_grade_captures": verified,
+            "unavailable_arms": len(seen) - verified,
+            "grader_execution_verified": False}
+
+
+def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, recovery_witness=None, norm_witness=None):
     """Verify paired public readouts without accepting protocol or settlement claims."""
     plan = _metadata(Path(plan_path), plan_sha256)
     witnessed = plan.get("schema") == RECOVERY_PLAN_SCHEMA
@@ -146,6 +197,7 @@ def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, re
         assignments.add(match)
     outcomes = {pair: {} for pair in expected}
     recovery_declarations = {}
+    norm_declarations = {}
     for row in records["rows"]:
         _object(row, (*IDENTITY, "arm", "norm", "recovery", "usage"), "L4-E observed arm")
         pair, match = _identity(row)
@@ -156,6 +208,7 @@ def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, re
         _require(all(value is None or type(value) is int and value >= 0 for value in usage.values()),
                  "usage must be nonnegative or unavailable")
         norm = _norm(row["norm"])
+        norm_declarations[pair, arm] = (match, norm)
         recovery_declarations[pair, arm] = (match, row["recovery"])
         outcomes[pair][arm] = {"norm_passed": norm["passed"], "norm_reason": norm["reason"],
                                "recovery": row["recovery"], "restricted_nights": _recovery(row["recovery"], horizon),
@@ -173,6 +226,11 @@ def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, re
             recovery_witness, plan_sha256=plan_sha256, observations_sha256=observations_sha256,
             expected=recovery_declarations, horizon=horizon, hold=hold,
         )
+    if norm_witness is not None:
+        report["norm_witness"] = _norm_witness(
+            norm_witness, plan_sha256=plan_sha256, observations_sha256=observations_sha256,
+            scorer_sha256=plan["scorer_sha256"], expected=norm_declarations,
+        )
     return report
 
 
@@ -184,6 +242,8 @@ def main():
     parser.add_argument("--observations-sha256", required=True)
     parser.add_argument("--recovery-witness", nargs=2, metavar=("PATH", "SHA256"),
                         help="verify exact night histories against the matched outcome declarations")
+    parser.add_argument("--norm-witness", nargs=3, metavar=("BUNDLE", "PATH", "SHA256"),
+                        help="verify pinned norm frame and grade captures for the matched arms")
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, TypeError, ValueError) as error:
