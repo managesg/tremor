@@ -1974,3 +1974,25 @@ reading weights. Source coverage now includes the synthetic loader
 and QGrid differential checks. This separate CPU run supplies no
 quiet-host qualification, corrected-source nomination, protected N2
 custody or formal bench verdict.
+
+## L8-D source integration and M6 full local subprocess replay
+
+The [installation integration](../../../runs/m5-installation-source-integration.vsglb2/OWNER.md)
+checks tracked `9562cdf` with the prior research closure. It passed
+531 lab and 34 focused package tests and reproduced the new
+installation receipt and both older L8 outputs. The L8-D protocol
+currently pins fixture bytes. The protocol author still needs to
+specify a versioned normalization recipe, calibration-only parameter
+fit, random generator and realized vector, and a matched held-out
+scoring transform before those scientific checks can be verified.
+
+The [eight-cell replay](../../../runs/m6-all-cells-local-work.hO2HiT/OWNER.md)
+computes all 48 fresh public work responses through local processes and
+grades them with the unchanged detached scorer. A separate interruption
+retains one response in the stopped cell and leaves its complete cost
+and verified task union unavailable. In this fixture the unassigned
+worker always picks the first visible field. All shared-access
+unassigned workers therefore pick the same field, and host assignment
+increases task coverage at additional synthetic cost. The result
+describes that exact selection rule. Native coordination and the
+held-out comparison remain open.
