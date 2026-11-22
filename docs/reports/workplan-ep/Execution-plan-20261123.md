@@ -2557,3 +2557,50 @@ The [sealed verifier](../../../runs/m4-l1-wall-stop-receipt.19PLrj/OWNER.md)
 passed all six tests and reproduced the legacy report byte for byte.
 The L1 author retains the prospective stop rule. The resource reviewer
 and independent outcome reviewer retain authentic clock and usage evidence.
+
+## M5 public visit render and token trace custody
+
+The [detached render verifier](../../../runs/m5-render-trace.hxkCeZ/OWNER.md)
+binds the exact observed visit sequence to retained rendered bytes and
+available token ID arrays. All 15 tests passed and fresh capture bytes
+matched the archive. The full fixture covers six adapter and five context
+visits with 21 and 15 checked ID entries, respectively. The stopped
+adapter prefix retains one missing token record and an unavailable total.
+The earlier verifier accepted repinned false render and count claims.
+The new verifier refuses both against the retained artifacts. Native
+capture, tokenizer replay, checkpoint settlement, and adoption stay open.
+
+## M9 concurrent contention for the final call slot
+
+The [detached reservation gate](../../../runs/m9-atomic-call-budget.8NGkTm/OWNER.md)
+uses the same process-local gate in separate matched ledgers. In each arm,
+two requests compete for one slot. One is reserved before dispatch and
+the other refuses while the first is in flight. Exact retries do not
+redispatch. Changed payloads with the same identity refuse. An unresolved
+dispatch retains its reservation. All five tests and a byte-exact report
+replay passed. The author still owns adoption and retry semantics.
+Durable multiprocess accounting, additional resource dimensions, and
+held-out behavior remain open.
+
+## M4 L8-B exact prompt reuse and declared repeat groups
+
+The [detached repeat registry](../../../runs/m4-l8b-repeat-registry.vUrOGR/OWNER.md)
+keeps sample, exact-prompt, semantic-family and declared-group counts
+visible. In the public counterexample, the previous capture join still
+has 20 clean sample IDs and 20 family labels after distinct exact prompts
+fall to 19. Its score report still matches. The optional registry refuses
+that reuse when identical bytes claim conflicting groups. It permits
+an explicitly shared group and preserves matched pairs with different
+prompts. All 28 tests and the exact legacy report comparison passed.
+Actual repeat grouping, statistical independence, and the denominator
+remain prospective decisions for the L8-B author and independent custodian.
+
+## M10 readable local thesis flow
+
+The [detached README patch](../../../runs/m10-thesis-text-fallback.PHapvX/OWNER.md)
+adds the equal-budget decision flow in text for readers without Mermaid
+rendering. The local browser shows the whole fallback and its supported,
+negative and inconclusive cases at 320, 500 and 1280 pixels. The patch
+changes one file out of 50 and preserves the diagram source, image and
+link targets, all eight pages and all 38 local references. The release
+owner retains adoption. Deployed Markdown behavior remains open.
