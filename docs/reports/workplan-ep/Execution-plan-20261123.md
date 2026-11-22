@@ -1416,3 +1416,36 @@ identity and the unresolved usage still need separate evidence.
 All 434 integrated lab tests passed. The exact roster retained all
 432 prior cases and added the two meter-witness regressions.
 [Isolated integration](../../../runs/m9-meter-integration.wGqKoo/OWNER.md)
+
+## M8 matched grading and allocator evidence
+
+The M8 grade report now intersects exact task and replicate identities
+across roles. A scripted shift in the unavailable grade reduces matched
+coverage from two assignments to one without changing the count of two
+complete receipt pairs for any individual role. Cross-family comparisons
+without a paired reference schedule remain unavailable. The integrated
+lab suite passed 436 cases.
+[Grade replay](../../../runs/m8-graded-contrast-coverage.JqS6hU/OWNER.md) ·
+[Integrated replay](../../../runs/m8-contrast-integration.MJcsEB/OWNER.md)
+
+The detached smoke verifier checks the declared one-fifth CUDA allocator
+limit against a separately pinned native capacity observation. The
+read-only Spark query lists the GB10 and reports device memory as
+unavailable. A native compliance claim needs an independently observed
+capacity and the actual worker device identity.
+[Capacity candidate](../../../runs/m8-smoke-allocator-capacity.cWyWp3/OWNER.md)
+
+## M6 host delivery correspondence
+
+From the two prior public archives, 48 rows match on nominal
+configuration, round and worker. None match on the frame or context
+digest. The detached join rejects all crossed pairs and accepts a
+synthetic same-scope control. Native usage stays unavailable.
+[Archived receipt join](../../../runs/m6-host-scope-join.O8b5jX/OWNER.md)
+
+A separate local child-pipe replay now sends all 48 exact public scored
+frames rather than joining across fixtures. It matched all acknowledgment
+frame and context digests and reaped the child cleanly. Model token use
+and cost remain unavailable. This observed replay is separate from the
+original archived execution and protected trial.
+[Fresh OS-pipe replay](../../../runs/m6-scored-child-pipe.EsiI6Y/OWNER.md)
