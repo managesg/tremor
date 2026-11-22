@@ -2541,3 +2541,19 @@ second-round requests differ in each scheduled turn. The driver,
 working ledger and provider were never invoked. The author and
 reviewer still need to bind the official bracket to the adopted
 source, prospective decision and actual Gate 6 record.
+
+## M4 L1-B optional synthetic wall-clock stop evidence
+
+The exact completed archive settles both planned answers with seven known
+scripted units. The legacy auditor accepts the archive after a terminal-only
+relabel to a wall stop and a fresh pin. Under the optional synthetic rule,
+the independent clock and terminal decision must agree on the exact journal
+and the cutoff. The verifier rejects the relabel because all work settled
+before the cutoff. It accepts the archived stopped prefix at the cutoff with
+one open attempt, one unstarted attempt, two unknown usage entries, and
+three known scripted units.
+
+The [sealed verifier](../../../runs/m4-l1-wall-stop-receipt.19PLrj/OWNER.md)
+passed all six tests and reproduced the legacy report byte for byte.
+The L1 author retains the prospective stop rule. The resource reviewer
+and independent outcome reviewer retain authentic clock and usage evidence.
