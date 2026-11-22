@@ -2604,3 +2604,42 @@ negative and inconclusive cases at 320, 500 and 1280 pixels. The patch
 changes one file out of 50 and preserves the diagram source, image and
 link targets, all eight pages and all 38 local references. The release
 owner retains adoption. Deployed Markdown behavior remains open.
+
+## M8 SmolLM3 smoke has a calendar-dependent prompt pin
+
+The [worker-date replay](../../../runs/m8-template-context.kA2l2t/OWNER.md)
+uses the exact reviewed worker, its candidate CUDA plan and the staged
+tokenizer. The legacy worker accepts the November 21 render, then refuses
+on November 22 and November 25 before device setup. All three renders
+contain 73 tokens. Both the text and token digests change with the date.
+
+The detached worker supplies the reviewed calendar text as a local
+template variable for this fixed smoke prompt. It retains the model,
+template, plan, digests and token guards. All six existing worker tests
+pass. A replay with Transformers 5.17.0 reaches the pre-device boundary
+on all three dates with the original prompt and token digests. The
+reviewed native image still needs verification. The worker owner and
+reviewer must rebind the worker manifest and admission before a native
+attempt. Existing reservation and authentic backing-path requirements
+also remain open.
+
+## M6 observed local selection rule
+
+The [optional rule receipt](../../../runs/m6-rule-custody.sKSlwg/OWNER.md)
+covers exact public child attempts with both complete and stopped inputs.
+The two rules can emit byte-identical legacy choices. The separately
+bound issue and observation now identify which rule the child used.
+Four local stdio cases reproduce, and five crossed controls refuse. The
+stopped case retains its one unacknowledged attempt as unobserved.
+Legacy report bytes are preserved. Independent observer authentication
+and actual held-out adoption remain open.
+
+## M7 roster relabeling under an explicit novelty rule
+
+The [optional novelty verifier](../../../runs/m7-roster-label-novelty.5cfS6d/OWNER.md)
+refuses a roster rename that preserves traversal slots, source and solver
+placement, exact scoring and all eight arm dispositions. It preserves
+genuine rerouting under a fixed roster and refuses a clone that would
+inflate within-holdout counts. All 25 tests and both legacy CLI reports
+reproduce. The protocol author decides prospectively whether roster
+labels are interchangeable. Protected custody and admission follow EP-1.
