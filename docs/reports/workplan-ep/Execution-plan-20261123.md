@@ -9,10 +9,10 @@
 | IN PROGRESS | 3. CPU benchmark and first R3 slices | Local Coordinator routes quiet-host qualification and independent R1 review. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) |
 | IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
-| IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) |
+| IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
 | BLOCKED | 7. Grover transfer | After EP-1, obtain protected fixtures, independent custody, and exact resource admission. Verify matched quantum and topology outcomes with the pinned scorer. [Local custody checklist](Grover-holdout-custody-checklist.md) · [Public replay](Grover-topology-scripted.md) |
 | IN PROGRESS | 8. Second-family replication | Coordinator and resource owner route the named SmolLM3 smoke reserve and admission. On the chosen distinct family verify the protected L1–L3 unchanged-transfer and recalibrated comparisons against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Local pairing design](Second-model-replication-design.md) |
-| IN PROGRESS | 9. Combined controller | Author and claims reviewer freeze component eligibility, safeguards, baseline and resource limits. Independently verify held-out matched outcomes and accounting. [Local controller design](Combined-controller-design.md) |
+| IN PROGRESS | 9. Combined controller | Author and claims reviewer freeze component eligibility, safeguards, baseline and resource limits. Independently verify held-out matched outcomes and accounting. [Local controller design](Combined-controller-design.md) · [Cluster coverage replay](../../../runs/controller-cluster-join.iJZn9z/OWNER.md) |
 | IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) |
 
 Links labeled local refer to coordination records retained on Spark.
@@ -941,3 +941,28 @@ late expiry records and unsolicited renewal. A witnessed violation
 can still close a lease early. All 21 tests passed, and the matched
 and sequential outputs reproduced byte for byte in
 `runs/l6-timebox-deadline.yi4i2Z`. This is a public fixture check.
+
+## Shared M6 and L7 checkout repair
+
+The tracked M6 fixed-share command fails in a clean checkout. It first
+needs the selector module. With that module present, its topology
+runner still needs variable worker rosters. Both exact files are
+already in the L7 adoption packet. In a fresh checkout the two-file
+repair reproduced the fixed-share report, the fixed-share audit, and
+the separate 16/19-unit comparator report. The focused suite passed all
+13 tests. The Coordinator and source owners can integrate the two
+files once for both milestones. The topology change also reproduced
+five legacy topology and Grover outputs byte for byte, passed 27
+regression tests on each source version and reproduced the retained
+54-block, 432-arm matched run.
+[Local parity evidence](../../../runs/topology-variable-roster-parity.sRW4Fq/OWNER.md)
+
+Compare peers against pooled self-assignment and fixed shares as
+separately named controls. On the public redundant fixture at 16
+synthetic units spent, peers and pooled self-assignment each verified
+three tasks. The separately reviewed fixed-share condition verified
+two, with per-worker caps and separate review and union charges.
+Author and independent review still need to freeze the held-out
+comparison, its outcome definition and actual resource accounting.
+[Local packaging evidence](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) ·
+[Local comparator evidence](../../../runs/m6-matched-baseline-witness.uLS8vH/COORDINATOR.md)
