@@ -24,13 +24,15 @@ checkpoint, report each unmet acceptance criterion.
 
 ## Wednesday overnight continuation
 
-The owner reports that Local Coordinator Manager session 7ce2c340,
-the Coordinator Assistant, and parallel workers are addressing blockers
-in Table A of `docs/reports/PC_ALL_BLOCKERS_WORKPLAN_V2_20261122.md`.
-That file and a direct manager terminal are unavailable on Spark.
-The lane outbox requests the current TREMOR rows and keeps independent
-work running. Existing named decisions on live providers, releases,
-new ports, credentials and protected execution remain in force.
+The [Coordinator's Table A extract](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122.md)
+acknowledges the Spark outbox through 04:47 UTC under X44. Under X42,
+the Coordinator owns the R1 corrected-source nomination in Wave 1.
+The TREMOR lane and reviewers own the remaining research dispositions.
+The A8 packet and owner retain the Pilot 4 and EP-1 decisions under D8.
+The Coordinator acknowledgment sets no run, spend, publication or
+timer authorization. An explicit nomination of the corrected R1
+candidate, qualification of its three CPU windows and the independent
+bench verdict remain open. [Exact archived R1 receipt index](../../../runs/r1-n2-three-receipts.BeDGMH/receipt-pins.sha256)
 
 M7's local public pair verification is ready for review. Protected
 transfer remains blocked by the EP-1 dependency, custody and admission.
@@ -1318,3 +1320,14 @@ tests pass and the pinned scripted audit matches byte for byte. The
 freeze still needs prospective arm-order review, independent held-out
 scoring, physical cleanup and settlement evidence.
 [M9 evidence](../../../runs/m9-terminal-cleanup.AH9x0t/OWNER.md)
+
+
+## M9 prospective arm order
+
+Paired and clustered audits accept an independently pinned order
+witness tied to the frozen manifest and task inventory. The witness
+covers every scheduled block once, checks each stratum's condition and
+applies its declared first-arm count bounds, including blocks with
+missing outcomes. The author still needs to freeze the actual grouping
+and bounds, and native runtime order needs independent verification.
+[Offline control](../../../runs/m9-frozen-order.bZ5vlB/OWNER.md)
