@@ -656,6 +656,15 @@ was refused at its correct fresh digest. [Release evidence](Grover-topology-scri
 The rehearsal uses generated observer tapes. Protected execution
 still needs an independent observer recording actual delivery.
 
+Across the public cap sweep, 708 of 1,024 arm-cap views matched
+their full-cap stage union. Of those, 305 had different release and
+delivery projections, all strict prefixes. That includes 157
+nonempty unions. The counts of fallback uses and predecessor-hit
+uses matched within those same-union views, while reads, work,
+shards, or hit releases could differ. A matching union therefore
+leaves terminal and delivery evidence separate.
+See `runs/m7-stage-versus-release.Q57qhV`.
+
 ## R1 host evidence and source scope
 
 The host readback joins the three exact historical test logs to their
