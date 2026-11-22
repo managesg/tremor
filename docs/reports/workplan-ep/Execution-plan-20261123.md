@@ -2464,3 +2464,33 @@ separately pinned postflight receipt can then validate score and
 resource evidence against the actual trace and reject crossed valid
 blocks. This joins existing custody and runtime requirements under M7.
 The EP-1 prerequisite and protected execution remain pending.
+
+
+## M7 public committed-trace rehearsal
+
+The [synthetic recorder and audit](../../../runs/m7-committed-public-trace.buv9F0/OWNER.md)
+start from the exact opened rehearsal block and a separately
+committed public scout-cap variant. Both bind the full preflight
+roster to all eight recorded arms. The postflight score and cost
+pins replay on the exact committed definition. Six substitutions
+are refused. The scorer rejects crossed blocks and event labels,
+reordered or missing arms, and changed score or cost pins. Exact
+dispatch parity also rejects a shorter trace whose supplied events
+and adjusted totals otherwise pass the semantic scorer. Only public synthetic
+actor and custody roles were available. Authentic recorder evidence,
+independent custody, EP-1 clearance and protected admission remain
+separate.
+
+
+## M9 common call-budget boundary
+
+The [detached budget gate](../../../runs/m9-stock-budget-gate.USxTWO/OWNER.md)
+uses the exact stock configuration readback with both arms disabled.
+The same public request dispatches once when a synthetic slot is
+available. With none available, both observed children refuse before
+dispatch and have no debit or result. A buffered dispatch and a
+changed configuration are also refused. All four fresh child cases
+reproduce the archived report. The common gate is an author-review
+candidate. Its single-request toy check leaves concurrent budget
+reservation, other resource dimensions and actual held-out behavior
+open.
