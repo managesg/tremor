@@ -574,6 +574,14 @@ reproduction scripts are in `runs/l5-condition-current.Pjhcxc`.
 These checks used public fixtures. Protected L5 still needs a frozen
 cohort, independent host custody and an admitted native runner.
 
+The detached host exchange also ran over real anonymous process
+pipes. It distinguished a broken write, a confirmed write with 30
+bytes queued and unread, and a worker that received the bytes but
+exited before acknowledgment. Each case retained an unavailable
+protocol ACK. All children exited and were reaped. This local
+transport replay uses a public fixture and leaves native
+admission and worker custody open. See `runs/r3-l5-os-pipe-evidence.QHAnQo`.
+
 ## M6 authority, access and independent union
 
 The exact 54-block archive met its access rules. Across 648
