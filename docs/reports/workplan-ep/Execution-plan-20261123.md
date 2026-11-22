@@ -1914,3 +1914,17 @@ reaches 300 seconds, even if total elapsed time fits the cleanup reserve.
 It passed 18 focused and 50 mocked opening tests. The just-below-deadline
 case and historical output bytes stay intact. Actual completion time,
 native admission and exact source adoption are still open.
+
+## M2 criterion 7 evidence intake
+
+The [offline intake](../../../runs/m2-gate7-intake.qp6SkE/OWNER.md)
+joins all 30 scheduled manual reviews, exact episode materials and
+separately pinned batch-scoped Console evidence. The complete
+synthetic case verified 240 observed charges and 120 material files.
+Unresolved billing stays unavailable unless the supplied evidence
+explicitly resolves it. A stopped batch remains unavailable, and
+crossed scope, mismatched billing and incomplete material cannot
+produce a match. Nine new tests and four previous controls passed.
+The two retained mock reports reproduced byte for byte. Actual
+reviewer identity, provider Console provenance and Pilot 4 criterion
+7 remain open.
