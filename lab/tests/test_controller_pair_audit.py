@@ -77,6 +77,57 @@ class ControllerPairAuditTests(unittest.TestCase):
         row["attempts"].append(self.attempt(sequence, "worker", status=status) | {"release": payload})
         return {"sequence": sequence, **payload, "executed": status == "completed"}
 
+    def policy_files(self, *, combined, plain):
+        fixture = self.fixture
+        common = fixture.artifact("common-policy.txt", b"Public scripted common policy")
+        references = {arm: fixture.artifact(f"{arm}-configuration.json", {
+            "schema": audit.selection.POLICY_CONFIGURATION,
+            "common_policy_sha256": common["sha256"],
+            "adaptive_components": components,
+        }) for arm, components in (("combined", combined), ("plain", plain))}
+        for arm, reference in references.items():
+            fixture.manifest["arms"][arm]["policy_sha256"] = reference["sha256"]
+        for row in self.rows:
+            row["policy_sha256"] = references[row["arm"]]["sha256"]
+        return common, references
+
+    def policy_pin(self, manifest_pin, common, references):
+        fixture = self.fixture
+        path = fixture.root / "configuration-witness.json"
+        return path, fixture.write(path, {
+            "schema": audit.selection.POLICY_WITNESS,
+            "manifest_sha256": manifest_pin,
+            "common_policy": common,
+            "configurations": references,
+        })
+
+    def test_cli_binds_frozen_adaptive_roster_to_the_arm_policy_bytes(self):
+        self.fixture.fake_receipt()
+        eligible = {"L1": {"component": "test-L1", "evidence_sha256": self.fixture.index["receipts"]["L1"]["sha256"]}}
+        common, references = self.policy_files(combined=eligible, plain={})
+        inputs = self.freeze()
+        path, pin = self.policy_pin(inputs["manifest_sha256"], common, references)
+        command = [sys.executable, "-B", "-m", "lab.controller_pair_audit",
+                   *(str(inputs[field]) for field in ("bundle", "manifest", "evidence_index", "trace"))]
+        for field in ("manifest", "evidence_index", "trace"):
+            command.extend((f"--{field.replace('_', '-')}-sha256", inputs[f"{field}_sha256"]))
+        process = subprocess.run([*command, "--policy-witness", str(path), pin], capture_output=True, text=True, check=True)
+        result = json.loads(process.stdout)
+        self.assertEqual(result["pairs"][0]["paired_delta"], "1/6")
+        configuration = result["policy_configuration"]
+        self.assertEqual(configuration["declared_design"], "adaptive_comparison")
+        self.assertEqual(configuration["adaptive_components"], {"combined": eligible, "plain": {}})
+        self.assertFalse(configuration["runtime_policy_application_verified"])
+        self.assertFalse(result["scientific_acceptance"])
+
+        for combined, plain, mismatched_arm in (({}, {}, "combined"), (eligible, eligible, "plain")):
+            common, references = self.policy_files(combined=combined, plain=plain)
+            inputs = self.freeze()
+            witness = self.policy_pin(inputs["manifest_sha256"], common, references)
+            self.assertEqual(audit.verify(**inputs)["pairs"][0]["paired_delta"], "1/6")
+            with self.assertRaisesRegex(ValueError, f"{mismatched_arm} adaptive components differ"):
+                audit.verify(**inputs, policy_witness=witness)
+
     def test_committed_fixture_recounts_penalized_duplicate_and_charges_failed_advice(self):
         combined = self.rows[1]["attempts"]
         combined.append(self.attempt(len(combined), "advice", status="failed", cpu=5))

@@ -16,6 +16,8 @@ ARTIFACTS = (
     "execution", "stop", "cost", "safety",
 )
 COMPARISON = ("line", "component", "contrast_id", "registered_comparator", "scope")
+POLICY_WITNESS = "controller_policy_configuration_witness_v1"
+POLICY_CONFIGURATION = "controller_policy_configuration_v1"
 
 
 def _require(condition, message):
@@ -105,7 +107,40 @@ def _evidence(root, line, row, scope, pin):
             _match_artifact(root, artifacts[role])
 
 
-def verify(bundle, manifest, evidence_index, *, manifest_sha256, evidence_index_sha256):
+def _configuration(root, witness, manifest_sha256, arms, lines, enabled):
+    path, pin = witness
+    record = _pinned_json(path, pin)
+    _object(record, ("schema", "manifest_sha256", "common_policy", "configurations"), "configuration witness")
+    _require(record["schema"] == POLICY_WITNESS and record["manifest_sha256"] == manifest_sha256,
+             "configuration witness must bind the pinned selection")
+    common = record["common_policy"]
+    _match_artifact(root, common)
+    expected = {
+        "combined": {line: {"component": lines[line]["component"], "evidence_sha256": lines[line]["evidence"]["sha256"]}
+                     for line in enabled},
+        "plain": {},
+    }
+    references = _object(record["configurations"], arms, "arm configurations")
+    for arm, reference in references.items():
+        configuration = _pinned_json(_reference(root, reference), reference["sha256"])
+        _require(reference["sha256"] == arms[arm]["policy_sha256"], "configuration differs from the arm policy pin")
+        _object(configuration, ("schema", "common_policy_sha256", "adaptive_components"), "policy configuration")
+        _require(configuration["schema"] == POLICY_CONFIGURATION
+                 and configuration["common_policy_sha256"] == common["sha256"],
+                 "arm configuration differs from the common policy")
+        _require(configuration["adaptive_components"] == expected[arm],
+                 f"{arm} adaptive components differ from the eligible roster")
+    return {
+        "witness_sha256": pin,
+        "common_policy_sha256": common["sha256"],
+        "configuration_sha256": {arm: reference["sha256"] for arm, reference in references.items()},
+        "declared_design": "adaptive_comparison" if enabled else "all_disabled_diagnostic",
+        "adaptive_components": expected,
+        "runtime_policy_application_verified": False,
+    }
+
+
+def verify(bundle, manifest, evidence_index, *, manifest_sha256, evidence_index_sha256, policy_witness=None):
     """Verify manifest structure and pinned bytes, with no scientific acceptance implied."""
     root = Path(bundle).resolve(strict=True)
     _require(root.is_dir(), "evidence bundle must be a directory")
@@ -144,7 +179,7 @@ def verify(bundle, manifest, evidence_index, *, manifest_sha256, evidence_index_
             enabled.append(line)
     _require(set(pins) == set(enabled), "independent receipts must cover exactly the enabled lines")
 
-    return {
+    result = {
         "validation": "structure_and_pins_only",
         "scientific_acceptance": False,
         "manifest_sha256": manifest_sha256,
@@ -153,6 +188,9 @@ def verify(bundle, manifest, evidence_index, *, manifest_sha256, evidence_index_
         "declared_enabled": enabled,
         "declared_disabled": disabled,
     }
+    if policy_witness is not None:
+        result["policy_configuration"] = _configuration(root, policy_witness, manifest_sha256, arms, lines, enabled)
+    return result
 
 
 def main():
@@ -162,10 +200,10 @@ def main():
     parser.add_argument("evidence_index", type=Path)
     parser.add_argument("--manifest-sha256", required=True)
     parser.add_argument("--evidence-index-sha256", required=True)
+    parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     try:
-        result = verify(args.bundle, args.manifest, args.evidence_index,
-                        manifest_sha256=args.manifest_sha256, evidence_index_sha256=args.evidence_index_sha256)
+        result = verify(**vars(args))
     except (KeyError, OSError, RecursionError, TypeError, ValueError) as error:
         parser.error(str(error))
     print(json.dumps(result, sort_keys=True))

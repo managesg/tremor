@@ -162,10 +162,10 @@ def _breaches(totals, limits):
 
 
 def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence_index_sha256, trace_sha256,
-           release_witness=None):
+           release_witness=None, policy_witness=None):
     """Replay the legacy pair or a V2 pair with an independently pinned release witness."""
     selected = selection.verify(bundle, manifest, evidence_index, manifest_sha256=manifest_sha256,
-                                evidence_index_sha256=evidence_index_sha256)
+                                evidence_index_sha256=evidence_index_sha256, policy_witness=policy_witness)
     document = selection._pinned_json(manifest, selected["manifest_sha256"])
     tape = selection._pinned_json(trace, trace_sha256)
     tape_fields = ("evidence", "manifest_sha256", "input_files", "arms")
@@ -256,6 +256,8 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
               "arm_resource_receipts": resources, "pairs": pairs}
     if witness_arms is not None:
         result["release_witness_sha256"] = witness_pin
+    if policy_witness is not None:
+        result["policy_configuration"] = selected["policy_configuration"]
     return result
 
 
@@ -266,6 +268,7 @@ def main():
     for pin in ("manifest", "evidence-index", "trace"):
         parser.add_argument(f"--{pin}-sha256", required=True)
     parser.add_argument("--release-witness", nargs=2, metavar=("PATH", "SHA256"))
+    parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"))
     args = parser.parse_args()
     try:
         result = verify(**vars(args))

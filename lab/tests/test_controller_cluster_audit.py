@@ -103,6 +103,16 @@ class ControllerClusterAuditTests(unittest.TestCase):
         self.assertEqual(report["fully_observed_pair_clusters"], 1)
         self.assertEqual(report["clusters"][0]["complete_pairs"], 2)
 
+    def test_policy_witness_preserves_an_all_disabled_cluster_as_diagnostic(self):
+        common, references = self.pair.policy_files(combined={}, plain={})
+        inputs = self.freeze()
+        witness = self.pair.policy_pin(inputs["manifest_sha256"], common, references)
+        result = audit.verify(**inputs, policy_witness=witness)
+        self.assertEqual([block["paired_delta"] for block in result["clusters"][0]["blocks"]], ["1/6", None])
+        configuration = result["paired_audit"]["policy_configuration"]
+        self.assertEqual(configuration["declared_design"], "all_disabled_diagnostic")
+        self.assertFalse(configuration["runtime_policy_application_verified"])
+
     def test_requires_release_witness_even_through_library_entry(self):
         with self.assertRaisesRegex(ValueError, "requires a V2 release witness"):
             audit.verify(**(self.freeze() | {"release_witness": None}))
