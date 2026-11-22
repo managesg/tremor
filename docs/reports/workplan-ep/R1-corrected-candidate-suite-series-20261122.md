@@ -37,6 +37,15 @@ predicate, examples and separation review remain with the author and
 independent custodian. The fresh per-module checks and separate
 adversarial bench verdict remain pending.
 
+The independent technical pre-review found that `pairwise_miss`
+silently truncates mismatched monitor rows and reports zero correlation
+when no pair has defined phi. A detached patch rejects misaligned
+observations and distinguishes unavailable correlation from measured
+zero. Its 41 focused tests passed and the existing public control
+report reproduced byte for byte. The source owner still needs to adopt
+the patch and rerun the applicable suite on the nominated cut.
+[Review packet](../../../runs/r1-exact-module-review.sdzwWw/OWNER.md)
+
 Verify the three exact archived receipts and the unchanged Torch-absence
 check from the Murmuration root.
 
