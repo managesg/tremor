@@ -2433,3 +2433,34 @@ the correct configuration both stop before dispatch. All four
 archived and fresh results match. This tests the runtime evidence
 path with no real controller component enabled. Component eligibility,
 the frozen baseline, held-out results and measured costs remain open.
+
+
+## M6 public no-choice scoring
+
+The [public scorer replay](../../../runs/m6-no-choice-scorer.B9jgNL/OWNER.md)
+independently checks the selected task against the delivered eligible
+set and the pinned rule. An acknowledged empty choice incurs a read
+but no work or verification charge. In the separate one-cell control,
+each completed policy records two empty choices and costs 18 scripted
+units. Each interruption retains one observed read and leaves full
+cost and union unavailable. Five contradictory or crossed cases are
+refused. All four preserved eight-cell reports still match. The
+held-out author and resource reviewer retain actual eligibility,
+cost and endpoint decisions.
+
+
+## M7 committed block identity in the run trace
+
+The retained [public custody rehearsal](../../../runs/grover-custody-current.JX6TFI/valid/manifest)
+and [public trace](../../../runs/grover-branch-release-audit.sUISPA/fixture/trace.json)
+use different stage qubit counts and iteration caps even though both
+are sequential blocks with a 32-unit budget. The trace has only regime, a public development
+seed and arms. A caller-supplied block label therefore cannot attach
+that trace to an opaque committed block. An independently pinned
+preflight roster needs to bind the protocol, split, inventory
+commitment, exact block, run and arm identities, worker order, cap
+and scorer. The runner must record that binding in the trace. A
+separately pinned postflight receipt can then validate score and
+resource evidence against the actual trace and reject crossed valid
+blocks. This joins existing custody and runtime requirements under M7.
+The EP-1 prerequisite and protected execution remain pending.
