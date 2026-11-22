@@ -2494,3 +2494,18 @@ reproduce the archived report. The common gate is an author-review
 candidate. Its single-request toy check leaves concurrent budget
 reservation, other resource dimensions and actual held-out behavior
 open.
+
+
+## Extended backend and thirteenth release verification
+
+The [extended verifier](../../../runs/tremor-extended-source-replay.WdS3Z5/OWNER.md)
+rebuilds the same exact 670-file backend. All 572 test cases passed
+again with no skips or lost IDs. The M6 verifier loaded the combined
+topology and scorer instead of the older archived module. The M7
+committed-trace reports reproduced on the combined quantum source.
+The M9 observer reproduced the separately pinned stock-configuration
+budget check. The thirteenth release has 50 pinned files and changes
+only README. Four public relay fixtures match the exact backend and
+the release CLI. The offline keyboard replay reaches the exact
+workplan heading at 500 and 1280 pixels. Native milestones and
+authenticated release behavior remain open.
