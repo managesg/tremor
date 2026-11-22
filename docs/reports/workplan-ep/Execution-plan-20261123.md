@@ -1637,3 +1637,21 @@ flags. The historical L3 and seven L7 reports remain byte-identical.
 The focused replay passed 34 tests and the integrated archive passed 453.
 Raw fit data, native execution and protected operating-point acceptance
 remain open. [Local evidence](../../../runs/m4-l3-operating-cost.yY2c1f/OWNER.md)
+
+The independent L3 review also replayed a positive failure table
+transplanted into the archived null with identical views and cutoffs.
+The final verifier rejects it, checks nested flags for unequal cutoffs
+on the same pair, and limits fitted false positives to the fitting
+allowance. The archived null still has zero gain and zero discordance.
+The final L3 isolation passed 455 checks.
+
+## M5 independently pinned activation selection
+
+The L8-D verifier can now bind the approved hook and exact ordered
+activation positions to each frozen rendered prompt and independently
+pinned token sequence. Coherently repinned captures with a wrong hook
+or out-of-range token selections are refused. Tokenizer execution and
+native hook attachment stay unverified. Twenty-one focused checks and
+460 integrated tests passed. The legacy report reproduced byte for
+byte. Actual L4-E training and protected L8-D remain open.
+[Evidence and exact verifier inputs](../../../runs/m5-activation-selection-contract.aJncEd/OWNER.md)
