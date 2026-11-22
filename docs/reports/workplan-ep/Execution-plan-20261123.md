@@ -1731,3 +1731,20 @@ Seven existing scorer checks and five new checks passed. The raw
 child stdout and derived report reproduced byte for byte. Native
 model usage, historical transport and protected outcomes remain open.
 [Child computation evidence](../../../runs/m6-computed-public-work.UdtQq1/OWNER.md)
+
+## M5 public training-to-evaluation lineage
+
+The detached [M5 lineage packet](../../../runs/m5-execution-lineage.95OxwA/OWNER.md)
+adds optional checks for the exact training plan, raw visits, retained
+projection and checkpoint bytes, and one norm and recovery evaluation per
+scheduled arm. The public fixture replay joined six adapter visits, five
+context visits and two evaluations. Plan-only and stopped receipts, early
+after-checkpoints, and crossed or altered evidence were rejected. Equal
+checkpoint bytes remain visible as a no-change case.
+
+`bash runs/m5-execution-lineage.95OxwA/verify.sh` exited zero with 24 focused
+tests and reproduced the earlier recovery and norm reports byte for byte.
+Review the detached patch together with its pinned trainer dependency
+before adoption. M5 acceptance still needs independent captures from the
+actual training, context comparator and held-out activation probe, along
+with resource settlement.
