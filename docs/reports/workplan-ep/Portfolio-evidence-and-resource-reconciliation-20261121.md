@@ -30,12 +30,19 @@ the local release asset. Published rendering and release approval remain
 open. [Animation replay](../../../runs/m10-animation-and-resources.qOMrQD/OWNER.md)
 
 **Staged scorer receipt.** The candidate links the aggregate results for
-all three scorer pairs across 10,000 seeded logs. All pairs agreed and
-2,396 logs met the scorer's validity predicate. The receipt describes the
-Lean-checked properties and the current release boundary. The candidate
-passed 24 release tests and eight local browser views. The current
-isolated integration run passed 422 lab tests.
-[Source and static release evidence](../../../runs/wednesday-integrated-closures.apKpbl/OWNER.md)
+all three scorer pairs across 10,000 seeded logs. The three scorers
+agreed, and 2,396 logs met the scorer's validity predicate. The receipt
+describes which properties Lean checked.
+[Scorer receipt replay](../../../runs/wednesday-integrated-closures.apKpbl/OWNER.md)
+
+**Current detached release and source.** The eight-patch local candidate
+passed 54 tests, including 26 coordination tests. It resolved 36 local
+references across eight pages and passed 12 offline browser views. A
+clean archive of the current research commit and its pinned fixture
+sources passed 460 lab tests. These checks cover local source and browser
+rendering. Publication and signed-in rendering remain open.
+[Release candidate](../../../runs/m6-public-frontier.mffLw1/OWNER.md) ·
+[Clean portfolio replay](../../../runs/portfolio-wednesday-current.Qez5in/OWNER.md)
 
 **Native calibration.** The short Qwen run established that the narrow
 local execution envelope could complete and release its reservation.
@@ -89,8 +96,15 @@ unavailable.
 
 **Public coordination and scoring.** Identical planned traversal left
 realized reads unequal in 72 of 108 public groups. A direct comparison
-of leadership therefore needs observed equivalent delivery. The
-combined-controller fixture produced a single scripted delta of 1/6
+of leadership therefore needs observed equivalent delivery. Across 54
+scripted blocks and 432 arms, 41 arms in 26 blocks completed more
+verified tasks than both independent baselines at no higher synthetic
+operation cost. All 41 retained every task verified by either baseline.
+At exactly the same cost as both baselines, 25 arms in 12 blocks gained
+tasks. Those realized-cost subgroups are descriptive.
+[Runnable coordination comparison](../../../runs/m6-public-frontier.mffLw1/OWNER.md)
+
+The combined-controller fixture produced a single scripted delta of 1/6
 and retained an unavailable delta on the interrupted pair. With a
 single complete scripted pair, a paired uncertainty interval remains
 unavailable. The Grover public fixture's exact stage unions first match at
@@ -98,7 +112,11 @@ unavailable. The Grover public fixture's exact stage unions first match at
 views, 317 matched the full-cap stage union while budget-stopped.
 Three completed arms in the separate release roster recorded one
 verified fallback. A missing arm or stopped prefix leaves the complete
-roster total unavailable. Protected transfer remains outstanding.
+roster total unavailable. Separately, the exact public simulator first
+reaches 25/32 at iteration 1. Comparing the displayed floating-point
+trace at the same threshold would select iteration 2. Protected transfer
+remains outstanding.
+[Exact threshold replay](../../../runs/m10-public-exact-grover.wPqCMg/OWNER.md) ·
 [Coordination evidence](Topology-matched-traversal.md) ·
 [Controller design](Combined-controller-design.md) · [Grover evidence](Grover-topology-scripted.md) ·
 [Local paired cap and stop replay](../../../runs/grover-paired-frontier.dJrINF/OWNER.md)
@@ -115,12 +133,20 @@ scientific intervals. The full acceptance scope remains in the
 | --- | --- | --- |
 | R2 native GPU | 0.100000 hours reserved, 0.023123 charged, 0.076877 released | No outstanding hold on this admission. The historical receipt reproduced byte for byte. |
 | T7 historical GPU | 2.405372 retained generation hours across three completed arms and two disjoint probes. The reported completed-container subtotal is 8,655 seconds. A separate clock-only log records three container-name sighting streaks. | A separate Spark journal query identifies 11 dated T7 name and network-endpoint joins and 28 task-deletion records. The deletion records provide runtime IDs without the named joins' identity fields. Exact GPU attachment, full attempted occupancy and cleanup remain unavailable. Retain the provisional 4.0 GPU-hour program hold. [Clock replay](../../../runs/t7-monitor-clock-sightings.vof1t2/OWNER.md) · [Dated journal replay](../../../runs/t7-dated-daemon.oo7Qwv/OWNER.md) |
-| Program planning balance | The retained reconciliation shows 65.976877 GPU-hours after the settled R2 charge and provisional T7 hold. The R2/R3 share is 7.476877 and the L1–L8 nominal ceilings total 49. | The plan assigns the remaining 9.5 hours to additional work. A proposed 0.1-hour SmolLM3 placement would leave 9.4 hours in that row. A resource owner still needs to reconcile current availability and issue a binding reservation. |
+| Program planning balance | The retained R2 ledger cut shows 65.976877 GPU-hours after the settled R2 charge and provisional T7 hold. The R2/R3 share is 7.476877 and the L1–L8 nominal ceilings total 49. | The plan assigns the remaining 9.5 hours to additional work. A proposed 0.1-hour SmolLM3 placement would leave 9.4 hours in that row. A resource owner still needs to reconcile current availability and issue a binding reservation. |
 | Hosted API | Four pinned local ledgers contain 417 uniquely paired reservations and charges. Independent repricing against the archived tariff totals USD 0.0413027. | The stored sum is USD 0.041302700000000000620. The largest charge-level difference is USD 0.00000000000000000002. Provider Console total and current budget availability remain unknown. [Repricing](../../../runs/m10-api-repricing.FKG1Eo/report.json) |
 
 [GPU settlement and placement](Spark-allocation-rephase.md) · [T7 source](../T7-smoke.md) · [API pricing and current gates](Pilot4-pricing-verification-gates.md)
 
 ## Reproduction
+
+Run the current local portfolio replay from the Murmuration root. It
+rebuilds the source and release, rechecks the archived R2, API and T7
+receipts, and writes the verified findings and resource values as JSON.
+
+```bash
+bash runs/portfolio-wednesday-current.Qez5in/verify.sh /absolute/new-output-directory
+```
 
 The current checkpoint checks the R1 suite series, L5 wire prefix,
 L7 and L8-B fixtures, Pilot 3 syntax, T7 generation time, the two
