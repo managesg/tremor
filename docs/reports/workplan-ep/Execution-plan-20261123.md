@@ -1593,3 +1593,19 @@ and reproduced the archived R2 calibration digest and two mocked
 SmolLM3 outcomes. The protected R3 batch still needs a current
 placement, an independently captured run and a verified ledger close.
 [Local verifier evidence](../../../runs/r3-bound-settlement.GxJpZy/OWNER.md)
+
+## M8 graded contrasts within assignment limits
+
+Replication coverage now intersects exact graded task and replicate
+pairs with both arms' declared per-assignment limits. The cross-role
+contrast retains the full scheduled count. It includes only assignments
+with grades and known in-limit usage in both roles. The report keeps
+unqualified grades and all recorded charges.
+
+The synthetic cross-check retains two raw graded assignments of three
+for each contrast even when none meet a zero-call cap. All 15 recorded
+calls remain in the totals. In the mixed case, one over-cap call and one
+missing GPU observation leave contrast counts of one, zero and zero.
+Grade-only output is byte-identical. All 72 replication checks and 449
+integrated checks passed. Native evidence and cumulative compliance
+remain separate. [Local evidence](../../../runs/m8-budgeted-grade-coverage.YLM02l/OWNER.md)
