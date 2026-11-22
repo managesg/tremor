@@ -2145,3 +2145,15 @@ a rotating lead with deliberately fixed traversal as a separate valid
 configuration. All 34 focused tests passed and all four earlier
 reports reproduced byte for byte. Public source adoption, hub and
 activity definitions, and protected matched measurements remain open.
+
+## M3 exact R3 L2 source adoption rehearsal
+
+The [isolated adoption replay](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md)
+layers typed completion and the latest paired-index checks on their
+reviewed bases. It identifies four changed shared dependencies and
+the pinned resource-audit module needed in a clean checkout. All 32
+tests passed and eight CLI artifacts stayed byte-identical. Clean,
+trigger-only and planted completions passed. Memory-floor and
+wall-limit stops remained stopped, and the paired cap case retained
+missing observations. The exact source owner adoption, protected
+inputs and one-use native admission remain pending.
