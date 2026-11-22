@@ -19,8 +19,11 @@ POLICY_TERMINAL_SCHEMA = "replication_terminal_capture_v2"
 LOADER_SCHEMA = "replication_loader_capture_v1"
 GRADE_SCHEMA = "replication_grade_witness_v1"
 SCORE_SCHEMA = "replication_score_capture_v1"
+SCORING_ARTIFACTS_SCHEMA = "replication_scoring_artifacts_v1"
 ASSIGNMENT_FIELDS = ("task_id", "replicate_id", "role", "arm", "attempt_id")
-GRADE_CONTEXT = ("scorer_sha256", "hidden_truth_sha256", "scoring_opportunities_sha256")
+SCORING_ARTIFACT_DIRECTORIES = {"scorer_sha256": "scorer", "hidden_truth_sha256": "hidden-truth",
+                                "scoring_opportunities_sha256": "scoring-opportunities"}
+GRADE_CONTEXT = tuple(SCORING_ARTIFACT_DIRECTORIES)
 ARMS = ("technique", "comparator")
 STATES = ("observed", "stopped", "void", "unavailable")
 RESOURCES = ("calls", "input_tokens", "output_tokens", "gpu_wall_ns")
@@ -219,6 +222,35 @@ def _graded_contrasts(complete_pairs, planned):
     return contrasts
 
 
+def _scoring_context(assignment):
+    matched = dict(zip(pairing.MATCH_FIELDS, assignment[1:], strict=True))
+    return {field: matched[field] for field in GRADE_CONTEXT}
+
+
+def _scoring_artifact_custody(witness, root, *, line, pins, execution_pin, grade_pin, schedule):
+    path, pin = witness
+    binding = {"line": line, "schedule_pins": pins, "execution_observation_sha256": execution_pin,
+               "grade_witness_sha256": grade_pin}
+    document = _object(_metadata(Path(path), pin), ("schema", *binding, "artifacts"), "scoring artifact witness")
+    _require(document["schema"] == SCORING_ARTIFACTS_SCHEMA and all(document[key] == value for key, value in binding.items()),
+             "scoring artifact witness differs from the pinned schedule, execution or grading")
+    roster = _object(document["artifacts"], GRADE_CONTEXT, "frozen scoring artifact roster")
+    scheduled = {field: set() for field in GRADE_CONTEXT}
+    for row in schedule.values():
+        for field, digest in _scoring_context(row).items():
+            scheduled[field].add(digest)
+    root = Path(root).resolve(strict=True)
+    verified = {}
+    for field, directory in SCORING_ARTIFACT_DIRECTORIES.items():
+        expected = sorted(scheduled[field])
+        _require(roster[field] == expected, f"{directory} artifact roster differs from the full schedule")
+        for digest in expected:
+            _capture_bytes(root, directory, digest)
+        verified[directory] = len(expected)
+    return {"witness_sha256": pin, "scheduled_assignments": len(schedule), "verified_artifacts": verified,
+            "scorer_execution_verified": False}
+
+
 def _grade_receipts(witness, line, execution_pin, root, expected, roles, schedule, limit_eligible):
     path, pin = witness
     document = _metadata(Path(path), pin)
@@ -333,10 +365,9 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
                                                       loaders, runs, expected)
             outputs += output_pin is not None
             if grade_witness is not None and state == "observed":
-                context = dict(zip(pairing.MATCH_FIELDS, schedule[key][1:], strict=True))
                 grade_inputs[attempt] = {"assignment": {field: event[field] for field in ASSIGNMENT_FIELDS},
                                          "terminal_sha256": capture, "output_sha256": output_pin,
-                                         **{field: context[field] for field in GRADE_CONTEXT}}
+                                         **_scoring_context(schedule[key])}
             policy_rows["observed" if state == "observed" else "stopped_or_void"] += input_policy
         seen.add(assignment)
         attempts.add(attempt)
@@ -368,12 +399,14 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
 
 def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None,
            inventory=None, execution_observation=None, capture_root=None, policy_witness=None,
-           policy_artifacts=None, grade_witness=None):
+           policy_artifacts=None, grade_witness=None, scoring_artifacts=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     _require(capture_root is None or execution_observation is not None,
              "capture root requires an execution observation pin")
     _require(grade_witness is None or execution_observation is not None and capture_root is not None,
              "grading witness requires exact execution capture bytes")
+    _require(scoring_artifacts is None or grade_witness is not None,
+             "scoring artifact custody requires an independently pinned grading witness")
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
                             reference=reference, inventory=inventory, policy_witness=policy_witness,
                             policy_artifacts=policy_artifacts)
@@ -439,6 +472,11 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
         report["execution_observation"] = _execution_observation(execution_observation, paired, coverage[1], rows,
                                                                 roles, capture_root, schedule, policy_witness,
                                                                 grade_witness, limit_eligible)
+    if scoring_artifacts is not None:
+        result = _scoring_artifact_custody(scoring_artifacts, capture_root, line=line, pins=pins,
+                                           execution_pin=execution_observation[1], grade_pin=grade_witness[1],
+                                           schedule=schedule)
+        report["execution_observation"]["grading_receipts"]["scoring_artifact_custody"] = result
     return report
 
 
@@ -461,6 +499,8 @@ def main():
                         help="independently pinned execution observations for covered arms")
     parser.add_argument("--grade-witness", nargs=2, metavar=("PATH", "SHA256"),
                         help="bind separately pinned grading receipts to observed outputs and frozen scoring inputs")
+    parser.add_argument("--scoring-artifacts", nargs=2, metavar=("PATH", "SHA256"),
+                        help="verify an independently pinned roster and bytes of all scheduled scoring inputs")
     parser.add_argument("--capture-root", type=Path,
                         help="verify terminal, loader and output files named by content digest")
     try:
