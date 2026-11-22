@@ -1928,3 +1928,17 @@ produce a match. Nine new tests and four previous controls passed.
 The two retained mock reports reproduced byte for byte. Actual
 reviewer identity, provider Console provenance and Pilot 4 criterion
 7 remain open.
+
+## M4 raw public monitor observations
+
+The [raw L3-B replay](../../../runs/m4-l3-raw-fit-replay.CpD9MN/OWNER.md)
+recomputes the monitor pair selection and fitted cutoffs from separately
+pinned public calibration rows, then evaluates both held-out splits.
+The exact positive and null archives were reproduced from 48 rows per
+case. The positive remains a scripted catch gain of 1/4 and the null
+stays zero. The optional path passed 22 focused tests and preserves
+the earlier output when a raw witness is absent. A four-view control
+verifies the whole panel, while crossed splits and repinned label
+changes fail. The scorer source is a separate owner-controlled adoption
+dependency. Protected observations and native scientific acceptance
+remain open.
