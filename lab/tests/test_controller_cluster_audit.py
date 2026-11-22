@@ -335,3 +335,15 @@ class ControllerClusterAuditTests(unittest.TestCase):
         inputs["witness_sha256"] = self.pair.fixture.write(witness, content)
         with self.assertRaisesRegex(ValueError, "different freeze"):
             audit.verify(**inputs)
+
+    def test_fresh_answer_key_cannot_duplicate_a_prompt_assignment(self):
+        original = audit.verify(**self.freeze(), missing_outcome_bounds=True)
+        self.assertEqual(original["clusters"][0]["blocks"][0]["paired_delta"], "1/6")
+        alias = deepcopy(self.blocks[0])
+        alias["block_id"] = "answer-key-alias"
+        changed = self.pair.rows[1]["attempts"][2]["work"]["task"]
+        next(task for task in alias["taskset"]["tasks"] if task["id"] == changed)["expect"] += 1
+        self.blocks[1] = alias
+        self.pair.rows[2:] = [deepcopy(row) | {"block_id": alias["block_id"]} for row in self.pair.rows[:2]]
+        with self.assertRaisesRegex(ValueError, "duplicate experimental task assignment"):
+            audit.verify(**self.freeze(), missing_outcome_bounds=True)

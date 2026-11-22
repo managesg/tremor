@@ -279,11 +279,14 @@ def verify(bundle, manifest, evidence_index, trace, *, manifest_sha256, evidence
         if prompt_coverage is None:
             prompt_coverage = has_prompts
         selection._require(has_prompts is prompt_coverage, "assignment prompt coverage differs across blocks")
-        identity_field = "check" if has_prompts else "id"
-        canonical_content = tuple(sorted(
-            json.dumps((task[identity_field], task["expect"]), sort_keys=True, separators=(",", ":"), allow_nan=False)
-            for task in tasks
-        ))
+        if has_prompts:
+            # Reference answers are scored under the inventory pin, not part of the delivered prompts.
+            canonical_content = tuple(sorted(task["check"] for task in tasks))
+        else:
+            canonical_content = tuple(sorted(
+                json.dumps((task["id"], task["expect"]), sort_keys=True, separators=(",", ":"), allow_nan=False)
+                for task in tasks
+            ))
         assignment = (block["condition"], block["seed"], slots, canonical_content)
         selection._require(assignment not in assignments, "duplicate experimental task assignment")
         assignments.add(assignment)
