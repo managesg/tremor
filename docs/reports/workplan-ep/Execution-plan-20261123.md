@@ -2658,3 +2658,18 @@ and three additive tests passed. Historical completion and cancellation
 reports reproduce byte for byte. The adoption review still needs the
 actual image's Transformers 5.2.0 renderer, independently reissued
 storage-phase pins and worker identity evidence through cleanup.
+
+## M8 pre-start worker identity through terminal capture
+
+The [detached host capture](../../../runs/m8-worker-runtime-binding.DV7iql/OWNER.md)
+adds a v3 event for worker-bound admissions. After exact inspection
+and a second preflight, it records the worker, admission, reserve,
+opening placement and inspection pins before attachment. The metrics
+reader joins independent preflight and admission pins with the same
+container and terminal output. Fresh host pins cannot hide crossed,
+omitted or reordered events. Cancellation before recheck retains no
+attachment and the v3 accounting replay keeps its reserve held. The
+85 predecessor and seven targeted tests passed, including allocator
+and deadline controls. Both historical mock reports and the R2 audit
+digest reproduced. Authentic worker backing, image compatibility,
+measured execution and independent native approval remain open.
