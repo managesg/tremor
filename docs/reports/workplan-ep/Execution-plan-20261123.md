@@ -1832,3 +1832,21 @@ coordination report reproduced byte for byte. The source replay covers
 `ff0287d` and its pinned overlays. The later M8 source commit has its
 separate targeted evidence. Native scientific acceptance, publication
 and authenticated rendering await their applicable evidence.
+
+## M8 and M9 in the clean source closure
+
+`bash runs/m8-m9-integrated-source.VAGts4/verify.sh` exited zero
+with 519 lab tests and 34 focused package tests. The reconstructed
+source and M3–M5 overlays include both tracked M8 scoring artifact
+and M9 terminal cleanup changes at `1c56f84`. The public M8 custody
+and earlier grading reports reproduce exactly, as do M5 event-time
+and prior static readouts, R1 public controls and the R2 receipt.
+[Source integration](../../../runs/m8-m9-integrated-source.VAGts4/OWNER.md)
+
+The [M9 host witness](../../../runs/m9-cleanup-custody.7Ac3Da/OWNER.md)
+joins a cleanup capture to the exact frozen manifest, run, trace,
+scheduled arm and final attempt. The completed and stopped historical
+R3 receipts cannot stand in for controller-arm cleanup, even with
+valid content hashes. Five custody and 73 controller tests passed.
+Actual controller execution, shared-state reset and native resource
+settlement remain outstanding.
