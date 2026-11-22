@@ -251,12 +251,12 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
 
 
 def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None,
-           inventory=None, execution_observation=None, capture_root=None):
+           inventory=None, execution_observation=None, capture_root=None, policy_witness=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     _require(capture_root is None or execution_observation is not None,
              "capture root requires an execution observation pin")
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
-                            reference=reference, inventory=inventory)
+                            reference=reference, inventory=inventory, policy_witness=policy_witness)
     pins = paired["manifest_sha256"]
     declared = _metadata(Path(coverage[0]), coverage[1])
     _object(declared, ("schema", "line", "schedule_pins", "rows"), "replication coverage witness")
@@ -328,6 +328,8 @@ def main():
                         help="independently pinned limits on total declared usage by line and role")
     parser.add_argument("--inventory", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned structural inventory for snapshot-bound schedules")
+    parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"),
+                        help="independently pinned frozen policy and calibration scope")
     parser.add_argument("--execution-observation", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned execution observations for covered arms")
     parser.add_argument("--capture-root", type=Path,

@@ -1223,3 +1223,13 @@ exact completion enumeration and 63 controller tests passed, and
 three legacy report modes reproduce byte for byte. See
 `runs/m9-weighted-outcome-bounds.BRkj8K/OWNER.md`. The author still owns
 prospective weight choice, custody, protected outcomes and acceptance.
+
+The M8 pairing and coverage CLIs now accept a pinned portability
+declaration. It distinguishes unchanged transfer from an allowed
+recalibration of named parameters using only the second-family fit
+split. It checks exact reference and transfer arm policy declarations,
+declared mechanical changes and common transfer mechanics. The recovery
+of actual policy artifacts and verification of normalization and fit
+execution remain distinct. Fifty-three tests passed and both earlier
+capture reports reproduced byte for byte. See
+`runs/m8-policy-portability.Z70VMn/OWNER.md`.

@@ -13,6 +13,9 @@ SPLITS = ("development", "reference_calibration", "second_family_calibration", "
 IDENTITY_FIELDS = ("task_id", "replicate_id", "block_id")
 SCHEDULE_V1 = "replication_holdout_schedule_v1"
 SCHEDULE_V2 = "replication_holdout_schedule_v2"
+PORTABILITY = "replication_policy_portability_v1"
+PORTABILITY_ARMS = ("technique", "comparator")
+MECHANICS = ("chat_template", "token_accounting", "normalization")
 MATCH_FIELDS = (
     "task_input_sha256", "task_seed_sha256", "initial_state_sha256",
     "eligible_actions_sha256", "perturbation_sha256", "observability_sha256",
@@ -94,7 +97,73 @@ def _schedule(document, *, role, line, task_splits, snapshot=None):
     return result
 
 
-def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=None):
+def _identities(values, label):
+    _require(type(values) is list, f"expected a list of {label}")
+    unique = {_identifier(value) for value in values}
+    _require(len(unique) == len(values), f"duplicate {label}")
+    return unique
+
+
+def _policy(config):
+    _object(config, ("mechanical", "arms"), "replication policy")
+    mechanical = _object(config["mechanical"], MECHANICS, "mechanical policy")
+    for pin in mechanical.values():
+        _hex(pin, 64)
+    arms = _object(config["arms"], PORTABILITY_ARMS, "policy arms")
+    for arm in arms.values():
+        _object(arm, ("method_sha256", "parameters"), "policy arm")
+        _hex(arm["method_sha256"], 64)
+        _require(type(arm["parameters"]) is dict, "expected named frozen parameters")
+        for key, pin in arm["parameters"].items():
+            _identifier(key)
+            _hex(pin, 64)
+    return mechanical, arms
+
+
+def _portability(witness, *, line, pins, task_splits):
+    path, pin = witness
+    document = _metadata(Path(path), pin)
+    _object(document, ("schema", "line", "schedule_pins", "roles",
+                       "allowed_mechanical_changes", "calibration"), "policy portability witness")
+    _require(document["schema"] == PORTABILITY and document["line"] == line
+             and document["schedule_pins"] == pins, "portability witness does not bind the paired schedules")
+    roles = _object(document["roles"], ("reference", "unchanged", "recalibrated"), "policy roles")
+    ref_mechanics, ref_arms = _policy(roles["reference"])
+    transfer_mechanics, transfer_arms = _policy(roles["unchanged"])
+    recalibrated_mechanics, recalibrated_arms = _policy(roles["recalibrated"])
+    _require(ref_arms == transfer_arms, "unchanged transfer changed a frozen arm")
+    _require(transfer_mechanics == recalibrated_mechanics, "transfer runtime mechanics differ")
+    allowed_mechanics = _identities(document["allowed_mechanical_changes"], "mechanical change names")
+    _require(allowed_mechanics <= set(MECHANICS), "unknown mechanical change")
+    changes = {key for key in MECHANICS if ref_mechanics[key] != transfer_mechanics[key]}
+    _require(changes <= allowed_mechanics, "undeclared mechanical change")
+
+    fit = _object(document["calibration"], ("task_ids", "allowed_parameters", "procedure_sha256",
+                                           "allowance_sha256"), "calibration plan")
+    tasks = _identities(fit["task_ids"], "calibration task IDs")
+    _require(tasks and all(task_splits.get(task) == "second_family_calibration" for task in tasks),
+             "calibration tasks must belong to the second-family calibration split")
+    _hex(fit["procedure_sha256"], 64)
+    _hex(fit["allowance_sha256"], 64)
+    allowed = _object(fit["allowed_parameters"], PORTABILITY_ARMS, "recalibration parameters")
+    changed = {}
+    for arm in PORTABILITY_ARMS:
+        old, new = transfer_arms[arm], recalibrated_arms[arm]
+        _require(old["method_sha256"] == new["method_sha256"], "calibration changed a frozen method")
+        parameters = old["parameters"]
+        _require(parameters.keys() == new["parameters"].keys(), "calibration changed the frozen parameter roster")
+        eligible = _identities(allowed[arm], "allowed parameter names")
+        _require(eligible <= parameters.keys(), "calibration allowance names an unknown parameter")
+        differences = {key for key in parameters if parameters[key] != new["parameters"][key]}
+        _require(differences <= eligible, "calibration changed an unauthorized parameter")
+        changed[arm] = sorted(differences)
+    return {"evidence": "pinned_policy_declarations_only", "witness_sha256": pin,
+            "mechanical_changes": sorted(changes), "recalibrated_parameter_changes": changed,
+            "declared_second_family_calibration_tasks": len(tasks),
+            "runtime_policy_verified": False, "calibration_execution_verified": False}
+
+
+def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=None, policy_witness=None):
     """Compare pinned metadata. Each input is a (path, SHA-256) pair.
 
     Split group IDs represent the custodian's reviewed canonical groupings.
@@ -137,6 +206,8 @@ def verify(*, line, splits, unchanged, recalibrated, reference=None, inventory=N
     }
     if bindings is not None:
         result["scheduled_snapshot_binding"] = snapshots
+    if policy_witness is not None:
+        result["policy_portability"] = _portability(policy_witness, line=line, pins=pins, task_splits=task_splits)
     return result
 
 
@@ -147,6 +218,8 @@ def main():
         parser.add_argument(f"--{name}", nargs=2, metavar=("PATH", "SHA256"), required=name != "reference")
     parser.add_argument("--inventory", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned structural inventory for snapshot-bound schedules")
+    parser.add_argument("--policy-witness", nargs=2, metavar=("PATH", "SHA256"),
+                        help="independently pinned frozen policy and calibration scope")
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, ValueError) as error:
