@@ -1,6 +1,7 @@
 """Report outcome and resource coverage for matched replication schedules."""
 
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 
@@ -12,7 +13,9 @@ SCHEMA = "replication_pair_coverage_v1"
 LIMIT_SCHEMA = "replication_pair_limits_v1"
 CUMULATIVE_LIMIT_SCHEMA = "replication_cumulative_limits_v1"
 EXECUTION_SCHEMA = "replication_execution_observation_v1"
+POLICY_EXECUTION_SCHEMA = "replication_execution_observation_v2"
 TERMINAL_SCHEMA = "replication_terminal_capture_v1"
+POLICY_TERMINAL_SCHEMA = "replication_terminal_capture_v2"
 LOADER_SCHEMA = "replication_loader_capture_v1"
 ARMS = ("technique", "comparator")
 STATES = ("observed", "stopped", "void", "unavailable")
@@ -136,19 +139,28 @@ def _cumulative_limits(witness, line, pins, totals):
     return {"limits_sha256": witness[1], "line": line_limits, "by_role": role_limits}
 
 
-def _check_capture(root, event, record, line, coverage_pin, loaders, runs):
+def _check_capture(root, event, record, line, coverage_pin, loaders, runs, expected_input_policy):
     digest = event["observer_capture_sha256"]
     terminal = _json(_capture_bytes(root, "terminal", digest))
-    _object(terminal, ("schema", "line", "coverage_sha256", "assignment", "state", "usage", "reason",
-                       "run_id", "loader_sha256", "output_sha256"), "terminal capture")
+    fields = ("schema", "line", "coverage_sha256", "assignment", "state", "usage", "reason",
+              "run_id", "loader_sha256", "output_sha256")
+    schema = TERMINAL_SCHEMA
+    if expected_input_policy is not None:
+        fields += ("applied_input_policy",)
+        schema = POLICY_TERMINAL_SCHEMA
+    _object(terminal, fields, "terminal capture")
     assignment = {field: event[field] for field in ("task_id", "replicate_id", "role", "arm", "attempt_id")}
-    _require(terminal["schema"] == TERMINAL_SCHEMA and terminal["line"] == line
+    _require(terminal["schema"] == schema and terminal["line"] == line
              and terminal["coverage_sha256"] == coverage_pin and terminal["assignment"] == assignment
              and terminal["state"] == record["state"], "terminal capture differs from observed assignment")
     checked_usage = _object(terminal["usage"], RESOURCES, "terminal usage")
     _require(all(type(value) is type(record["usage"][field]) and value == record["usage"][field]
                  for field, value in checked_usage.items()), "captured usage differs from covered usage")
     observed = record["state"] == "observed"
+    captured_policy = terminal.get("applied_input_policy")
+    if expected_input_policy is not None:
+        _require((captured_policy is None and not observed) or captured_policy == expected_input_policy,
+                 "captured input or applied policy differs from scheduled assignment")
     reason = terminal["reason"]
     _require((reason is None) if observed else (type(reason) is str and bool(reason.strip())),
              "terminal reason must describe a stopped or void result")
@@ -173,15 +185,32 @@ def _check_capture(root, event, record, line, coverage_pin, loaders, runs):
                  "loader capture differs from the observed run or checkpoint")
     if output_pin is not None:
         _capture_bytes(root, "output", output_pin)
-    return output_pin is not None
+    return output_pin is not None, captured_policy is not None
 
 
-def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_root):
+def _configuration_pins(policy_witness):
+    """Identify the exact effective configuration in each scheduled role and arm."""
+    document = _metadata(Path(policy_witness[0]), policy_witness[1])
+    pins = {}
+    for role, config in document["roles"].items():
+        pins[role] = {}
+        for arm, arm_policy in config["arms"].items():
+            effective = {"role": role, "arm": arm, "mechanical": config["mechanical"], "arm_policy": arm_policy}
+            canonical = json.dumps(effective, sort_keys=True, separators=(",", ":")).encode()
+            pins[role][arm] = sha256(canonical).hexdigest()
+    return pins
+
+
+def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_root, schedule, policy_witness):
     bindings = paired.get("scheduled_snapshot_binding")
     _require(bindings is not None, "execution observation requires snapshot-bound schedules")
     document = _metadata(Path(witness[0]), witness[1])
-    _object(document, ("schema", "line", "schedule_pins", "coverage_sha256", "executions"), "execution observation")
-    _require(document["schema"] == EXECUTION_SCHEMA and document["line"] == paired["line"]
+    fields = ("schema", "line", "schedule_pins", "coverage_sha256", "executions")
+    policy_bound = document.get("schema") == POLICY_EXECUTION_SCHEMA
+    if policy_bound:
+        fields += ("policy_witness_sha256", "artifact_witness_sha256")
+    _object(document, fields, "execution observation")
+    _require(document["schema"] in (EXECUTION_SCHEMA, POLICY_EXECUTION_SCHEMA) and document["line"] == paired["line"]
              and document["schedule_pins"] == paired["manifest_sha256"]
              and document["coverage_sha256"] == coverage_pin, "execution observation refers to different coverage")
     _require(type(document["executions"]) is list, "invalid execution observations")
@@ -189,6 +218,16 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
     loaders, runs, outputs = {}, {}, 0
     root = None if capture_root is None else Path(capture_root).resolve(strict=True)
     _require(root is None or root.is_dir(), "capture root must be a directory")
+    policy_rows = {"observed": 0, "stopped_or_void": 0}
+    if policy_bound:
+        portability = paired.get("policy_portability", {})
+        custody = portability.get("artifact_custody")
+        _require(root is not None and custody is not None,
+                 "policy-bound observation requires exact artifact custody and capture bytes")
+        _require(document["policy_witness_sha256"] == portability["witness_sha256"]
+                 and document["artifact_witness_sha256"] == custody["artifact_witness_sha256"],
+                 "execution observation refers to different policy evidence")
+        policy_pins = _configuration_pins(policy_witness)
     counts = {role: {arm: {"observed": 0, "stopped": 0, "void": 0}
                      for arm in ARMS} for role in roles}
     for event in document["executions"]:
@@ -206,7 +245,16 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
                  "execution state differs from coverage or has no terminal")
         _require(event["snapshot"] == bindings[role], "observed checkpoint differs from scheduled snapshot")
         if root is not None:
-            outputs += _check_capture(root, event, rows[key][role][arm], paired["line"], coverage_pin, loaders, runs)
+            expected = None
+            if policy_bound:
+                _, task_input, *_ = schedule[key]
+                expected = {"policy_witness_sha256": document["policy_witness_sha256"],
+                            "configuration_sha256": policy_pins[role][arm],
+                            "task_input_sha256": task_input}
+            output, input_policy = _check_capture(root, event, rows[key][role][arm], paired["line"], coverage_pin,
+                                                  loaders, runs, expected)
+            outputs += output
+            policy_rows["observed" if state == "observed" else "stopped_or_void"] += input_policy
         seen.add(assignment)
         attempts.add(attempt)
         captures.add(capture)
@@ -225,6 +273,9 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
               "without_terminal_observation_by_state": missing, "native_execution_verified": False}
     if root is not None:
         result["checked_capture_bytes"] = {"terminals": len(seen), "loaders": len(loaders), "outputs": outputs}
+    if policy_bound:
+        result["input_policy_capture_rows"] = policy_rows
+        result["native_policy_application_verified"] = False
     return result
 
 
@@ -293,7 +344,7 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
         report["cumulative_limits"] = _cumulative_limits(cumulative_limits, line, pins, totals)
     if execution_observation is not None:
         report["execution_observation"] = _execution_observation(execution_observation, paired, coverage[1], rows,
-                                                                roles, capture_root)
+                                                                roles, capture_root, schedule, policy_witness)
     return report
 
 

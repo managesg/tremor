@@ -1241,3 +1241,11 @@ unscheduled holdout tasks. The scripted audit verified 13 policy
 artifacts, three prior inputs and three scheduled assignments. All 61
 focused tests passed. Runtime application and semantic leakage remain
 separate checks. See `runs/m8-policy-exact-artifacts.UE3JI0/OWNER.md`.
+
+The M8 V2 execution observation now binds raw terminal captures to the
+pinned policy and artifact witnesses and each exact role/arm and task
+input. Fifteen observed scripted completions matched. A stopped
+terminal can retain matching policy evidence without inventing a
+completed output. The 67-test suite preserved both earlier V1 reports
+byte for byte. Independent native custody and actual policy application
+remain open. See `runs/m8-execution-policy-join.wNXnq6/OWNER.md`.
