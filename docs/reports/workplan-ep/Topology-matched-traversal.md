@@ -98,3 +98,23 @@ The independent exposure recount and refusal evidence are in
 `runs/topology-exposure-current.GctymJ`. Protected acceptance
 still needs the frozen comparison, actual host delivery records,
 independent scoring custody and realized resource accounting.
+
+## Combining evidence from different workers
+
+A replay of the 432 public arms followed accepted work back to the
+prerequisite receipts delivered to each worker. It joined both baselines
+by fixture, resource ceiling and planned traversal. In 121 arms, an
+accepted task used another worker's evidence and the arm verified more
+tasks than both pooled own-access work and the fixed-share union. Of
+these arms, 56 had a task that directly used evidence from at least two
+other workers. Another 30 reached two other workers through a chain of
+prior work without such a direct combination.
+
+Another 88 arms beat only the fixed-share union and used no foreign
+evidence. For example, at 16 units the shared-access pooled condition
+completed `join` by giving worker `c` accepted `left` and `right` receipts
+from workers `a` and `b`. Neither baseline completed `join` in that block.
+Track these evidence paths alongside the two baseline differences in the
+held-out comparison. The public replay describes engineered dependencies
+and supplies no causal or held-out model estimate.
+[Reproduction and scope](../../../runs/m6-complementary-lineage.odFNO3/OWNER.md)
