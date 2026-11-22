@@ -5,7 +5,7 @@
 | Status | Milestone | Acceptance and next owner |
 | --- | --- | --- |
 | DONE | 1. Spark calibration | Guarded native Qwen run, exact removal, and audited settlement. R2 charged 0.023123 GPU-hours. [Local receipt](Spark-readiness.md#calibration-result-and-settlement) |
-| BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) |
+| BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) · [Current B4 replay](../../../runs/b4-current-checkout.6MX2SY/OWNER.md) |
 | IN PROGRESS | 3. CPU benchmark and first R3 slices | Local Coordinator routes quiet-host qualification and independent R1 review. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) |
 | IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
@@ -966,3 +966,19 @@ Author and independent review still need to freeze the held-out
 comparison, its outcome definition and actual resource accounting.
 [Local packaging evidence](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) ·
 [Local comparator evidence](../../../runs/m6-matched-baseline-witness.uLS8vH/COORDINATOR.md)
+
+## Current B4 source dependencies
+
+The retained FAKE archive still replays exactly. Fresh capture from
+the tracked source exposes a mismatch between the parent EP-1
+settlement and the reported stop. The existing spend source corrects
+it. The separate client source supplies the request-byte charge field
+required by the wire audit. With both in a disposable checkout, the
+fresh full and no-room cases reproduce the archived outcome fields.
+The 130 focused tests pass.
+
+The B4 tools and both source-owner changes need adoption and an exact
+source rerun. The Pilot 4 manifest still depends on the independently
+held historical archive, author wording, pricing coverage and the
+current named release. B4 loopback evidence leaves all those gates open.
+[Local source and runtime check](../../../runs/b4-current-checkout.6MX2SY/OWNER.md)
