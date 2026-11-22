@@ -121,6 +121,31 @@ class ControllerClusterAuditTests(unittest.TestCase):
         self.assertEqual(report["fully_observed_pair_clusters"], 1)
         self.assertEqual(report["clusters"][0]["complete_pairs"], 2)
 
+    def test_final_cleanup_failure_cannot_count_as_a_completed_pair(self):
+        combined = self.pair.rows[1]
+        usage_before_cleanup = sum(attempt["usage"]["cpu_wall_ns"] for attempt in combined["attempts"])
+        cleanup = self.pair.attempt(len(combined["attempts"]), "cleanup", cpu=7, status="failed")
+        combined["attempts"].append(cleanup)
+        for status in ("failed", "refused"):
+            with self.subTest(status=status):
+                cleanup["status"] = status
+                with self.assertRaisesRegex(ValueError, "completed arm requires successful final cleanup"):
+                    audit.verify(**self.freeze(), missing_outcome_bounds=True)
+
+        combined["terminal"] = "stopped"
+        stopped = audit.verify(**self.freeze(), missing_outcome_bounds=True)
+        self.assertIsNone(stopped["clusters"][0]["blocks"][0]["paired_delta"])
+        self.assertEqual(stopped["missing_outcome_bounds"]["by_cluster"][0]["missing_pairs"], 2)
+        stopped_arm = stopped["paired_audit"]["pairs"][0]["arms"][1]
+        self.assertEqual(stopped_arm["known_usage"]["cpu_wall_ns"], usage_before_cleanup + 7)
+
+        combined["terminal"] = "completed"
+        combined["attempts"].append(self.pair.attempt(len(combined["attempts"]), "cleanup", cpu=2))
+        observed = audit.verify(**self.freeze(), missing_outcome_bounds=True)
+        self.assertEqual(observed["clusters"][0]["blocks"][0]["paired_delta"], "1/6")
+        observed_arm = observed["paired_audit"]["pairs"][0]["arms"][1]
+        self.assertEqual(observed_arm["known_usage"]["cpu_wall_ns"], usage_before_cleanup + 9)
+
     def test_missing_outcome_bounds_preserve_known_other_arm_and_stopped_status(self):
         result = audit.verify(**self.freeze(), missing_outcome_bounds=True)
         cluster, = result["missing_outcome_bounds"]["by_cluster"]

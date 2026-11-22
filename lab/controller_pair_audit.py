@@ -131,6 +131,8 @@ def _outcome(block, arm, row, manifest, prior, witness=None):
         if witness is not None:
             base["completion_safeguard"] = _completion_safeguard("unavailable_noncompleted_arm")
         return {**base, "distinct_passing": None}
+    selection._require(not cleanup_started or row["attempts"][-1]["status"] == "completed",
+                       "completed arm requires successful final cleanup")
     selection._require(not unknown and not overruns, "completed arm has unaccounted usage or exceeded a cap")
     selection._require(any(attempt["role"] == "worker" and attempt["status"] == "completed"
                            for attempt in row["attempts"]),
