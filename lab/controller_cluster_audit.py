@@ -101,9 +101,11 @@ def _weight_diagnostics(clusters, bounds, weights, witness_pin):
 def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_witness, *,
            manifest_sha256, evidence_index_sha256, trace_sha256, witness_sha256, release_witness,
            prior_inventory=None, policy_witness=None, missing_outcome_bounds=False, charge_witness=None,
-           cohort_weight_witness=None, order_witness=None):
+           cohort_weight_witness=None, order_witness=None, attempt_meter_witness=None):
     """Retain each scheduled pair in its verified cluster, including stopped pairs."""
     selection._require(release_witness is not None, "cluster audit requires a V2 release witness")
+    selection._require(attempt_meter_witness is None or charge_witness is not None,
+                       "attempt meter witness requires an attempt charge join")
     freeze = {"manifest_sha256": manifest_sha256, "evidence_index_sha256": evidence_index_sha256}
     exposure = holdout.verify(
         bundle, manifest, evidence_index, task_inventory, exposure_witness, **freeze,
@@ -149,7 +151,9 @@ def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_wit
                 summaries, bounds["by_cluster"], weights, cohort_weight_witness[1],
             )
     if charge_witness is not None:
-        report["observed_charge_join"] = costs.reconcile(trace, trace_sha256, charge_witness)
+        report["observed_charge_join"] = costs.reconcile(
+            trace, trace_sha256, charge_witness, attempt_meter_witness=attempt_meter_witness,
+        )
     return report
 
 
@@ -169,6 +173,8 @@ def main():
                         help="bound the full cohort under an independently pinned cluster weight profile")
     parser.add_argument("--charge-witness", nargs=2, metavar=("PATH", "SHA256"),
                         help="join exact arm attempts to independently pinned cost and common-role artifacts")
+    parser.add_argument("--attempt-meter-witness", nargs=2, metavar=("PATH", "SHA256"),
+                        help="verify separately pinned meter-to-attempt identities")
     try:
         report = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:

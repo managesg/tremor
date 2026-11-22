@@ -1,4 +1,5 @@
 from copy import deepcopy
+from hashlib import sha256
 import json
 import subprocess
 import sys
@@ -220,6 +221,56 @@ class ControllerClusterAuditTests(unittest.TestCase):
         ):
             with self.subTest(expected=expected), self.assertRaisesRegex(ValueError, expected):
                 audit.verify(**inputs, charge_witness=self.cost_witness(inputs, modify=modify))
+
+    def test_independent_meter_refuses_swaps_between_equal_usage_attempts(self):
+        inputs = self.freeze()
+        fixture = self.pair.fixture
+        charge = self.cost_witness(inputs)
+        charge_document = json.loads(fixture.bundle.joinpath("charge-witness.json").read_bytes())
+        assignment = json.loads((fixture.bundle / "cost-assignment.json").read_bytes())["rows"]
+        tape = json.loads(inputs["trace"].read_bytes())
+        attempts = {(row["block_id"], row["arm"], attempt["sequence"]): attempt
+                    for row in tape["arms"] for attempt in row["attempts"]}
+        rows = []
+        for row in assignment:
+            key = (row["block_id"], row["arm"], row["sequence"])
+            exact = json.dumps(attempts[key], sort_keys=True, separators=(",", ":")).encode()
+            rows.append(row | {"attempt_sha256": sha256(exact).hexdigest()})
+        path = fixture.root / "attempt-meter.json"
+        meter = {"schema": "controller_attempt_meter_observation_v1", "trace_sha256": inputs["trace_sha256"],
+                 "charge_index_sha256": charge_document["charge_index"]["sha256"], "rows": rows}
+        pin = fixture.write(path, meter)
+
+        command = [
+            sys.executable, "-B", "-m", "lab.controller_cluster_audit",
+            *(str(inputs[key]) for key in (
+                "bundle", "manifest", "evidence_index", "trace", "task_inventory", "exposure_witness"
+            )),
+            *(piece for field in ("manifest", "evidence_index", "trace", "witness")
+              for piece in (f"--{field.replace('_', '-')}-sha256", inputs[f"{field}_sha256"])),
+            "--release-witness", *(str(value) for value in inputs["release_witness"]),
+            "--charge-witness", *map(str, charge), "--attempt-meter-witness", str(path), pin,
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=True, timeout=10)
+        confirmed = json.loads(result.stdout)["observed_charge_join"]
+        self.assertEqual(confirmed["attempt_meter_observations"], {"witness_sha256": pin, "matched_charges": 10})
+        self.assertFalse(confirmed["native_metering_verified"])
+        self.assertEqual(confirmed["unknown_attempt_charge_ids"], ["attempt-charge-9"])
+
+        def swap(rows, charges, _roles):
+            self.assertEqual(charges[0]["usage"], charges[1]["usage"])
+            rows[0]["charge_id"], rows[1]["charge_id"] = rows[1]["charge_id"], rows[0]["charge_id"]
+
+        crossed = self.cost_witness(inputs, modify=swap)
+        legacy = audit.verify(**inputs, charge_witness=crossed)["observed_charge_join"]
+        self.assertEqual(legacy["common_and_arm_costs"], confirmed["common_and_arm_costs"])
+        with self.assertRaisesRegex(ValueError, "meter observation differs from assigned attempt"):
+            audit.verify(**inputs, charge_witness=crossed, attempt_meter_witness=(path, pin))
+
+    def test_attempt_meter_requires_a_charge_join(self):
+        inputs = self.freeze()
+        with self.assertRaisesRegex(ValueError, "attempt meter witness requires an attempt charge join"):
+            audit.verify(**inputs, attempt_meter_witness=(inputs["trace"], inputs["trace_sha256"]))
 
     def test_policy_witness_preserves_an_all_disabled_cluster_as_diagnostic(self):
         common, references = self.pair.policy_files(combined={}, plain={})

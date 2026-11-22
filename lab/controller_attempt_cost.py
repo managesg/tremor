@@ -1,5 +1,7 @@
 """Reconcile verified controller attempts with independently pinned charges."""
 
+from hashlib import sha256
+import json
 from pathlib import Path
 
 from lab import controller_common_cost as common
@@ -9,9 +11,35 @@ from lab import controller_selection as selection
 
 WITNESS_SCHEMA = "controller_attempt_charge_witness_v1"
 ASSIGNMENT_SCHEMA = "public_controller_attempt_charges_v1"
+METER_SCHEMA = "controller_attempt_meter_observation_v1"
 
 
-def reconcile(trace, trace_pin, witness):
+def _attempt_sha(attempt):
+    body = json.dumps(attempt, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    return sha256(body).hexdigest()
+
+
+def _meter_observations(witness, trace_pin, charge_index_pin):
+    path, pin = witness
+    document = selection._pinned_json(path, pin)
+    selection._object(document, ("schema", "trace_sha256", "charge_index_sha256", "rows"), "attempt meter witness")
+    selection._require(document["schema"] == METER_SCHEMA and document["trace_sha256"] == trace_pin
+                       and document["charge_index_sha256"] == charge_index_pin and type(document["rows"]) is list,
+                       "attempt meter witness does not bind the pinned trace and charge index")
+    by_charge = {}
+    for row in document["rows"]:
+        selection._object(row, ("charge_id", "block_id", "arm", "sequence", "attempt_sha256"), "attempt meter row")
+        identifier = selection._text(row["charge_id"], "meter charge ID")
+        block = selection._text(row["block_id"], "meter block ID")
+        arm = selection._text(row["arm"], "meter arm")
+        sequence = row["sequence"]
+        selection._require(identifier not in by_charge and arm in pairs.ARMS and type(sequence) is int and sequence >= 0,
+                           "invalid or duplicate attempt meter row")
+        by_charge[identifier] = (block, arm, sequence, selection._digest(row["attempt_sha256"]))
+    return by_charge
+
+
+def reconcile(trace, trace_pin, witness, *, attempt_meter_witness=None):
     """Join a replayed trace to cost artifacts. The caller first verifies the pair."""
     witness_path, witness_pin = witness
     root = Path(witness_path).resolve(strict=True).parent
@@ -36,6 +64,10 @@ def reconcile(trace, trace_pin, witness):
     receipts = {row["id"]: row for row in index["receipts"]}
     placement = selection._pinned_json(paths["placement"], pins["placement"])["charges_by_scope"]
     arm_charges = {identifier for role in pairs.ARMS for identifier in placement[role]}
+    meter = None
+    if attempt_meter_witness is not None:
+        meter = _meter_observations(attempt_meter_witness, trace_pin, pins["charge_index"])
+        selection._require(meter.keys() == arm_charges, "attempt meter coverage differs from placed arm charges")
     seen_attempts, seen_charges, unknown = set(), set(), []
     for link in assignment["rows"]:
         selection._object(link, ("block_id", "arm", "sequence", "charge_id"), "attempt charge row")
@@ -52,13 +84,20 @@ def reconcile(trace, trace_pin, witness):
         selection._require(receipt["scope"] == arm and receipt["role"] == attempt["role"]
                            and receipt["prior_settlement_sha256"] is None and receipt["usage"] == attempt["usage"],
                            "attempt charge scope, role, settlement or exact usage differs")
+        if meter is not None:
+            selection._require(meter[charge] == (*key, _attempt_sha(attempt)),
+                               "meter observation differs from assigned attempt")
         seen_attempts.add(key)
         seen_charges.add(charge)
         if receipt["usage"] is None:
             unknown.append(charge)
     selection._require(seen_attempts == attempts.keys() and seen_charges == arm_charges,
                        "incomplete attempt mapping or extra arm charge")
-    return {"evidence": "scripted_controller_attempt_charge_join", "trace_sha256": trace_pin,
+    report = {"evidence": "scripted_controller_attempt_charge_join", "trace_sha256": trace_pin,
             "charge_witness_sha256": witness_pin, "matched_attempts": len(seen_attempts),
             "unknown_attempt_charge_ids": sorted(unknown), "common_and_arm_costs": totals,
             "native_metering_verified": False}
+    if meter is not None:
+        report["attempt_meter_observations"] = {"witness_sha256": attempt_meter_witness[1],
+                                                "matched_charges": len(meter)}
+    return report
