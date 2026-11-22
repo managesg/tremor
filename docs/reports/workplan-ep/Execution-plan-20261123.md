@@ -1960,3 +1960,17 @@ The eleven-patch candidate passed 63 tests and 14 offline browser
 views, and retained both report bytes and the explainer. The
 illustration qualifier remains small in standalone mobile display.
 Authenticated or published rendering still needs separate evidence.
+
+## M3 exact R1 lab coverage
+
+The [archived test roster](../../../runs/r1-source-roster.JgJ9uv/OWNER.md)
+linked all 785 package cases in each retained run to exact source test
+definitions. The exact candidate also contained 106 lab test files
+outside that recorded package roster. The [supplementary lab replay](../../../runs/r1-exact-lab-suite.BYjGfc/OWNER.md)
+reconstructed the 351 pinned source files and exercised that lab suite.
+It reported 553 passes and one skip. The skipped case then passed on
+the same reconstruction using two named Qwen manifest files without
+reading weights. Source coverage now includes the synthetic loader
+and QGrid differential checks. This separate CPU run supplies no
+quiet-host qualification, corrected-source nomination, protected N2
+custody or formal bench verdict.
