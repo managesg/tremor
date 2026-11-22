@@ -240,3 +240,35 @@ This result supports the public predicate review for candidate nomination.
 Protected N2 still needs its independently sealed rule and carrier
 evidence. The nomination, quiet-host qualification, and full-bench
 verdict remain pending.
+
+## Provisional custody-corrected candidate
+
+An independent reviewer found that the previous candidate accepted
+a caller-supplied claim that changed a refused action's public norm
+verdict while leaving its Board prefix unchanged. A private successor
+applies the reviewed prefix-custody fix. Its 351-file manifest is
+`e972484a4db7c24f75058bf904c273545a4a4684a6dcc370caed2de44b1726de`.
+Only the grader and its regression test differ from the previous
+patched cut. An independent replay confirmed that this version
+rejects the substituted claim and preserves all six public cases.
+
+The focused grader suite passed seven tests. One isolated full CPU
+run exited zero on the corrected cut. It reported 785 tests and one
+Torch-dependent skip, with the same ordered test identities as the
+previous cut. The test runner reported 225.815 seconds. The retained
+attachment and cleanup window was 230.508 seconds. Exact container
+absence was checked after exit and the source manifest was rechecked.
+
+The 48 host samples showed a minimum of 56,813,968 KiB available
+memory, load between 2.20 and 2.82, and median sampled CPU idle of
+89.704%. The device had no GPU attached to the test container.
+These measurements support independent qualification. The Coordinator
+still owns candidate nomination and quiet-host qualification. If this
+first run qualifies, two more qualifying full runs remain on the
+corrected cut. Protected N2 and the independent bench verdict remain
+open.
+
+```bash
+sha256sum -c runs/r1-n2-corrected-candidate.i5ACbL/evidence.sha256
+python3 -B runs/r1-n2-corrected-candidate.i5ACbL/result.py | cmp - runs/r1-n2-corrected-candidate.i5ACbL/report.json
+```
