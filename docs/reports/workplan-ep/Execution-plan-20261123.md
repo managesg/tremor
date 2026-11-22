@@ -1773,3 +1773,17 @@ failed five other subtests. The public L1, L3 and L7 controls reproduced
 byte for byte. This evidence is for a detached source cut. The Coordinator
 nomination, source owner adoption, qualified windows, protected N2 and
 formal bench verdict remain open.
+
+## M3 settlement and Spark allocation limits
+
+The [detached R3 follow-up](../../../runs/r3-policy-bound-settlement.anD2RU/OWNER.md)
+requires the reviewed November 20 program ceiling of 70 GPU-hours and
+an opening balance no greater than the shared 7.5 GPU-hour allocation.
+The previous verifier accepted internally consistent repinned examples
+at 100 and 12 GPU-hours respectively. The updated verifier rejects both
+and retains a separate T7 input to reserve arithmetic.
+
+`bash runs/r3-policy-bound-settlement.anD2RU/verify.sh` exited zero with
+21 bound and typed tests and byte-exact historical R2 readback. This is
+source and fixture evidence. The current ledger head, T7 hold, protected
+admission and actual R3 measurements still need independent evidence.
