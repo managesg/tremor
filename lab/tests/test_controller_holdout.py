@@ -30,7 +30,7 @@ class ControllerHoldoutTests(unittest.TestCase):
             }]} for role in holdout.PRIOR_ROLES
         }
 
-    def verify(self, *, witness_adjustment=None):
+    def verify(self, *, witness_adjustment=None, reviewed_prior=None):
         f = self.fixture
         tasks = f.bundle / "tasks.json"
         task_pin = f.write(tasks, {"blocks": self.blocks})
@@ -41,8 +41,17 @@ class ControllerHoldoutTests(unittest.TestCase):
                   "task_inventory_sha256": task_pin, "prior": self.prior, "holdout": self.rows}
         record.update(witness_adjustment or {})
         witness_pin = f.write(witness, record)
+        prior_inventory = None
+        if reviewed_prior is not None:
+            prior_path = f.root / "prior-inventory.json"
+            prior_inventory = (prior_path, f.write(prior_path, {
+                "schema": holdout.PRIOR_INVENTORY,
+                "manifest_sha256": manifest_pin,
+                "roles": reviewed_prior,
+            }))
         return holdout.verify(f.bundle, manifest, index, tasks, witness, manifest_sha256=manifest_pin,
-                              evidence_index_sha256=index_pin, witness_sha256=witness_pin)
+                              evidence_index_sha256=index_pin, witness_sha256=witness_pin,
+                              prior_inventory=prior_inventory)
 
     def test_clean_and_disrupted_repeats_preserve_one_cluster(self):
         report = self.verify()
@@ -122,3 +131,14 @@ class ControllerHoldoutTests(unittest.TestCase):
         receipt = json.loads((self.fixture.bundle / "L1-test-receipt.json").read_bytes())
         self.prior["L1"]["source_sha256"] = receipt["artifacts"]["data"]["sha256"]
         self.assertEqual(self.verify()["heldout_blocks"], 2)
+
+    def test_same_prior_source_pin_cannot_substitute_members_with_reviewed_inventory(self):
+        reviewed = copy.deepcopy(self.prior)
+        before = self.verify(reviewed_prior=reviewed)
+        self.assertIn("prior_inventory_sha256", before)
+        development = self.prior["development"]
+        development["members"][0]["prompt_sha256"] = holdout._task_prompts(alloc.gen(81))
+        self.assertEqual(development["source_sha256"], reviewed["development"]["source_sha256"])
+        self.assertEqual(self.verify()["heldout_clusters"], before["heldout_clusters"])
+        with self.assertRaisesRegex(ValueError, "member inventory differs"):
+            self.verify(reviewed_prior=reviewed)

@@ -9,6 +9,7 @@ from lab import controller_selection as selection
 
 
 SCHEMA = "controller_holdout_exposure_v1"
+PRIOR_INVENTORY = "controller_prior_inventory_v1"
 PRIOR_ROLES = ("development", "calibration", "controller_tuning", "baseline_tuning")
 GROUP_FIELDS = ("family", "lineage", "seed_group")
 MEMBER_FIELDS = (*GROUP_FIELDS, "prompt_sha256")
@@ -96,7 +97,7 @@ def _holdout_rows(blocks, rows, family, prior):
 
 
 def verify(bundle, manifest, evidence_index, task_inventory, witness, *, manifest_sha256, evidence_index_sha256,
-           witness_sha256):
+           witness_sha256, prior_inventory=None):
     """Validate scope, coverage, and partition consistency at the supplied custody pin."""
     root = Path(bundle).resolve(strict=True)
     selected = selection.verify(root, manifest, evidence_index, manifest_sha256=manifest_sha256,
@@ -110,9 +111,19 @@ def verify(bundle, manifest, evidence_index, task_inventory, witness, *, manifes
                       "independent exposure witness")
     selection._require(custody["schema"] == SCHEMA and custody["manifest_sha256"] == manifest_sha256
                        and custody["task_inventory_sha256"] == task_pin, "exposure witness binds a different freeze")
+    prior_pin = None
+    if prior_inventory is not None:
+        prior_path, prior_pin = prior_inventory
+        independent = selection._pinned_json(prior_path, prior_pin)
+        selection._object(independent, ("schema", "manifest_sha256", "roles"), "prior inventory")
+        selection._require(independent["schema"] == PRIOR_INVENTORY
+                           and independent["manifest_sha256"] == manifest_sha256,
+                           "prior inventory refers to a different freeze")
+        selection._require(independent["roles"] == custody["prior"],
+                           "prior source or member inventory differs from the independent record")
     prior = _prior_data(root, document, selected, custody["prior"])
     clusters = _holdout_rows(inventory["blocks"], custody["holdout"], document["scope"]["task_family"], prior)
-    return {
+    report = {
         "evidence": "prospective_exposure_metadata",
         "manifest_sha256": manifest_sha256,
         "task_inventory_sha256": task_pin,
@@ -121,6 +132,9 @@ def verify(bundle, manifest, evidence_index, task_inventory, witness, *, manifes
         "heldout_clusters": clusters,
         "scientific_acceptance": False,
     }
+    if prior_pin is not None:
+        report["prior_inventory_sha256"] = prior_pin
+    return report
 
 
 def main():
@@ -129,6 +143,7 @@ def main():
         parser.add_argument(name, type=Path)
     for name in ("manifest", "evidence-index", "witness"):
         parser.add_argument(f"--{name}-sha256", required=True)
+    parser.add_argument("--prior-inventory", nargs=2, metavar=("PATH", "SHA256"))
     try:
         report = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:

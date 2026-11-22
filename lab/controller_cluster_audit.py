@@ -10,13 +10,13 @@ from lab import controller_selection as selection
 
 
 def verify(bundle, manifest, evidence_index, trace, task_inventory, exposure_witness, *,
-           manifest_sha256, evidence_index_sha256, trace_sha256, witness_sha256, release_witness):
+           manifest_sha256, evidence_index_sha256, trace_sha256, witness_sha256, release_witness, prior_inventory=None):
     """Retain each scheduled pair in its verified cluster, including stopped pairs."""
     selection._require(release_witness is not None, "cluster audit requires a V2 release witness")
     freeze = {"manifest_sha256": manifest_sha256, "evidence_index_sha256": evidence_index_sha256}
     exposure = holdout.verify(
         bundle, manifest, evidence_index, task_inventory, exposure_witness, **freeze,
-        witness_sha256=witness_sha256,
+        witness_sha256=witness_sha256, prior_inventory=prior_inventory,
     )
     outcomes = pairs.verify(
         bundle, manifest, evidence_index, trace, **freeze, trace_sha256=trace_sha256,
@@ -51,6 +51,7 @@ def main():
     for name in ("manifest", "evidence-index", "trace", "witness"):
         parser.add_argument(f"--{name}-sha256", required=True)
     parser.add_argument("--release-witness", nargs=2, metavar=("PATH", "SHA256"), required=True)
+    parser.add_argument("--prior-inventory", nargs=2, metavar=("PATH", "SHA256"))
     try:
         report = verify(**vars(parser.parse_args()))
     except (KeyError, OSError, TypeError, ValueError) as error:
