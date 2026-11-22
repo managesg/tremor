@@ -1178,3 +1178,14 @@ were refused with unchanged evidence bytes. Both normal retry-cap cases
 remain exact. See `runs/m2-driver-custody-stop.5S54It/OWNER.md` for the
 reproducer and patch. Driver adoption and persistent ledger custody remain
 owner dependencies.
+
+## Earlier-pilot findings and release provenance
+
+The exact Pilot 1 and Pilot 2 local archives reconcile 88 charges and
+11 episode records each. Pilot 1 classified five 300-token generation
+stops as truncated, with no retained block types. Pilot 2 recorded 23
+malformed turns. The 22 invalid-JSON replies and one oversized reply
+all had leading text before a final JSON array. The design notes now
+give the reconciled count and distinguish the 260-call cap from the
+88 calls made. A detached release patch links the aggregate receipt
+from the README. See `runs/m10-early-pilot-provenance.l7RSWZ/OWNER.md`.

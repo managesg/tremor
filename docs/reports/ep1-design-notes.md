@@ -666,9 +666,9 @@ verified: 36bab4b (plus working tree) 2026-11-20
 
 ## 2f. Pilot 2 malformed-reply fix (pre-freeze change 19)
 
-**Stop reason:** 22 of 88 calls malformed (25%) — 21 `not_json`/`extra_text`/`multiple_values` plus 1 `oversize`. With thinking off, Haiku 5.5 emits prose reasoning before the JSON array. The strict parser rejects anything that is not exactly one JSON array.
+**Stop reason (reconciled against the retained archive):** 23 of 88 calls were recorded as malformed (26.1%), comprising 22 `not_json` and one `oversize`. Each retained malformed reply had leading text before a final JSON array. All 88 replies ended with `end_turn` and the recorded content blocks were text. The strict parser rejected leading text outside the JSON array. See `runs/m10-early-pilot-provenance.l7RSWZ/report.json` for the aggregate replay.
 
-**Arm distribution (exploratory, n=11 episodes):** `states_check` 10, `play` 6, `keyword_stuffed` 3, `none` 2, `code` 1. Prose differs by card (`states_check` most), but the fix is arm-neutral: it changes the parser, not the prompt.
+**Arm distribution (exploratory, n=11 episodes):** `states_check` 10, `play` 6, `keyword_stuffed` 3, `none` 3, `code` 1. Prose differs by card (`states_check` most), but the fix is arm-neutral: it changes the parser, not the prompt.
 
 **Considered and rejected:**
 - **Assistant prefill (`[`):** Haiku 5.5 returns HTTP 400 on any prefill even with `thinking: disabled`. Official docs do not qualify this by thinking mode; the restriction applies to the model family. Not viable.
@@ -679,7 +679,7 @@ verified: 36bab4b (plus working tree) 2026-11-20
 
 **Implementation:** `team_claude.parse` → find last `raw_decode` yielding a list; verify trailing is only whitespace; return that list. `extra_text_bytes` recorded per turn for audit.
 
-**Pilot 2 order observations (exploratory only):** `per_agent` showed 0 duplicates in 3 `none` episodes (pilot 1 had 2); `shared` showed 1. Per-arm counts too small (n=1 per cell) to infer. The change-18 order rule **cannot be evaluated from pilot 2** — it stopped at 260 calls (11 episodes) before completing 6 task sets per order. Pilot 3 must show: 6 task sets per order (3 `none` episodes each), room/duplicate/instrument-gap pass/fail per the rule in 13.16b.
+**Pilot 2 order observations (exploratory only):** `per_agent` showed 0 duplicates in 3 `none` episodes (pilot 1 had 2); `shared` showed 1. Per-arm counts too small (n=1 per cell) to infer. The change-18 order rule **cannot be evaluated from pilot 2** — it stopped after 88 calls (11 episodes) under a 260-call cap, before completing the planned task sets. Pilot 3 must show: 6 task sets per order (3 `none` episodes each), room/duplicate/instrument-gap pass/fail per the rule in 13.16b.
 
 **Pilot 3 specification (same both-orders design):**
 - New batch `pilot3` sibling of `ep1` in `spend.BATCH_SPECS` (not inside `ep1`).
