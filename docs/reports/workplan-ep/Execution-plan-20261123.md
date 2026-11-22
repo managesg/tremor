@@ -1496,3 +1496,26 @@ settlement and L8-D open.
 The isolated lab suite retained all 442 case IDs and added three scoped
 norm witness tests. All 445 passed.
 [Integrated archive](../../../runs/m5-norm-integration.CMVIor/OWNER.md)
+
+## M9 reused settlements and M10 historical T7 activity
+
+The M9 shared and clustered cost verifiers accept an independent witness
+for reused charges. Each charge binds to exact settlement bytes, typed
+usage and a distinct ledger/entry identity. A charge under a new alias
+cannot reuse the same entry even when the containing file has a new
+digest. Different entries from the same settlement remain valid. The
+archived accounting reports reproduce. Native ledger authenticity and
+whole-program settlement remain open.
+[Prior settlement evidence](../../../runs/m9-reused-settlement.ICKpFx/OWNER.md)
+
+The T7 monitor replay verified 126 arm-name sightings in three
+clock-only streaks. The latest aligns with the retained timed power
+record if they share the same date and clock. The name sightings
+do not bind exact container instances or their terminal cleanup.
+Historical billable occupancy remains unavailable and the existing
+4.0 GPU-hour hold remains in the planning balance.
+[Monitor evidence](../../../runs/t7-monitor-clock-sightings.vof1t2/OWNER.md)
+
+The integrated archive retained all 445 previous cases and passed
+three added prior-settlement tests, 448 total.
+[Integrated evidence](../../../runs/m9-settlement-integration.06PlZF/OWNER.md)
