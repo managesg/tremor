@@ -2057,3 +2057,38 @@ The [existing storage handoff](../../../runs/smol-mount-custody.p7a4zR/coordinat
 still requires the storage operator to return two disjoint backing
 paths with custody from preflight through cleanup. The exact ledger
 placement and one-use native admission remain separate.
+
+## M2 both drafts through the exact offline driver and review intake
+
+The [two-draft driver replay](../../../runs/m2-both-wordings-driver.DoiRDn/OWNER.md)
+uses the detached request-custody, response-shape and reservation
+assembly. Both draft request sequences matched their independent
+preflight digests. Each ran a complete and a cap-stop mock, all at
+260 attempts. The two crossing cases refused ordinal 261 before
+transport. Archived replies and metered usage remain fixture inputs.
+
+The [exact review intake](../../../runs/m2-draft-criterion7-join.MMJzru/OWNER.md)
+joins all four driver outputs to the earlier materialized preflight
+and the scoped criterion 7 verifier. Crossed streams from two valid
+drafts are refused. The cap-stop cases retain one missing reply
+artifact each. No draft was selected, and real reviewer, Console,
+pricing and release decisions remain pending.
+
+## M8 executable scoring and M9 same-run public process receipts
+
+The [M8 public scorer bridge](../../../runs/m8-l2c-executable-coverage.FA4RQp/OWNER.md)
+runs the pinned L2-C scorer and passes nine exact grade receipts
+through the replication CLI, with one separate stopped terminal.
+An altered measurement retaining the same denominator passes identity
+checks and fails the deterministic regrade. Eighteen tests passed.
+The same four public Board outputs are reused across synthetic roles.
+Actual model costs, label custody and family outcomes remain unavailable.
+
+The [M9 local process pair](../../../runs/m9-public-process.dWPzTi/OWNER.md)
+runs the same public training-partition SQL policy in two bounded local
+children. Independent scoring gave 40/40 in each arm and a paired
+difference of zero. The parent waited for both exact process instances
+and checked their teardown against the retained arm receipts. The
+offline replay and three crossed-evidence controls passed. A held-out
+active controller, native resource accounting and shared-state
+reset remain unverified.
