@@ -1159,3 +1159,11 @@ identities. The cap-stop case agrees on all 240 prompt identities and
 structured messages, exact serialized bytes and per-attempt IDs. See
 `runs/m2-prompt-wire-custody.AlVBRt/OWNER.md`. Actual Pilot 4 review and
 Console reconciliation remain unavailable.
+
+The detached request-custody candidate exercises the stock retry path with
+260 private pre-transport intents per scenario and no intent for the
+cap-refused 261st attempt. An intent is a prepared request, and a failed
+capture stops transport while retaining the reservation. Seven focused
+tests and two full replays verified the candidate. The driver owner still
+needs to adopt and independently verify mandatory capture for the exact
+pilot configuration. See `runs/m2-prepost-candidate.sRKW0e/OWNER.md`.
