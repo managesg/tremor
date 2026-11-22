@@ -24,6 +24,10 @@ checkpoint, report each unmet acceptance criterion.
 
 ## Wednesday overnight continuation
 
+The [13:38 UTC Coordinator acknowledgement](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1338Z-through-3111.md)
+extends Table A through Spark outbox line 3111. It records routing and
+scope. It leaves the existing execution approvals and source nomination open.
+
 The [11:55 UTC Coordinator successor](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1155Z.md)
 covers Table A fingerprints through Spark outbox line 2875, extending
 the [04:47 UTC extract](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122.md).
@@ -2732,3 +2736,34 @@ checks each round's handoff and planning prefix and reconciles the completed
 handoff count. It keeps genuine cap stops and both traversal policies
 valid. All 40 tests and four archived report comparisons passed. Frozen
 held-out assignments and measured outcomes remain independent criteria.
+
+## Combined L7 authority and L8-D row-order replay
+
+The [integrated source packet](../../../runs/tremor-authority-token-integration.mqusYk/OWNER.md)
+starts from the pinned 670-file backend and applies the exact L7 authority
+patch. It retains all 572 baseline cases and adds six L7 cases, for 578
+passing lab tests. Four archived L7 outputs reproduce. The external L8-D
+row-order verifier uses the combined runtime module and reproduces the
+positive case and five refusal controls. The separate raw source manifest
+pins the 671-file closure. Source adoption, held-out and native proof stay open.
+
+## M6 indexed rule receipts and M9 stock dispatch
+
+The [M6 supplemental index](../../../runs/m6-rule-custody-indexed-replay.hk7u4f/OWNER.md)
+binds the historical raw log flagged at Table A line 3061 and the output of
+a fresh exact replay. It exits 0 and reproduces the archived bytes.
+
+The [M9 integrated subprocess rehearsal](../../../runs/m9-durable-stock-dispatch.F4qs2n/OWNER.md)
+drives the unchanged stock all-disabled child from the durable reservation
+gate in both arms. Each arm sends exactly one dispatch after reservation and
+observes one decision-only refusal. An exact duplicate launches no child.
+All 24 admitted and refused transcript files match the archived stock bytes.
+Real enabled-controller outcome, actual resource accounting and adoption remain open.
+
+## M10 exact ordered release intake
+
+The [release-owner preflight](../../../runs/m10-ordered-release-preflight.ss65l8/OWNER.md)
+rebuilds the exact fourteen patches from the clean base, verifies the twelve-
+and thirteen-patch preimages and matches all 50 final files. This tests the
+complete ordered chain that includes the corrected Pilot 1 language and
+thesis fallback. The release owner still owns adoption and deployed proof.
