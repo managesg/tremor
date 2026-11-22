@@ -2419,3 +2419,17 @@ pairs and withholds the ratio. The author still needs to select the
 prospective endpoint and inference rules before real outcomes are
 read. Actual training, checkpoint settlement and held-out custody
 remain separate.
+
+
+## M9 configured decision observed in a public process
+
+The [toy subprocess replay](../../../runs/m9-toy-active-process.TBUCuM/OWNER.md)
+uses one worker implementation, identical input bytes and a single
+dispatch allowance. The parent verifies the observed policy digest
+and route before sending the dispatch, and verifies the child's result
+against the exact sent frame. Plain and active toy configurations take
+different routes. A swapped configuration and a child that ignores
+the correct configuration both stop before dispatch. All four
+archived and fresh results match. This tests the runtime evidence
+path with no real controller component enabled. Component eligibility,
+the frozen baseline, held-out results and measured costs remain open.
