@@ -2300,3 +2300,16 @@ earlier archive reproduced exactly. Phase references bind supplied
 bytes without authenticating their capture. The storage owner and
 reviewer still need actual stable paths and custody through cleanup.
 The candidate adds no admission or runtime control.
+
+
+## M2 installed capture writer lifecycle
+
+The [package rehearsal](../../../runs/m2-installed-capture-lifecycle.rQ15if/OWNER.md)
+installs the reviewed capture writer into the exact reconstructed
+package. Previously an inactive writer could reach a relative file
+open with no directory descriptor. The detached guard refuses before
+that open both before entry and after exit. Normal synthetic capture
+retains mode-0700 separate sinks, exact mode-0600 initial and retry
+bytes, and exclusive writes. Import creates no files. Pilot 4
+registration, native contexts under an approved custody root,
+prospective wording, pricing and release remain with their owners.
