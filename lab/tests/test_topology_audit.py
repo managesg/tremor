@@ -1,13 +1,34 @@
 from collections import Counter
+from fractions import Fraction
 import hashlib
 import json
 import unittest
+from unittest.mock import patch
 
+from lab.quantum import topology_audit, topology_transfer
 from lab.quantum.topology_audit import audit
 from lab.quantum.topology_transfer import compare
+from lab.quantum.transfer_fixtures import Fixture, Stage
 
 
 class TopologyAuditTests(unittest.TestCase):
+    def test_solver_with_local_partial_marks_still_requires_all_shards(self):
+        fixture = Fixture("complementary", (Stage(
+            "join", 3, 1, Fraction(1), (("a", (0,)), ("b", (1,))), ("a", "b"),
+        ),))
+        with patch.object(topology_transfer, "development_fixture", return_value=fixture), \
+                patch.object(topology_audit, "development_fixture", return_value=fixture):
+            trace = compare((("complementary", 0),))
+            cells = audit(json.dumps(trace).encode())["cases"][0]["cells"]
+            shared = next(row for row in cells if (row["mode"], row["access"]) == ("independent", "shared"))
+            self.assertEqual(shared["stage_union"], ["join"])
+            arm = next(row for row in trace["cases"][0]["arms"]
+                       if (row["mode"], row["evidence_access"]) == ("independent", "shared"))
+            work = next(row for row in arm["trace"] if row["kind"] == "work" and row["task"] == "join")
+            work["inputs"].pop()
+            with self.assertRaisesRegex(ValueError, "bad work receipt inputs"):
+                audit(json.dumps(trace).encode())
+
     def test_serialized_full_grid_and_external_digest(self):
         raw = json.dumps(compare()).encode()
         report = audit(raw, expected_sha256=hashlib.sha256(raw).hexdigest())

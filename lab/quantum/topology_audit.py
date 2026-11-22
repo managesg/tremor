@@ -260,9 +260,13 @@ def audit(raw, *, expected_sha256=None):
         seen.add((regime, seed))
         fixture = development_fixture(regime, seed)
         stages = {stage.name: stage for stage in fixture.stages}
-        shards = {f"shard/{stage.name}/{source}": (source, sorted(marks))
-                  for stage in fixture.stages for source, marks in stage.marks
-                  if any(solver not in dict(stage.marks) for solver in stage.solvers)}
+        shards = {}
+        for stage in fixture.stages:
+            all_marks = {index for _, marks in stage.marks for index in marks}
+            source_marks = {source: set(marks) for source, marks in stage.marks}
+            if any(source_marks.get(solver) != all_marks for solver in stage.solvers):
+                shards.update({f"shard/{stage.name}/{source}": (source, sorted(marks))
+                               for source, marks in stage.marks})
         arms = {(arm["mode"], arm["evidence_access"]): arm for arm in case["arms"]}
         _check(len(case["arms"]) == len(arms) and arms.keys() == set(product(MODES, ACCESS))
                and len({arm["budget"] for arm in arms.values()}) == 1, "incomplete or unmatched comparison grid")
