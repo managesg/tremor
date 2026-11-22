@@ -103,6 +103,23 @@ class L4ERecoveryWitnessTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "mismatched recovery history"):
             self.verify()
 
+    def test_frozen_hold_must_fit_the_observation_window(self):
+        self.hold = self.plan["horizon_nights"] + 1
+        self.plan["recovery_hold_nights"] = self.hold
+        for row, history in zip(self.rows, self.history, strict=True):
+            history["samples"] = [{"night": night, "predicate": True} for night in range(self.hold)]
+            row["recovery"].update(state="recovered", confirmation_night=self.hold - 1)
+        report = self.verify()
+        self.assertEqual([history["confirmation_night"] for history in report["recovery_witness"]["histories"]],
+                         [self.hold - 1, self.hold - 1])
+
+        self.hold += 1
+        self.plan["recovery_hold_nights"] = self.hold
+        for row in self.rows:
+            row["recovery"].update(state="right_censored", confirmation_night=None)
+        with self.assertRaisesRegex(ValueError, "invalid frozen recovery hold"):
+            self.verify()
+
     def test_new_schema_cannot_skip_history(self):
         plan, observed, options = self.inputs()
         del options["recovery_witness"]

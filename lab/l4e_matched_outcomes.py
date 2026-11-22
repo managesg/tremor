@@ -125,7 +125,6 @@ def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, re
     _object(plan, (*fields, "recovery_hold_nights") if witnessed else fields, "L4-E matched outcome plan")
     _require(witnessed == (recovery_witness is not None), "frozen recovery plan and recovery witness are both required")
     hold = plan.get("recovery_hold_nights")
-    _require(not witnessed or (type(hold) is int and hold >= 1), "invalid frozen recovery hold")
     records = _object(_metadata(Path(observations_path), observations_sha256), ("schema", *PINS, "plan_sha256", "rows"),
                       "L4-E matched observations")
     horizon = plan["horizon_nights"]
@@ -133,6 +132,8 @@ def verify(plan_path, observations_path, *, plan_sha256, observations_sha256, re
              and plan["scope"] == "scripted_development" and records["plan_sha256"] == plan_sha256
              and type(horizon) is int and horizon > 0,
              "wrong L4-E plan, observation schema or recovery horizon")
+    # The elapsed-night grid includes both night 0 and the horizon.
+    _require(not witnessed or (type(hold) is int and 1 <= hold <= horizon + 1), "invalid frozen recovery hold")
     _require(all(records[field] == _hex(plan[field], 64) for field in PINS), "scorer or L4-E receipt differs")
     _require(type(plan["pairs"]) is list and plan["pairs"] and type(records["rows"]) is list,
              "expected L4-E matched pair and observation inventories")
