@@ -35,14 +35,23 @@ agreed, and 2,396 logs met the scorer's validity predicate. The receipt
 describes which properties Lean checked.
 [Scorer receipt replay](../../../runs/wednesday-integrated-closures.apKpbl/OWNER.md)
 
-**Current detached release and source.** The eight-patch local candidate
-passed 54 tests, including 26 coordination tests. It resolved 36 local
-references across eight pages and passed 12 offline browser views. A
-clean archive of the current research commit and its pinned fixture
-sources passed 460 lab tests. These checks cover local source and browser
-rendering. Publication and signed-in rendering remain open.
-[Release candidate](../../../runs/m6-public-frontier.mffLw1/OWNER.md) ·
-[Clean portfolio replay](../../../runs/portfolio-wednesday-current.Qez5in/OWNER.md)
+**Current detached release.** The nine-patch local candidate over
+staging commit `a99cddd` passed 60 tests, including 32 coordination tests.
+It resolved 36 local references across eight pages and passed 12 offline
+browser views. The 432-arm result reproduced byte for byte and the
+explainer still decodes to 377 frames over 60 seconds. Published rendering
+and release approval remain open.
+[Release candidate](../../../runs/m6-public-arithmetic-domain.AZVeDW/OWNER.md)
+
+**Research source integration.** The earlier archive at `08808a1`
+with its overlays passed 460 lab tests. The later source replay adds
+the M3 settlement and monitor-readout patches, M5 event-time parity,
+and the M9 terminal cleanup check at `ff0287d`. It passed 512 lab
+tests and 34 focused package tests. The M5 and R1 reports and historical
+R2 receipt reproduced exactly. Native and authenticated acceptance
+require separate evidence.
+[Earlier portfolio replay](../../../runs/portfolio-wednesday-current.Qez5in/OWNER.md) ·
+[Current source integration](../../../runs/m3-m5-source-integration.vMYmXV/OWNER.md)
 
 **Native calibration.** The short Qwen run established that the narrow
 local execution envelope could complete and release its reservation.
@@ -74,7 +83,15 @@ qualification and the formal bench verdict are pending. The observed
 L5 interruption retains six wire requests, one validated
 acknowledgment, two cleanup observations and 94 unstarted positions.
 The second acknowledgment and paired comparison remain unavailable.
-[R1 suite series](R1-corrected-candidate-suite-series-20261122.md)
+The R1 readout now preserves measured phi when a near-zero denominator
+makes Kish unavailable. It passed 23 focused tests and a separate check
+of 4,096 binary monitor tables. The detached R3 receipt check rejects
+repinned limits of 100 program hours or 12 shared hours. The historical
+R2 output reproduced exactly. The current ledger balance and actual
+R3 settlement remain open.
+[R1 suite series](R1-corrected-candidate-suite-series-20261122.md) ·
+[Strict JSON readout](../../../runs/r1-kish-wire.65UPjg/OWNER.md) ·
+[R3 allocation check](../../../runs/r3-policy-bound-settlement.anD2RU/OWNER.md)
 
 **Public L7 and L8-B.** The five L7 layouts observed all 48 work
 opportunities per layout under a common 193-unit cap. Flat and
@@ -85,6 +102,16 @@ arm-by-layer cases with 51,200 full bytes and a 10,240-byte selected
 decision-token row per case. The archived Qwen run confirms the
 tensor dimensions. Native activation bytes and held-out outcomes
 remain unavailable.
+
+**Public L4-E lineage.** The verifier reassembled the trainer plan,
+replayed the same eligible content at four cutoffs, and joined two
+evaluation records across six declared adapter visits and five
+declared context visits. Results matched the retained timeline bytes.
+The verifier refused an otherwise valid report from the wrong history,
+a stale source version, and an altered grade. Visit counts differ
+by design. Actual training, independent protected custody, and native
+activation capture still await evidence.
+[Event-time parity](../../../runs/m5-event-time-parity.IdIlGZ/OWNER.md)
 
 **Non-model development baseline.** On one SQLite training sequence,
 a primary-key guess scored 0/40. A deterministic rule inferred the
@@ -104,10 +131,19 @@ At exactly the same cost as both baselines, 25 arms in 12 blocks gained
 tasks. Those realized-cost subgroups are descriptive.
 [Runnable coordination comparison](../../../runs/m6-public-frontier.mffLw1/OWNER.md)
 
+In the separate public subprocess replay, a complete fixed-lead child
+returned six work receipts and three verified tasks at 25 synthetic
+cost units. A stopped independent child retained one response and three
+known synthetic cost units. Complete cost and task union are unavailable
+for that cell. The other six cells retain their archived data.
+[Local child replay](../../../runs/m6-computed-public-work.UdtQq1/OWNER.md)
+
 The combined-controller fixture produced a single scripted delta of 1/6
-and retained an unavailable delta on the interrupted pair. With a
-single complete scripted pair, a paired uncertainty interval remains
-unavailable. The Grover public fixture's exact stage unions first match at
+and retained an unavailable delta on the interrupted pair. The verifier
+now rejects a completed arm after a failed or refused final cleanup.
+A stopped arm retains the cleanup cost and a missing outcome, and a
+successful retry retains both cleanup charges. With one complete
+scripted pair, a paired uncertainty interval remains unavailable. The Grover public fixture's exact stage unions first match at
 27 abstract scripted cost units. Across 1,024 public arm-by-cap
 views, 317 matched the full-cap stage union while budget-stopped.
 Three completed arms in the separate release roster recorded one
@@ -140,9 +176,18 @@ scientific intervals. The full acceptance scope remains in the
 
 ## Reproduction
 
-Run the current local portfolio replay from the Murmuration root. It
-rebuilds the source and release, rechecks the archived R2, API and T7
-receipts, and writes the verified findings and resource values as JSON.
+Run the latest source and release checks from the Murmuration root.
+The release command creates its two supplied directories and uses
+offline local files for browser verification.
+
+```bash
+bash runs/m3-m5-source-integration.vMYmXV/verify.sh
+bash runs/m6-public-arithmetic-domain.AZVeDW/verify.sh /absolute/new-release-root /absolute/new-browser-root
+```
+
+The earlier combined portfolio replay reconstructs its pinned source and
+release, rechecks archived R2, API and T7 receipts, and writes findings
+and resource values as JSON.
 
 ```bash
 bash runs/portfolio-wednesday-current.Qez5in/verify.sh /absolute/new-output-directory
