@@ -1850,3 +1850,24 @@ R3 receipts cannot stand in for controller-arm cleanup, even with
 valid content hashes. Five custody and 73 controller tests passed.
 Actual controller execution, shared-state reset and native resource
 settlement remain outstanding.
+
+## M7 structure custody and M8 executable public scorer
+
+The [M7 structure check](../../../runs/m7-structural-novelty.3kiUPz/OWNER.md)
+keeps the exact schedule fingerprint and separately compares the
+prerequisite forest. Reordering independent stages cannot count an
+equivalent block as novel or fill a second quota slot. A distinct
+prerequisite remains eligible when its branch tallies match. The
+60-test detached replay, 19 tracked custody tests and independent
+384-forest check passed. Both archived reports matched exactly. Local
+source is `5f502f1`. Protected inventory and authority are still pending.
+
+The [M8 public L2-C regrade](../../../runs/m8-public-l2c-regrade.aoIVQ1/OWNER.md)
+replays the existing frozen scorer on eight scripted Board tapes and
+refuses two freshly pinned invalid truth files. Each reference state
+contains six valid and two invalid opportunities. The one-check direct
+relay rejects both invalid notes and admits all valid notes in this
+fixture. The four-check policy also rejects both invalid notes and
+refuses two valid notes in the unavailable reference state. The
+previous M8 scoring-artifact example uses opaque fixture bytes. These
+replayed L2-C results supply no family-transfer or protected estimates.
