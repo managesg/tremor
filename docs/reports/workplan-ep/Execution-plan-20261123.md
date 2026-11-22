@@ -86,8 +86,16 @@ repackaged tensors can now be checked with the optional
 across shard layouts and verifies the tensor-to-shard index. The
 synthetic comparison covered repacking, a changed byte, missing or
 misplaced index entries and original file digest enforcement. This
-checks exact named payloads. Family qualification and actual model
-comparison remain open. See `runs/m8-repacked-weights.8UkG5l`.
+checks exact named payloads. See `runs/m8-repacked-weights.8UkG5l`.
+
+The read-only exact comparison also passed on the staged Qwen3.5-4B
+and SmolLM3-3B snapshots. The independently checked configs and indexes
+account for 738 and 326 named tensors, with distinct signatures. The
+two manifests accounted for 15,510,454,018 bytes. The verifier took
+33.46 seconds and recorded a peak process RSS of 18,816 KiB. This
+provisional-registry receipt verifies the stored payloads. Family
+qualification, native CUDA smoke and held-out replication remain open.
+See `runs/m8-staged-named-tensors.c8MFcF`.
 
 ## R3 and L4-E to L8-D receipt checks
 
