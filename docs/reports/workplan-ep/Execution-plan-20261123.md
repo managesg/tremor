@@ -1449,3 +1449,29 @@ frame and context digests and reaped the child cleanly. Model token use
 and cost remain unavailable. This observed replay is separate from the
 original archived execution and protected trial.
 [Fresh OS-pipe replay](../../../runs/m6-scored-child-pipe.EsiI6Y/OWNER.md)
+
+## M4 operating-point and selection checks
+
+The L3 verifier recomputes the fit rate from its exact reported count and
+distinct fit-clean roster and derives the held-out rate from the paired
+clean table. A coherent off-target report withholds catch gain. The L7
+selector counts only distinct, nonblank task IDs. Exact archived L3 and
+all seven L7 reports reproduce, while eight newly tested invalid inputs
+passed the previous verifiers. These checks cover the public
+instruments. Independent statistical and native review remain open.
+[Focused tests and replay](../../../runs/m4-l3-l7-acceptance.zmDP15/OWNER.md)
+
+## M6 stopped child transport
+
+A bounded public replay sent both planned prefix frames, validated the
+second and stopped before its acknowledgment. The original task work
+for the first acknowledged frame was replayed from the archive. The
+scoring verifier kept three scripted prefix units and withheld the
+affected own-access comparison, complete cost and verified union.
+The original shared-access comparison still reproduces. Model tokens
+and costs remain unavailable.
+[Observed prefix replay](../../../runs/m6-observed-stop-join.hStRmn/OWNER.md)
+
+The integrated archive retained all 436 previous lab cases and added
+six L3 and L7 regressions. All 442 tests passed.
+[Integration replay](../../../runs/m4-acceptance-integration.91EuW9/OWNER.md)
