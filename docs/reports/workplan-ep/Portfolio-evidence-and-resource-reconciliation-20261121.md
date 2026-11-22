@@ -35,13 +35,16 @@ agreed, and 2,396 logs met the scorer's validity predicate. The receipt
 describes which properties Lean checked.
 [Scorer receipt replay](../../../runs/wednesday-integrated-closures.apKpbl/OWNER.md)
 
-**Current detached release.** The nine-patch local candidate over
-staging commit `a99cddd` passed 60 tests, including 32 coordination tests.
-It resolved 36 local references across eight pages and passed 12 offline
-browser views. The 432-arm result reproduced byte for byte and the
-explainer still decodes to 377 frames over 60 seconds. Published rendering
+**Current detached release.** The eleven-patch local candidate over
+staging commit `a99cddd` passed 63 tests, including 35 coordination
+tests. It resolved 36 local references across eight pages and passed
+14 offline browser views. The README showed both coordination findings
+and the matched-access link at actual widths of 500 and 1280 pixels.
+Both coordination outputs reproduced byte for byte. The unchanged
+explainer decodes to 377 frames over 60 seconds. Its illustrative
+qualifier is small in the standalone mobile view. Published rendering
 and release approval remain open.
-[Release candidate](../../../runs/m6-public-arithmetic-domain.AZVeDW/OWNER.md)
+[Release candidate](../../../runs/m10-public-coordination-scope.iIc2K3/OWNER.md)
 
 **Research source integration.** The earlier archive at `08808a1`
 with its overlays passed 460 lab tests. The later source replay adds
@@ -54,7 +57,12 @@ adds the M8 scoring-artifact paths. It passed 519 lab and 34 focused
 package tests and reproduced both M8 output formats.
 [Supplemental source replay](../../../runs/m8-m9-integrated-source.VAGts4/OWNER.md)
 [Earlier portfolio replay](../../../runs/portfolio-wednesday-current.Qez5in/OWNER.md) ·
-[Current source integration](../../../runs/m3-m5-source-integration.vMYmXV/OWNER.md)
+[Prior source integration](../../../runs/m3-m5-source-integration.vMYmXV/OWNER.md)
+
+The next integrated cut at `74fbd84` adds Grover custody and L3
+calibration feasibility. It passed 525 lab and 34 focused package
+tests and preserved the pinned M7, M8, M5, R1, and R2 outputs.
+[Current source integration](../../../runs/m4-m9-integrated-source.ysfER0/OWNER.md)
 
 **Native calibration.** The short Qwen run established that the narrow
 local execution envelope could complete and release its reservation.
@@ -115,6 +123,14 @@ a stale source version, and an altered grade. Visit counts differ
 by design. Actual training, independent protected custody, and native
 activation capture still await evidence.
 [Event-time parity](../../../runs/m5-event-time-parity.IdIlGZ/OWNER.md)
+
+The L8-D public loader check binds the ordered checkpoint stages to
+named tensor bytes. It rejected a freshly repinned before/after
+swap and correctly reported zero changed tensors for distinct
+packages carrying identical tensors. The 27 tests passed and the
+earlier runtime reports reproduced exactly. Native installation
+and observed hook execution remain open.
+[Installation evidence](../../../runs/m5-l8-installed-state.Ouxw2i/OWNER.md)
 
 **Second-family scoring inputs.** The optional witness verifies exact
 scorer, truth and opportunity bytes for every scheduled assignment,

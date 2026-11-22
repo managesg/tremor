@@ -1942,3 +1942,21 @@ verifies the whole panel, while crossed splits and repinned label
 changes fail. The scorer source is a separate owner-controlled adoption
 dependency. Protected observations and native scientific acceptance
 remain open.
+
+## M5 byte-exact installed checkpoint stages and M10 release briefing
+
+The [L8-D stage join](../../../runs/m5-l8-installed-state.Ouxw2i/OWNER.md)
+binds the frozen before/after checkpoints to separately pinned loader
+receipts and recomputed tensor inventory hashes. The public fixture
+checks one tensor per stage and rejects a freshly repinned swap.
+Distinct packages with identical tensor bytes report no change.
+Local `9562cdf` passed 27 focused tests. Both older outputs stayed
+byte-identical. Native installation and matched hook capture remain open.
+
+The [local release README](../../../runs/m10-public-coordination-scope.iIc2K3/OWNER.md)
+now presents the shared-evidence gains alongside the same-access
+authority comparison and links directly to the detailed replay.
+The eleven-patch candidate passed 63 tests and 14 offline browser
+views, and retained both report bytes and the explainer. The
+illustration qualifier remains small in standalone mobile display.
+Authenticated or published rendering still needs separate evidence.
