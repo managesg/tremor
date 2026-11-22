@@ -1609,3 +1609,17 @@ missing GPU observation leave contrast counts of one, zero and zero.
 Grade-only output is byte-identical. All 72 replication checks and 449
 integrated checks passed. Native evidence and cumulative compliance
 remain separate. [Local evidence](../../../runs/m8-budgeted-grade-coverage.YLM02l/OWNER.md)
+
+## M6 common arithmetic domain
+
+The default topology policies and fixed-share baseline must receive
+the same exact integer observations. A public one-task control showed
+the topology policies credited Boolean and float observations rejected
+by the fixed-share baseline. The owner candidate checks the arithmetic
+domain before comparing policies and rejects observations for undeclared
+tasks. Explicit custom protocols retain their own domains.
+
+All 48 focused tests passed. Matched traversal, fixed-share and Grover
+archives reproduced byte for byte. The patch targets the current pinned
+owner copy. Owner adoption and held-out comparison remain open.
+[Local candidate](../../../runs/m6-matched-arithmetic-domain.V6iU7g/OWNER.md)
