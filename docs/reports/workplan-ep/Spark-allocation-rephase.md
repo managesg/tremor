@@ -120,3 +120,16 @@ admission, protected staging, CUDA duration, and cleanup remain open.
 
 Verify the retained measurements and exact source references with
 `sha256sum -c runs/smollm3-two-pass-leadin.vAJvJ9/evidence.sha256`.
+
+The staged tensor headers and shard index account for 326 BF16 tensors
+with 3,075,098,624 stored elements and 6,150,197,248 payload bytes.
+Representing those stored elements once in FP32 would use
+12,300,394,496 bytes. These are serialization figures. Loader
+temporaries, cache and allocator overhead are runtime quantities
+that the header audit leaves unmeasured. The stock headroom check
+and independent launch review still apply.
+
+```bash
+sha256sum -c runs/smollm3-tensor-storage.X2qEiK/evidence.sha256
+python3 -B runs/smollm3-tensor-storage.X2qEiK/verify_storage.py | cmp - runs/smollm3-tensor-storage.X2qEiK/report.json
+```
