@@ -1,7 +1,7 @@
 # TREMOR coordinator blockers
 
-November 22, 2026 UTC. **1 of 10 milestones accepted.** The deadline is
-November 23 at 09:00 UTC. R2 calibration is accepted. Pilot 4 and Grover
+November 22, 2026 UTC. **1 of 10 milestones accepted.** The current
+checkpoint is Wednesday morning, November 25. R2 calibration is accepted. Pilot 4 and Grover
 transfer remain blocked. The seven other milestones have completed local
 work and outstanding acceptance dependencies.
 

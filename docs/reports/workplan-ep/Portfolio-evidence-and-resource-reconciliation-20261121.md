@@ -1,10 +1,10 @@
 # TREMOR Spark evidence and resource reconciliation
 
-November 22, 2026, 01:01 UTC · **1 of 10 milestones accepted.** This internal
+November 22, 2026 · **1 of 10 milestones accepted.** This internal
 checkpoint records which acceptance criteria the available evidence
 supports and what the assigned owners still need to supply. The
 [execution plan](Execution-plan-20261123.md) retains the full scope and
-Monday, November 23, 09:00 UTC checkpoint.
+Wednesday morning, November 25 checkpoint.
 
 ## Acceptance register
 
@@ -17,11 +17,17 @@ Monday, November 23, 09:00 UTC checkpoint.
 | 5. L4-E to L8-D | **In progress.** The Qwen projection probe distinguished factors loaded at zero scale from nonzero application. The public trainer preflight binds ordered adapter and context visits. Actual training and checkpoint settlement remain open. | Trainer and reviewer settle the actual before/after checkpoints against the context control. L8-D author freezes the held-out probe afterward and the custodian verifies actual loading and capture. [Lineage](L4-L8-adapter-lineage.md) |
 | 6. Coordination | **In progress.** Matched public traversal covers 54 blocks and 432 arms. Realized reads differed in 72 of 108 groups even with matched planned traversal. The two-round public fixture joins 48 scripted deliveries to work and independent grading across eight cells. | Author and custodian freeze authority by access, common tasks and independent union. Outcome and resource reviewers verify protected matched results and realized costs. [Traversal](Topology-matched-traversal.md) |
 | 7. Grover transfer | **Blocked.** Independent integer replay agreed with the transfer scorer at 645 trace points and 11 exact threshold decisions. At the stopped public cap, the observed capped difference and possible completed-pair difference answer different questions. | After EP-1, author freezes the protected design, custodian and reviewer establish independent inventory and scorer custody, and the operator runs the admitted matched transfer with settlement. [Custody](Grover-holdout-custody-checklist.md) |
-| 8. Second-family replication | **In progress.** SmolLM3 loaded and ran the public CPU probe. Two read-only preflights each rehashed 6.17 GB of staged model data and worker files in 12.045 seconds combined. A synthetic admission binds the stock recipe before mock claim/create. Live CUDA remains untested. | Family and loader reviewer clears the designated model. Resource and admission reviewers record the exact reserve and launch pin. Custodian and author freeze disjoint tuning and paired protected L1–L3 transfer and recalibration against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Matched design](Second-model-replication-design.md) |
+| 8. Second-family replication | **In progress.** SmolLM3 ran the public CPU probe. The read-only scan verified 15.51 GB across Qwen3.5-4B and SmolLM3-3B using exact manifest and tensor identities. Public L1–L3 schedules bind those identities. An independent review replayed the scripted observation join. | Family and loader reviewer clears the designated model. Resource and admission reviewers record the exact reserve and launch pin. Custodian and author freeze disjoint tuning and paired protected L1–L3 transfer and recalibration. Independent observed loader, outcome and charge receipts remain required. [Smoke](SmolLM3-native-smoke-packet.md) · [Staged scan](../../../runs/m8-staged-named-tensors.c8MFcF/OWNER.md) · [Observation join](../../../runs/m8-observed-declaration-join.skuPSU/OWNER.md) |
 | 9. Combined controller | **In progress.** Scripted replay has one complete pair with delta 1/6 and a stopped pair with unavailable delta. The updated auditor refuses duplicate schedule aliases and excess calls. The detached cost join accounts for 15 attempts and retains one unknown usage receipt. The same-policy SQLite development check scored 40/40 in both arms. | Integration author and claims reviewer freeze supported components, safeguards and baseline. Verify admitted held-out pairs and complete cost and settlement evidence. [Design](Combined-controller-design.md) |
 | 10. Internal research report | **In progress.** The internal draft below records the accepted calibration, the Pilot 3 outcome and the observed limits of the public controls. Separate source and evidence paths support rechecking. | Claims reviewer reproduces eligible outcomes and their uncertainty. Resource owner reconciles provider and GPU records, supports the final cost attribution, and resolves or explicitly retains the historical T7 hold. |
 
 ## Results the current evidence supports
+
+**Staged research explainer.** The checked-in 960 × 540 GIF decoded
+all 377 distinct frames and runs for 60 seconds. Its rendered Pilot 3
+chart matched the 263-token bar and 150-token threshold. This confirms
+the local release asset. Published rendering and release approval remain
+open. [Animation replay](../../../runs/m10-animation-and-resources.qOMrQD/OWNER.md)
 
 **Native calibration.** The short Qwen run established that the narrow
 local execution envelope could complete and release its reservation.
@@ -101,7 +107,7 @@ scientific intervals. The full acceptance scope remains in the
 | --- | --- | --- |
 | R2 native GPU | 0.100000 hours reserved, 0.023123 charged, 0.076877 released | No outstanding hold on this admission. The historical receipt reproduced byte for byte. |
 | T7 historical GPU | 2.405372 retained generation hours across three completed arms and two disjoint probes. The reported completed-container subtotal is 8,655 seconds. | Full attempted work remains estimated, including failed and diagnostic intervals. Retain the provisional 4.0-hour program hold. |
-| Program planning balance | 65.976877 GPU-hours after the settled R2 charge and provisional T7 hold. The R2/R3 share retains 7.476877 and the L1–L8 nominal ceilings total 49. | The residual is 9.5 hours shared by additional work. The proposed 0.1-hour SmolLM3 placement would leave 9.4 hours there. It has no binding reservation. |
+| Program planning balance | The retained reconciliation shows 65.976877 GPU-hours after the settled R2 charge and provisional T7 hold. The R2/R3 share is 7.476877 and the L1–L8 nominal ceilings total 49. | The plan assigns the remaining 9.5 hours to additional work. A proposed 0.1-hour SmolLM3 placement would leave 9.4 hours in that row. A resource owner still needs to reconcile current availability and issue a binding reservation. |
 | Hosted API | Four local ledger files contain 417 unique reservations and 417 charges. Reported gross local spend is USD 0.0413027. | The stored decimal sum is USD 0.041302700000000000620 because charge rows retain floating-point digits. Provider Console total remains unknown. Pilot 4 has no local ledger or run directory. |
 
 [GPU settlement and placement](Spark-allocation-rephase.md) · [T7 source](../T7-smoke.md) · [API pricing and current gates](Pilot4-pricing-verification-gates.md)
@@ -124,6 +130,12 @@ against the exact retained receipts.
 ```bash
 bash runs/tremor-workplan-reconcile.9pWmmW/replay-prior.sh
 ```
+
+The exact archived API receipt can also be regenerated from the four
+local ledgers with `bash runs/portfolio-api-nested.x81FKM/verify.sh`.
+The replay retains unavailable Provider Console and current budget-room
+fields. The earlier allocation timing arithmetic uses its historical
+Monday cutoff. The current Wednesday goal uses a separate checkpoint.
 
 The verifier restores the report and execution plan from the original
 local commit and rechecks their pinned sources. A separate 21-receipt
