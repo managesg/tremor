@@ -1883,3 +1883,16 @@ three other policies across 324 equal-cap comparisons. The release
 owner patch preserves the original report bytes, passed 63 release
 tests and rendered the new table and replay command in two offline
 browser sizes. Held-out native authority effects remain unmeasured.
+
+## M7 through M9 in the clean source closure
+
+`bash runs/m7-m9-integrated-source.lXYtCo/verify.sh` exited zero with
+522 lab and 34 focused package tests. The reconstructed cut includes
+the tracked M7 custody, M8 scoring artifact and M9 terminal cleanup
+changes at `5f502f1` with the earlier pinned overlays. The integrated
+source reproduced both M7 custody reports, both M8 scoring reports,
+the M5 results, R1 public controls and R2 receipt. The independent
+M7 oracle agreed across 384 prerequisite forests. Protected execution,
+resource settlement and line-level acceptance retain their own evidence
+requirements.
+[Integration replay](../../../runs/m7-m9-integrated-source.lXYtCo/OWNER.md)
