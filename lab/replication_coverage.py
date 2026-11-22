@@ -205,7 +205,21 @@ def _configuration_pins(policy_witness):
     return pins
 
 
-def _grade_receipts(witness, line, execution_pin, root, expected, roles):
+def _graded_contrasts(complete_pairs, planned):
+    contrasts = {}
+    for left, right in (("reference", "unchanged"), ("reference", "recalibrated"), ("unchanged", "recalibrated")):
+        label = f"{left}_vs_{right}"
+        if left not in complete_pairs or right not in complete_pairs:
+            contrasts[label] = {"scheduled_assignments": None, "matched_graded_assignments": None,
+                                "reason": "missing_reference_schedule"}
+        else:
+            matched = complete_pairs[left] & complete_pairs[right]
+            contrasts[label] = {"scheduled_assignments": len(planned), "matched_graded_assignments": len(matched),
+                                "reason": None}
+    return contrasts
+
+
+def _grade_receipts(witness, line, execution_pin, root, expected, roles, schedule):
     path, pin = witness
     document = _metadata(Path(path), pin)
     _object(document, ("schema", "line", "execution_observation_sha256", "grades"), "grading witness")
@@ -243,10 +257,13 @@ def _grade_receipts(witness, line, execution_pin, root, expected, roles):
         counts[state] += 1
         seen.add(attempt)
     _require(seen == expected.keys(), "grading receipts must match each observed attempt once")
-    complete_pairs = dict.fromkeys(roles, 0)
-    for (role, _, _), arms in scored_arms.items():
-        complete_pairs[role] += len(arms) == len(ARMS)
-    return {"grading_witness_sha256": pin, "states": counts, "complete_graded_pairs_by_role": complete_pairs,
+    complete_pairs = {role: set() for role in roles}
+    for (role, task, replicate), arms in scored_arms.items():
+        if len(arms) == len(ARMS):
+            complete_pairs[role].add((task, replicate))
+    return {"grading_witness_sha256": pin, "states": counts,
+            "complete_graded_pairs_by_role": {role: len(keys) for role, keys in complete_pairs.items()},
+            "graded_contrast_coverage": _graded_contrasts(complete_pairs, schedule),
             "scorer_execution_verified": False}
 
 
@@ -334,7 +351,9 @@ def _execution_observation(witness, paired, coverage_pin, rows, roles, capture_r
         result["input_policy_capture_rows"] = policy_rows
         result["native_policy_application_verified"] = False
     if grade_witness is not None:
-        result["grading_receipts"] = _grade_receipts(grade_witness, paired["line"], witness[1], root, grade_inputs, roles)
+        result["grading_receipts"] = _grade_receipts(
+            grade_witness, paired["line"], witness[1], root, grade_inputs, roles, schedule,
+        )
     return result
 
 

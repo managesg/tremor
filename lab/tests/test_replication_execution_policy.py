@@ -138,7 +138,7 @@ class ReplicationExecutionPolicyTests(unittest.TestCase):
         self.assertEqual(output["input_policy_capture_rows"]["observed"], 15)
         self.assertFalse(output["native_policy_application_verified"])
 
-    def grading_fixture(self):
+    def grading_fixture(self, *, recalibrated_gap=("case-a", "r1")):
         execution = self.pin()
         observations = json.loads(execution[0].read_bytes())["executions"]
         rows = {(row["task_id"], row["replicate_id"]): row
@@ -159,8 +159,12 @@ class ReplicationExecutionPolicyTests(unittest.TestCase):
             score_pin = sha256(score).hexdigest()
             (folder / score_pin).write_bytes(score)
             grades.append({**binding, "state": "scored", "reason": None, "score_sha256": score_pin})
-        for row, state in zip(grades[:2], ("invalid", "unavailable"), strict=True):
-            row.update(state=state, reason=f"scripted {state} disposition", score_sha256=None)
+        grades[0].update(state="invalid", reason="scripted invalid disposition", score_sha256=None)
+        gap = next(row for row in grades if (
+            row["assignment"]["role"], row["assignment"]["arm"], row["assignment"]["task_id"],
+            row["assignment"]["replicate_id"],
+        ) == ("recalibrated", "technique", *recalibrated_gap))
+        gap.update(state="unavailable", reason="scripted unavailable disposition", score_sha256=None)
         return execution, {"schema": audit.GRADE_SCHEMA, "line": self.inputs["line"],
                            "execution_observation_sha256": execution[1], "grades": grades}
 
@@ -213,3 +217,28 @@ class ReplicationExecutionPolicyTests(unittest.TestCase):
         crossed_score["grades"][-1]["score_sha256"] = crossed_score["grades"][-2]["score_sha256"]
         with self.assertRaisesRegex(ValueError, "score capture differs from the grading receipt"):
             verify(crossed_score)
+
+    def test_contrast_coverage_uses_same_assignments_despite_equal_role_counts(self):
+        execution, declaration = self.grading_fixture(recalibrated_gap=("case-b", "r1"))
+        witness = self.policy.fixture._pin("grading", json.dumps(declaration))
+        report = audit.verify(**self.inputs, execution_observation=execution, grade_witness=witness)
+        grades = report["execution_observation"]["grading_receipts"]
+        self.assertEqual(grades["complete_graded_pairs_by_role"],
+                         {"reference": 2, "unchanged": 2, "recalibrated": 2})
+        expected = {"scheduled_assignments": 3, "matched_graded_assignments": 1, "reason": None}
+        self.assertEqual(grades["graded_contrast_coverage"], {
+            "reference_vs_unchanged": expected | {"matched_graded_assignments": 2},
+            "reference_vs_recalibrated": expected,
+            "unchanged_vs_recalibrated": expected,
+        })
+        self.assertFalse(report["scientific_acceptance"])
+
+    def test_missing_reference_contrast_is_unavailable_instead_of_zero(self):
+        schedule = {("a", "r1"), ("b", "r1")}
+        coverage = audit._graded_contrasts({"unchanged": {("a", "r1")}, "recalibrated": set()}, schedule)
+        unavailable = {"scheduled_assignments": None, "matched_graded_assignments": None,
+                       "reason": "missing_reference_schedule"}
+        self.assertEqual(coverage["reference_vs_unchanged"], unavailable)
+        self.assertEqual(coverage["reference_vs_recalibrated"], unavailable)
+        self.assertEqual(coverage["unchanged_vs_recalibrated"],
+                         {"scheduled_assignments": 2, "matched_graded_assignments": 0, "reason": None})
