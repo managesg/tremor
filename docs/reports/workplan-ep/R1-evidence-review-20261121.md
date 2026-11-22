@@ -188,3 +188,35 @@ These fixture captures establish the new identity join. The earlier
 full-suite receipts retain their original captured fields. Candidate
 nomination, quiet-host qualification, fresh per-module Opus review,
 and the independent bench verdict remain open.
+
+## Candidate nomination and remaining full runs
+
+The Coordinator can nominate the patched candidate
+`ee8237e5f288cb4f8d1a08453589d5e921cec2443f084d53b31519515a66689e`
+after the protected N2 and independent verifier-mutant scope review.
+Both archived candidates list 351 files. Their manifests differ only
+in `src/murmuration/night.py` and `tests/test_night.py`.
+
+| Evidence | Earlier candidate | Patched candidate |
+| --- | --- | --- |
+| Archived full runs with exit 0 | Three runs of 783 tests, one recorded skip per run | One run of 785 tests, one recorded skip |
+| Fresh focused identity checks | Unavailable | Two runs of ten tests |
+| Formal quiet-host qualification | Pending | Pending |
+| Independent bench acceptance | Pending | Pending |
+
+The full-suite gate requires three qualifying runs against one nominated
+candidate. If the Coordinator and independent reviewer qualify the patched
+candidate's retained full run, two full runs remain. Otherwise, three
+qualifying runs remain. If the nominated source changes, bind all counted
+runs to the resulting candidate. The fresh focused runs establish identity
+for their own scope. The protected N2 carrier evidence, independent
+verifier-mutant review, and fresh per-module and final verdicts remain
+required.
+
+From the repository root, verify the exact archived receipts and replay
+the candidate comparison.
+
+```bash
+sha256sum -c runs/r1-nomination-ready.w0D3vn/evidence.sha256
+python3 -B runs/r1-nomination-ready.w0D3vn/replay.py | cmp - runs/r1-nomination-ready.w0D3vn/report.json
+```
