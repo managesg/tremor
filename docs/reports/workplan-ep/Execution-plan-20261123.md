@@ -1655,3 +1655,15 @@ native hook attachment stay unverified. Twenty-one focused checks and
 460 integrated tests passed. The legacy report reproduced byte for
 byte. Actual L4-E training and protected L8-D remain open.
 [Evidence and exact verifier inputs](../../../runs/m5-activation-selection-contract.aJncEd/OWNER.md)
+
+## M9 prompt roster determines assignment identity
+
+Changing only the scorer's private expected answer no longer creates
+a second assignment for the same worker-facing prompts, seed, condition
+and slots. The complete task inventory still pins scoring truth.
+The original synthetic bug changed the cluster result from 1/6 to
+1/12. The new test refuses that duplicate and keeps legitimate
+different prompts and conditions valid. The archived meter report and
+72 controller tests pass, along with 461 clean integrated lab tests.
+Protected outcomes and scientific interpretation remain outstanding.
+[Verification](../../../runs/m9-prompt-identity.Nb183C/OWNER.md)
