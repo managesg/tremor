@@ -1150,3 +1150,12 @@ no reply. Criterion 7 still requires the Pilot 4 Console receipt, complete
 prompt content and documented manual review for every episode. See
 `runs/m2-gate7-custody.KUiJwO/OWNER.md` for the reproducible receipts and
 handoff. The online pilot and EP-1 freeze remain gated.
+
+The follow-up reconstructs all 240 historical Pilot 3 requests and
+verifies prompt text, exact wire bytes and replies against the pinned
+archives. The complete mock Pilot 4 scenario agrees on 240 request
+identities. The cap-stop case agrees on all 240 prompt identities and
+239 charged wire identities. The prospective custody guidance preserves
+structured messages, exact serialized bytes and per-attempt IDs. See
+`runs/m2-prompt-wire-custody.AlVBRt/OWNER.md`. Actual Pilot 4 review and
+Console reconciliation remain unavailable.
