@@ -13,7 +13,7 @@
 | BLOCKED | 7. Grover transfer | After EP-1, obtain protected fixtures, independent custody, and exact resource admission. Verify matched quantum and topology outcomes with the pinned scorer. [Local custody checklist](Grover-holdout-custody-checklist.md) · [Public replay](Grover-topology-scripted.md) · [Matched caps and stops](../../../runs/grover-paired-frontier.dJrINF/OWNER.md) |
 | IN PROGRESS | 8. Second-family replication | Coordinator and resource owner route the named SmolLM3 smoke reserve and admission. On the chosen distinct family verify the protected L1–L3 unchanged-transfer and recalibrated comparisons against the common reference. [Smoke](SmolLM3-native-smoke-packet.md) · [Local pairing design](Second-model-replication-design.md) · [Local image and model check](../../../runs/smollm3-image-shape-readiness.VF1grj/OWNER.md) |
 | IN PROGRESS | 9. Combined controller | Author and claims reviewer freeze component eligibility, safeguards, baseline and resource limits. Independently verify held-out matched outcomes and accounting. [Local controller design](Combined-controller-design.md) · [Cluster coverage replay](../../../runs/controller-cluster-join.iJZn9z/OWNER.md) |
-| IN PROGRESS | 10. Final internal report | Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) · [Local visual verification](../../../runs/tremor-static-frontend.QaGBGR/OWNER.md) · [Opt-in explainer](../../../runs/m10-static-explainer.QcO0jq/OWNER.md) |
+| IN PROGRESS | 10. Final internal report | Offline release and reader evidence accepted at local scope on November 22 (Assistant, relayed by PC). Release adoption, provider Console totals and T7 accounting remain open. Report and claims owners reproduce accepted traces, scores, uncertainty, and limitations. Resource owner reconciles hosted and GPU records and retains unresolved costs as unknown. [Findings and acceptance register](Portfolio-evidence-and-resource-reconciliation-20261121.md) · [Local visual verification](../../../runs/tremor-static-frontend.QaGBGR/OWNER.md) · [Opt-in explainer](../../../runs/m10-static-explainer.QcO0jq/OWNER.md) |
 
 Links labeled local refer to coordination records retained on Spark.
 
@@ -2849,3 +2849,21 @@ and unlisted workloads explicit. It ties raw counters to the exact
 plan and window, preventing reuse under another container or cgroup
 instance. Sixteen public tests pass. The tool provides evidence to a reviewer and leaves quietness, capture
 provenance, and authority unverified. [Prospective intake](../../../runs/r1-prospective-host-intake.H9RCTa/OWNER.md)
+
+## M10 scoped offline acceptance
+
+The Local Coordinator Assistant accepted the retained M10 offline
+release and reader evidence at local scope (message `msg_805f62c63b42`,
+relayed by PC). The accepted packet is
+`runs/tremor-chat-intake.f0VZwV`: `OWNER.md` sha256 prefix `3d744345`,
+`EVIDENCE.sha256` prefix `6590b891` and `FRONTEND.sha256` prefix
+`6800c876`. The Assistant independently rehashed 7/7 intake, 6/6
+frontend and 50/50 detached release files. The relay bytes matched
+under `cmp`. The retained frontend run exited 0 and records eight
+pages, 38 references and six layouts. This chat rehashed the three
+cited files and passed `sha256sum -c` on both checksum manifests.
+
+The scope covers offline evidence only. Release adoption, provider
+Console totals, T7 occupancy and cleanup accounting, and protected or
+native runs remain open with their owners. The milestone tally stays
+1/10 overall. [Accepted packet](../../../runs/tremor-chat-intake.f0VZwV/OWNER.md)
