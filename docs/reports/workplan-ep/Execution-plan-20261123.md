@@ -2527,3 +2527,17 @@ executed violations. All seven original order tests pass unchanged
 against both the working-copy and tracked test inputs. Clean stopped
 and incomplete outcomes remain distinct. Actual Pilot
 4 clearance and the scripted bracket still need their own reviews.
+
+
+## M2 full prospective scripted bracket
+
+The [prospective bracket rehearsal](../../../runs/m2-prospective-bracket.B0vioj/OWNER.md)
+runs the exact package episode loop on all six scheduled train sets,
+both orders, all five conditions and both unselected wording drafts.
+Each draft completes 30 floor and 30 oracle episodes. Both Python
+scorers and the pinned Lean scorer agree on 0.25 and 1.0 in every
+cell. The exact first-round requests match between drafts. The
+second-round requests differ in each scheduled turn. The driver,
+working ledger and provider were never invoked. The author and
+reviewer still need to bind the official bracket to the adopted
+source, prospective decision and actual Gate 6 record.
