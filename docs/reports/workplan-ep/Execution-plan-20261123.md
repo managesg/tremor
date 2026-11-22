@@ -1352,3 +1352,22 @@ protected matched effects remain open.
 Isolated discovery retained all 424 tests from the prior order
 integration and added three M5 and M8 regressions. All 427 passed.
 [Integrated replay](../../../runs/m5-m8-integrated-evidence.6visSS/OWNER.md)
+
+## M3 explicit archived suite results and M4 revocation
+
+R1 archive replay now requires a passing status for each test and the
+one exact skip. A contradictory failure is refused even under a fresh
+log pin and a passing footer. The amended detached corrected-source
+verifier and the tracked spot evidence replay reproduce the authentic
+reports byte for byte. The lab integration passed all 429 cases.
+R1 still needs nomination and independent quiet-host and bench verdicts.
+[Receipt checks](../../../runs/r1-explicit-suite-status.Luo6KV/OWNER.md) ·
+[Integrated replay](../../../runs/r1-status-integration.99Mmit/OWNER.md)
+
+The detached L6 comparator candidate separately verifies revocation
+within a round. The opening exposure remains in the denominator, while
+standing requests after an observed violation or closure are refused.
+Seventeen focused tests pass and both retained public reports are
+byte-identical. Source-owner adoption, the matched protocol freeze and
+independent measured outcomes remain open.
+[Owner patch and replay](../../../runs/m4-l6-revoked-standing.d1A65E/OWNER.md)
