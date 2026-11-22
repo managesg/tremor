@@ -24,6 +24,18 @@ class QuantumTransferTests(unittest.TestCase):
         self.assertTrue(transfer.verify(task, (0, Fraction(1))))
         self.assertFalse(transfer.verify(task, (False, Fraction(1))))
 
+    def test_initial_three_quarters_equality_is_the_earliest_hit(self):
+        target = Fraction(3, 4)
+        for qubits in range(2, transfer.MAX_QUBITS + 1):
+            with self.subTest(qubits=qubits):
+                marked = tuple(range(3 * (1 << qubits) // 4))
+                task = transfer.ThresholdTask(qubits, marked, 2, target)
+                result = transfer.reference(task)
+                self.assertEqual(result["trace"], [target, Fraction(0), target])
+                self.assertTrue(transfer.verify(task, (0, target)))
+                self.assertFalse(transfer.verify(task, (2, target)))
+                self.assertFalse(transfer.verify(task, None))
+
     def test_independent_gate_disagreement_refuses(self):
         with patch.object(transfer.gatesim, "marked_probability", return_value=0):
             with self.assertRaisesRegex(ValueError, "disagree"):

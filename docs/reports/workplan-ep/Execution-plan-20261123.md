@@ -1285,3 +1285,20 @@ byte-identical to the reviewed implementation. The R3-L5 tests use
 tracked copies of the three public pinned receipts. The integrated
 rerun passed the same 419 tests without those four compatibility
 attachments. See `runs/m3-m5-clean-source-closure.jK0kFD/OWNER.md`.
+
+
+## Exact equality across supported Grover sizes
+
+An independent integer recurrence agreed with the exact scorer at all
+265,224 probability points across 2,056 combinations of qubit size and
+marked-state count. The grid covers one through ten qubits and iterations
+zero through 128, including empty and full marked sets. Floating closed
+form first-hit checks used five thresholds.
+
+For three quarters marked and a three-quarter threshold, the exact first
+hit is iteration zero at every tested size. Across those nine sizes,
+the floating closed form first returns iteration two and direct comparison
+on floating gate probabilities finds no hit through iteration 128.
+The exact scorer accepts iteration zero and refuses the other two answers.
+These public checks leave protected execution dependent on EP-1, custody
+and admission. [Reproducible evidence](../../../runs/m7-all-cardinality-exact.XrwDrI/OWNER.md)
