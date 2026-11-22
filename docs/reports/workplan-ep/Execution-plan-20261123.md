@@ -1702,3 +1702,16 @@ results. They verified 240 and 239 metered shapes and retained 20 and
 in both controls. The candidate is detached from owner code. Author,
 driver, pricing and current named release requirements remain open.
 [Driver and evidence replay](../../../runs/m2-shape-evidence.aIDSOk/OWNER.md)
+
+## M6 matched input domain in the standalone release
+
+The exact public topology and fixed-share sources now accept the
+same integer input domain as the lane candidates. The default
+comparisons reject Boolean and floating-point observations, noninteger
+fixed-share reference answers and undeclared task observations.
+The explicit custom protocol retains its native input shape.
+
+The new detached release passed 60 tests and 12 browser checks.
+The complete 432-arm replay and the explainer bytes reproduced.
+The staged Git checkout stays at the pinned a99cddd base pending
+review. [Public candidate](../../../runs/m6-public-arithmetic-domain.AZVeDW/OWNER.md)
