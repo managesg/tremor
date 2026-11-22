@@ -2256,3 +2256,42 @@ placement check. The source owners need to review backend, team and
 spend in the same canonical package tree and verify the canonical
 guard before adding the prospectively approved entry point. The two
 drafts remain unselected and the D8 checks remain open.
+
+
+## M2 canonical package rehearsal
+
+The [fresh package build](../../../runs/m2-canonical-ledger-layout.4AcYxE/OWNER.md)
+applies five reviewed patches to pinned copies of the three source
+files. The resulting backend, team and spend bytes match the import
+closure. The unchanged spend path derives the scratch package's
+runs/spend directory. The real path guard accepts the direct new
+ledger name and refuses seven invalid placements or file types. In
+the isolated directory, global accounting includes regular historical
+files and excludes the lock. The proposed Pilot 4 ledger stays absent.
+EP1 and its CLI remain byte-identical and the pilot remains unregistered.
+Independent owner adoption, private writer wiring, dated pricing and
+author and release decisions remain open.
+
+
+## M10 prospective L2 decision wording
+
+The [detached README correction](../../../runs/m10-l2-decision-wording.IMtWQr/OWNER.md)
+removes the claim that an interval spanning zero rejects the L2
+hypothesis. The proposed paragraph preserves the targeted-policy and
+verification-cost comparisons and points to the public preregistration
+rules. The decision bounds still need a prospective freeze. The exact
+50-file readback changed only the README and verified 38 local links
+across eight Markdown pages. Release-owner adoption remains open.
+
+
+## M8 retained read-only backing review
+
+The [offline mount review](../../../runs/m8-readonly-backing-review.mzfOfK/OWNER.md)
+distinguishes a container's read-only bind from a read-only backing
+filesystem. The stock inspector accepts the synthetic bind record.
+The optional reviewer refuses the same bind on a writable superblock
+and accepts the matching read-only snapshots. Nine checks passed,
+including mount changes, overlapping roots and ambiguous backing.
+This applies to the read-only filesystem route. The storage owner
+still needs to provide actual stable paths and custody through cleanup.
+The packet adds no admission or runtime control.
