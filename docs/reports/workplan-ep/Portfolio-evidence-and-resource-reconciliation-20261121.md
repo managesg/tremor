@@ -49,7 +49,10 @@ the M3 settlement and monitor-readout patches, M5 event-time parity,
 and the M9 terminal cleanup check at `ff0287d`. It passed 512 lab
 tests and 34 focused package tests. The M5 and R1 reports and historical
 R2 receipt reproduced exactly. Native and authenticated acceptance
-require separate evidence.
+require separate evidence. A supplemental closure at `1c56f84`
+adds the M8 scoring-artifact paths. It passed 519 lab and 34 focused
+package tests and reproduced both M8 output formats.
+[Supplemental source replay](../../../runs/m8-m9-integrated-source.VAGts4/OWNER.md)
 [Earlier portfolio replay](../../../runs/portfolio-wednesday-current.Qez5in/OWNER.md) ·
 [Current source integration](../../../runs/m3-m5-source-integration.vMYmXV/OWNER.md)
 
@@ -137,7 +140,14 @@ scripted blocks and 432 arms, 41 arms in 26 blocks completed more
 verified tasks than both independent baselines at no higher synthetic
 operation cost. All 41 retained every task verified by either baseline.
 At exactly the same cost as both baselines, 25 arms in 12 blocks gained
-tasks. Those realized-cost subgroups are descriptive.
+tasks. Those realized-cost subgroups are descriptive. All 41 gains used shared
+evidence. Among the 378 alternatives to pooled own-view, 158 cost no
+more than both baselines and 112 cost exactly the same as both.
+Holding evidence access fixed, alternative authority policies gained
+zero tasks against independent assignment across 324 equal-cap cases,
+including 114 equal-cost cases. The added replay reports evidence
+access changes separately for each assignment policy.
+[Same-access comparison](../../../runs/m6-matched-access-frontier.IwTktY/OWNER.md)
 [Runnable coordination comparison](../../../runs/m6-public-frontier.mffLw1/OWNER.md)
 
 In the separate public subprocess replay, a complete fixed-lead child

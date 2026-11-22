@@ -1871,3 +1871,15 @@ fixture. The four-check policy also rejects both invalid notes and
 refuses two valid notes in the unavailable reference state. The
 previous M8 scoring-artifact example uses opaque fixture bytes. These
 replayed L2-C results supply no family-transfer or protected estimates.
+
+## M6 matched-access frontier
+
+The [optional access-matched report](../../../runs/m6-matched-access-frontier.IwTktY/OWNER.md)
+reports exact realized-cost denominators against both prior baselines
+and compares authority at the same evidence access. All 41 gains at
+no higher cost against the own-view baselines use shared access.
+Independent assignment at matched access has no utility loss to the
+three other policies across 324 equal-cap comparisons. The release
+owner patch preserves the original report bytes, passed 63 release
+tests and rendered the new table and replay command in two offline
+browser sizes. Held-out native authority effects remain unmeasured.
