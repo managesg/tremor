@@ -24,15 +24,25 @@ checkpoint, report each unmet acceptance criterion.
 
 ## Wednesday overnight continuation
 
-The [Coordinator's Table A extract](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122.md)
-acknowledges the Spark outbox through 04:47 UTC under X44. Under X42,
-the Coordinator owns the R1 corrected-source nomination in Wave 1.
-The TREMOR lane and reviewers own the remaining research dispositions.
-The A8 packet and owner retain the Pilot 4 and EP-1 decisions under D8.
-The Coordinator acknowledgment sets no run, spend, publication or
-timer authorization. An explicit nomination of the corrected R1
-candidate, qualification of its three CPU windows and the independent
-bench verdict remain open. [Exact archived R1 receipt index](../../../runs/r1-n2-three-receipts.BeDGMH/receipt-pins.sha256)
+The [11:55 UTC Coordinator successor](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1155Z.md)
+covers Table A fingerprints through Spark outbox line 2875, extending
+the [04:47 UTC extract](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122.md).
+Under X42, the Coordinator owns the R1 corrected-source nomination
+or an explicit unknown disposition. Its three quiet-host reviews
+and independent bench verdict remain open. The A8 packet and owner
+retain the Pilot 4 and EP-1 decisions under D8. The historical
+resource reviewer retains the T7 reconciliation with the provisional
+4.0 GPU-hour hold. This acknowledgement carries routing only.
+[Exact archived R1 receipt index](../../../runs/r1-n2-three-receipts.BeDGMH/receipt-pins.sha256)
+
+The X73 M8 raw evidence request has the
+[indexed command output](../../../runs/m8-1155z-raw-review.Ihd8sO/OWNER.md)
+for 13 ancestry tests and 20 member-join tests. All five exact report
+comparisons passed. The
+[independent Tab-only browser replay](../../../runs/m10-l2-tab-check.oxXy3v/OWNER.md)
+reproduces the X73 M10 disclosure and exact workplan link at both
+widths. Source adoption, authentic storage custody, the L2 scientific
+freeze and release acceptance remain with the assigned owners.
 
 M7's local public pair verification is ready for review. Protected
 transfer remains blocked by the EP-1 dependency, custody and admission.
