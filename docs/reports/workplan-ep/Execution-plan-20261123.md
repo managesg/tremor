@@ -2242,3 +2242,17 @@ regenerated four fixtures from the twelve-patch release. The release
 CLI independently reproduced the board and usage report. The
 release inventory remains tied to the previous offline browser
 results. This is source and offline release evidence.
+
+
+## M2 exact import closure and ledger placement
+
+The [isolated import check](../../../runs/m2-import-closure.SDjXAs/OWNER.md)
+pins 25 package and lab modules plus seven harness modules for the
+private reply-custody rehearsal. All four retained mock joins replayed
+without starting the driver. The real-host guard refuses the canonical
+Pilot 4 ledger path when the reviewed spend module is loaded from a
+detached packet. The mock supplies its own ledger and bypasses that
+placement check. The source owners need to review backend, team and
+spend in the same canonical package tree and verify the canonical
+guard before adding the prospectively approved entry point. The two
+drafts remain unselected and the D8 checks remain open.
