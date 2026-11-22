@@ -1748,3 +1748,11 @@ Review the detached patch together with its pinned trainer dependency
 before adoption. M5 acceptance still needs independent captures from the
 actual training, context comparator and held-out activation probe, along
 with resource settlement.
+
+Independent review found that the first lineage packet accepted a freshly
+repinned static digest and non-null training counters. The [static replay
+follow-up](../../../runs/m5-static-lineage.ICFafq/OWNER.md) replays the
+snapshot metadata against distinct pinned static artifacts and requires
+both actual counters to be null. Its verifier exited zero with 29 tests.
+Both earlier outcome archives still match byte for byte. Matching the
+event-time content parity report to the outcome remains a separate check.
