@@ -5,12 +5,13 @@ import json
 from pathlib import Path
 
 from lab import replication_pairing as pairing
-from lab.replication_inventory import _metadata, _object, _require
+from lab.replication_inventory import _hex, _metadata, _object, _require
 
 
 SCHEMA = "replication_pair_coverage_v1"
 LIMIT_SCHEMA = "replication_pair_limits_v1"
 CUMULATIVE_LIMIT_SCHEMA = "replication_cumulative_limits_v1"
+EXECUTION_SCHEMA = "replication_execution_observation_v1"
 ARMS = ("technique", "comparator")
 STATES = ("observed", "stopped", "void", "unavailable")
 RESOURCES = ("calls", "input_tokens", "output_tokens", "gpu_wall_ns")
@@ -133,8 +134,52 @@ def _cumulative_limits(witness, line, pins, totals):
     return {"limits_sha256": witness[1], "line": line_limits, "by_role": role_limits}
 
 
+def _execution_observation(witness, paired, coverage_pin, rows, roles):
+    bindings = paired.get("scheduled_snapshot_binding")
+    _require(bindings is not None, "execution observation requires snapshot-bound schedules")
+    document = _metadata(Path(witness[0]), witness[1])
+    _object(document, ("schema", "line", "schedule_pins", "coverage_sha256", "executions"), "execution observation")
+    _require(document["schema"] == EXECUTION_SCHEMA and document["line"] == paired["line"]
+             and document["schedule_pins"] == paired["manifest_sha256"]
+             and document["coverage_sha256"] == coverage_pin, "execution observation refers to different coverage")
+    _require(type(document["executions"]) is list, "invalid execution observations")
+    seen, attempts, captures = set(), set(), set()
+    counts = {role: {arm: {"observed": 0, "stopped": 0, "void": 0}
+                     for arm in ARMS} for role in roles}
+    for event in document["executions"]:
+        _object(event, ("task_id", "replicate_id", "role", "arm", "state", "attempt_id",
+                        "observer_capture_sha256", "snapshot"), "execution row")
+        key = tuple(pairing._identifier(event[field]) for field in ("task_id", "replicate_id"))
+        role, arm, state = (pairing._identifier(event[field]) for field in ("role", "arm", "state"))
+        _require(key in rows and role in bindings and arm in ARMS, "execution row has no scheduled arm")
+        attempt = pairing._identifier(event["attempt_id"])
+        capture = _hex(event["observer_capture_sha256"], 64)
+        assignment = key, role, arm
+        _require(assignment not in seen and attempt not in attempts and capture not in captures,
+                 "execution observation reuses an assignment, attempt or capture")
+        _require(state != "unavailable" and state == rows[key][role][arm]["state"],
+                 "execution state differs from coverage or has no terminal")
+        _require(event["snapshot"] == bindings[role], "observed checkpoint differs from scheduled snapshot")
+        seen.add(assignment)
+        attempts.add(attempt)
+        captures.add(capture)
+        counts[role][arm][state] += 1
+
+    missing = dict.fromkeys(("stopped", "void", "unavailable"), 0)
+    for key, records in rows.items():
+        for role, arms in records.items():
+            for arm, record in arms.items():
+                if (key, role, arm) not in seen:
+                    state = record["state"]
+                    _require(state != "observed", "an observed arm is missing its execution observation")
+                    missing[state] += 1
+    return {"evidence": "matched_independently_pinned_observer_declarations",
+            "observation_sha256": witness[1], "matched_terminal_rows": len(seen), "by_role_and_arm": counts,
+            "without_terminal_observation_by_state": missing, "native_execution_verified": False}
+
+
 def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, limits=None, cumulative_limits=None,
-           inventory=None):
+           inventory=None, execution_observation=None):
     """Verify exact joins and report coverage without selecting a scientific estimand."""
     paired = pairing.verify(line=line, splits=splits, unchanged=unchanged, recalibrated=recalibrated,
                             reference=reference, inventory=inventory)
@@ -192,6 +237,9 @@ def verify(*, line, splits, unchanged, recalibrated, coverage, reference=None, l
         report["per_assignment_limits_sha256"] = limits[1]
     if cumulative_limits is not None:
         report["cumulative_limits"] = _cumulative_limits(cumulative_limits, line, pins, totals)
+    if execution_observation is not None:
+        report["execution_observation"] = _execution_observation(execution_observation, paired, coverage[1], rows,
+                                                                roles)
     return report
 
 
@@ -206,6 +254,8 @@ def main():
                         help="independently pinned limits on total declared usage by line and role")
     parser.add_argument("--inventory", nargs=2, metavar=("PATH", "SHA256"),
                         help="independently pinned structural inventory for snapshot-bound schedules")
+    parser.add_argument("--execution-observation", nargs=2, metavar=("PATH", "SHA256"),
+                        help="independently pinned execution observations for covered arms")
     try:
         result = verify(**vars(parser.parse_args()))
     except (OSError, ValueError, TypeError, KeyError) as error:

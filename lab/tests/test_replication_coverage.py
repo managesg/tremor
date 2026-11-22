@@ -53,6 +53,69 @@ class ReplicationCoverageTests(unittest.TestCase):
                          inputs["inventory"][1])
         self.assertFalse(report["scientific_acceptance"])
 
+    def execution_fixture(self):
+        inputs = self.fixture.bind_inventory(self.evidence())
+        for role in ("reference", "unchanged", "recalibrated"):
+            self.document["schedule_pins"][role] = inputs[role][1]
+        roles = self.document["rows"][0]["roles"]
+        roles["reference"]["technique"]["state"] = "stopped"
+        roles["reference"]["comparator"]["state"] = "unavailable"
+        roles["unchanged"]["technique"]["state"] = "void"
+        inputs["coverage"] = self.pinned()
+        executions = []
+        for row in self.document["rows"]:
+            for role, arms in row["roles"].items():
+                for arm, receipt in arms.items():
+                    if receipt["state"] in ("observed", "stopped"):
+                        attempt = f"attempt-{len(executions)}"
+                        executions.append({
+                            "task_id": row["task_id"], "replicate_id": row["replicate_id"],
+                            "role": role, "arm": arm, "state": receipt["state"], "attempt_id": attempt,
+                            "observer_capture_sha256": fixtures._digest(attempt),
+                            "snapshot": json.loads(inputs[role][0].read_bytes())["snapshot"],
+                        })
+        return inputs, {
+            "schema": "replication_execution_observation_v1", "line": inputs["line"],
+            "schedule_pins": self.document["schedule_pins"], "coverage_sha256": inputs["coverage"][1],
+            "executions": executions,
+        }
+
+    def verify_execution(self, inputs, document):
+        witness = self.fixture._pin("execution", json.dumps(document))
+        return audit.verify(**inputs, execution_observation=witness)
+
+    def test_execution_observations_keep_stopped_void_and_unavailable_distinct(self):
+        inputs, document = self.execution_fixture()
+        result = self.verify_execution(inputs, document)["execution_observation"]
+        self.assertEqual(result["matched_terminal_rows"], 16)
+        self.assertEqual(result["by_role_and_arm"]["reference"]["technique"]["stopped"], 1)
+        self.assertEqual(result["without_terminal_observation_by_state"],
+                         {"stopped": 0, "void": 1, "unavailable": 1})
+        self.assertFalse(result["native_execution_verified"])
+
+    def test_repinned_execution_witness_cannot_cross_snapshots_or_reuse_attempts(self):
+        inputs, original = self.execution_fixture()
+        for field, expected in (("attempt_id", "reuses"),
+                                ("observer_capture_sha256", "reuses"),
+                                ("snapshot", "checkpoint differs")):
+            document = deepcopy(original)
+            executions = document["executions"]
+            current = next(row for row in executions if row["role"] == "recalibrated")
+            reference = next(row for row in executions if row["role"] == "reference")
+            current[field] = reference[field]
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, expected):
+                self.verify_execution(inputs, document)
+
+    def test_observed_arm_requires_witness_and_exact_coverage(self):
+        inputs, document = self.execution_fixture()
+        document["executions"].pop()
+        with self.assertRaisesRegex(ValueError, "observed arm is missing"):
+            self.verify_execution(inputs, document)
+        self.document["rows"][0]["roles"]["reference"]["technique"]["usage"]["calls"] = 1
+        inputs["coverage"] = self.pinned()
+        with self.assertRaisesRegex(ValueError, "refers to different coverage"):
+            self.verify_execution(inputs, document)
+
     def test_cli_reports_one_cluster_and_keeps_partial_cost_unavailable(self):
         inputs = self.evidence()
         arm = self.document["rows"][1]["roles"]["recalibrated"]["comparator"]
