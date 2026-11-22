@@ -220,3 +220,30 @@ during this run. The suite result is for the tree as it was at run time.
 Digests (sha256, first 16 hex): `alloc.py` 07ae29d898ee57ef, `alloc2.py` c78207f7dab9d66d,
 `formal_alloc.py` 6c256eeb0eca7366 (unchanged), `Basic.lean` 6362b8d173e4a455, `Json.lean`
 2fb07ff937460ab5, `Theorems.lean` a91b4aac74c9b06e.
+
+## November 22 release-candidate recheck
+
+A fresh isolated Lean build from the archived 351-file R1 source ran
+the retained four differential tests with the same 10,000 seeded
+logs. All three scorer pairs had zero disagreements, and the scoring
+bridge checked the returned score count and schema. The set contained
+2,396 valid logs. This verifies the scripted scorer-agreement claim in
+the staged public release.
+
+The exact staged public `quantum/gatesim.py` also completed the
+independent QGrid differential. The comparison used the release's
+public iteration-estimate function and checked 329 statevectors over
+65 cases. It found zero differences at the registered tolerances,
+including global phase, and both simulators matched the closed-form
+probability in all 329 states. The first check used system Python,
+which lacked NumPy. The successful run used the existing local Python
+3.12 environment with NumPy 2.5.5.
+
+```bash
+bash runs/release-three-scorers.hDZq9x/verify.sh
+```
+
+The staged release remained clean at
+`a99cddd1301905566e09a25b10aa583af9867ad3`. These checks cover
+the scripted public instruments. Held-out model effects and
+scientific acceptance remain open.
