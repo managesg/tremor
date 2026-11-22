@@ -39,9 +39,9 @@ def all_seeds_rate(rows, task="task", ok="pass"):
     return sum(all(v) for v in by.values()) / len(by) if by else None
 
 
-def check_prereg(frozen_hash, paths):
+def check_prereg(frozen_hash, paths, *, root=None):
     """Raise ValueError if the code tree no longer matches the frozen code_tree_hash."""
-    now = tree_hash(paths)
+    now = tree_hash(paths, root=root)
     if now != frozen_hash:
         raise ValueError(f"code_tree_hash mismatch: frozen {frozen_hash}, now {now}")
 

@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
@@ -98,6 +99,31 @@ class CliTests(unittest.TestCase):
             r = cli("prereg-check", pre, "--tree", "src", "train", "--root", d)
             self.assertEqual(r.returncode, 2)
             self.assertIn("mismatch", json.loads(r.stdout)["error"])
+
+    def test_manifest_and_prereg_check_share_the_selected_source_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            module = root / "lab" / "fixture.py"
+            module.parent.mkdir()
+            module.write_text("value = 1\n", encoding="utf-8")
+            pre = root / "pre.md"
+
+            relative = cli("manifest", "--root", directory, "--tree", "lab")
+            absolute = cli("manifest", "--root", directory, "--tree", str(module.parent))
+            self.assertEqual(relative.returncode, 0, relative.stdout)
+            self.assertEqual(absolute.returncode, 0, absolute.stdout)
+            tree_hash = json.loads(relative.stdout)["tree_hash"]
+            self.assertEqual(tree_hash, json.loads(absolute.stdout)["tree_hash"])
+
+            pre.write_text(f"code_tree_hash: {tree_hash}\n", encoding="utf-8")
+            accepted = cli("prereg-check", str(pre), "--root", directory, "--tree", "lab")
+            self.assertEqual(accepted.returncode, 0, accepted.stdout)
+            self.assertTrue(json.loads(accepted.stdout)["match"])
+
+            module.write_text("value = 2\n", encoding="utf-8")
+            refused = cli("prereg-check", str(pre), "--root", directory, "--tree", "lab")
+            self.assertEqual(refused.returncode, 2, refused.stdout)
+            self.assertIn("mismatch", json.loads(refused.stdout)["error"])
 
     def test_power_parse(self):
         r = cli("power-parse", "-", stdin="2026/01/01 00:00:00.000, 100.0, 50\n2026/01/01 00:00:10.000, 100.0, 50\n")

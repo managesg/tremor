@@ -73,7 +73,7 @@ def build_parser():
     mf.add_argument("--config", default="{}", help="JSON object hashed into the manifest")
     mf.add_argument("--seed", type=int, default=0)
     mf.add_argument("--root", default=".")
-    mf.add_argument("--tree", nargs="*", default=[], help="paths to tree-hash")
+    mf.add_argument("--tree", nargs="*", default=[], help="paths to tree-hash, resolved against --root")
     pc = sub.add_parser("prereg-check", help="fail unless the code tree still matches a prereg's code_tree_hash")
     pc.add_argument("prereg_file")
     pc.add_argument("--tree", nargs="+", required=True, help="paths to tree-hash, resolved against --root")
@@ -155,7 +155,8 @@ def _main(a):
     elif a.cmd == "manifest":
         rec = manifest.build(json.loads(a.config), a.seed, root=a.root)
         try:
-            rec["tree_hash"] = manifest.tree_hash(a.tree, a.root) if a.tree else None
+            paths = [os.path.join(a.root, path) for path in a.tree]
+            rec["tree_hash"] = manifest.tree_hash(paths, root=a.root) if paths else None
         except (ValueError, OSError) as e:
             return _fail(str(e))
         _out(rec)
@@ -164,7 +165,7 @@ def _main(a):
         if not m or not m.group(1):
             return _fail(f"{a.prereg_file}: code_tree_hash is missing or blank; freeze it first")
         try:
-            stats.check_prereg(m.group(1), [os.path.join(a.root, t) for t in a.tree])
+            stats.check_prereg(m.group(1), [os.path.join(a.root, path) for path in a.tree], root=a.root)
         except (ValueError, OSError) as e:
             return _fail(str(e))
         _out({"prereg": a.prereg_file, "code_tree_hash": m.group(1), "match": True})

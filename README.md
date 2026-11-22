@@ -46,10 +46,22 @@ transcript or message content) except `synth`, which prints a fake transcript.
 `report`, `sweep`, `allowlist` and `hazard` print capability keys: they require `--salt`, or an explicit
 `--unsafe-raw-keys` (output then not shareable).
 
-**Freezing a prereg:** commit first, then from the repo root run
-`python3 -m murmuration manifest --root . --tree src train` and write its `tree_hash` into the prereg's
-`code_tree_hash:` line (the recorded `git_sha` and the hash then come from the same root). Before each run:
-`python3 -m murmuration prereg-check prereg/<file>.md --tree src train --root .`.
+**Freezing a prereg.** Commit first. Run the manifest command with the exact
+source paths the protocol requires, then record its `tree_hash` in the
+preregistration's `code_tree_hash:` line. Before each run, pass the same
+root and paths to the check.
+
+```bash
+PYTHONPATH=src python3 -m murmuration manifest --root . --tree src train
+PYTHONPATH=src python3 -m murmuration prereg-check prereg/H7.md --root . --tree src train
+```
+
+These examples cover `src` and `train`. For a new protocol that executes
+bench code from `lab`, include `lab` in both commands or use the
+protocol's explicit file manifest. The enclosing Git commit and the
+selected source hash identify different parts of an archived or
+locally modified checkout. To verify an archived hash calculated relative
+to a single subtree, pass that directory as `--root` and `.` as `--tree`.
 
 ## Wave 1 status
 
