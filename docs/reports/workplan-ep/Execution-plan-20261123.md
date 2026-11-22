@@ -264,6 +264,17 @@ reports byte for byte. Integration requires the runner owner's review.
 Scientific use still requires the frozen roster, windows, and labels,
 independent runtime custody, and exact admission.
 
+The public screening fixture now replays all 65 ordered check
+selections in each of its two reference states. The checked subsets
+reproduce all 50 archived ranking prefixes. At half the checks,
+uniform selection matches full screening on invalid admissions
+with probability 1/2 in both states. When one reference is missing,
+matching full screening on both invalid admissions and valid
+refusals has probability 1/6. One direct-relay check blocks both
+invalid opportunities without refusing either valid opportunity
+lost under full screening. These are fixed scripted Board counts.
+See `runs/l2c-uniform-board-enumeration.tVcsk0`.
+
 ## L3 equal-call and operating-point verification
 
 The public Boolean fixture reproduced 100 scripted call units per arm,
