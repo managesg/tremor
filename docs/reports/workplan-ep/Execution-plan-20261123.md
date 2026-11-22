@@ -1996,3 +1996,12 @@ unassigned workers therefore pick the same field, and host assignment
 increases task coverage at additional synthetic cost. The result
 describes that exact selection rule. Native coordination and the
 held-out comparison remain open.
+
+## M10 independent local release claims review
+
+The [independent signoff](../../../runs/m10-independent-release-signoff.5GEhhm/OWNER.md)
+accepts local README claims and rendering for the pinned eleven-patch
+candidate after a fresh 63-test, 14-view replay and independent
+cohort recount. It leaves the final portfolio outcomes, scientific
+claims, resource settlement, authenticated view and publication to
+their established owners.

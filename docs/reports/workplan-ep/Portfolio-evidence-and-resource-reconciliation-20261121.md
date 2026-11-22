@@ -44,7 +44,13 @@ Both coordination outputs reproduced byte for byte. The unchanged
 explainer decodes to 377 frames over 60 seconds. Its illustrative
 qualifier is small in the standalone mobile view. Published rendering
 and release approval remain open.
-[Release candidate](../../../runs/m10-public-coordination-scope.iIc2K3/OWNER.md)
+[Release candidate](../../../runs/m10-public-coordination-scope.iIc2K3/OWNER.md) ·
+[Independent local claims signoff](../../../runs/m10-independent-release-signoff.5GEhhm/OWNER.md)
+
+The independent reviewer accepted the exact local README claims, link
+and explainer context after recounting all 432 scripted arms. This
+completes the local claims review for this candidate. Final native
+findings, ledger reconciliation and release approval remain open.
 
 **Research source integration.** The earlier archive at `08808a1`
 with its overlays passed 460 lab tests. The later source replay adds
@@ -132,6 +138,11 @@ earlier runtime reports reproduced exactly. Native installation
 and observed hook execution remain open.
 [Installation evidence](../../../runs/m5-l8-installed-state.Ouxw2i/OWNER.md)
 
+The integrated source cut at `9562cdf` passed 531 lab tests and
+34 focused package tests. It reproduced the exact public installation
+receipt and both archived runtime reports.
+[Integrated installation replay](../../../runs/m5-installation-source-integration.vsglb2/OWNER.md)
+
 **Second-family scoring inputs.** The optional witness verifies exact
 scorer, truth and opportunity bytes for every scheduled assignment,
 including one with no attempted run. The public rehearsal verified nine
@@ -172,6 +183,18 @@ scorer verified three tasks. A stopped independent child retained one response a
 known synthetic cost units. Complete cost and task union are unavailable
 for that cell. The other six cells retain their archived data.
 [Local child replay](../../../runs/m6-computed-public-work.UdtQq1/OWNER.md)
+
+A follow-up executes all eight cells and grades 48 fresh work receipts.
+All unassigned workers see the same first field under shared access,
+so those workers verify one distinct task. The fixed and rotating
+assignment cells verify three tasks and cost three and four additional
+operation units, respectively, against the same-access independent
+cell. Repeating with an interrupted independent own-access worker
+withholds the affected contrast and retains the other seven cells.
+These are outcomes of the scripted first-visible and host-assignment
+rules in one fixture. The separate 54-block frontier has its own
+workloads and policies.
+[Eight-cell subprocess replay](../../../runs/m6-all-cells-local-work.hO2HiT/OWNER.md)
 
 The combined-controller fixture produced a single scripted delta of 1/6
 and retained an unavailable delta on the interrupted pair. The verifier
