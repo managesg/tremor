@@ -100,3 +100,23 @@ ledger arithmetic from the repository root.
 sha256sum -c runs/spark-deadline-envelope.gTLzpr/evidence.sha256
 python3 -B runs/spark-deadline-envelope.gTLzpr/replay.py | cmp - runs/spark-deadline-envelope.gTLzpr/report.json
 ```
+
+### SmolLM3 preflight lead time
+
+One back-to-back offline pair ran the stock file validation against the
+actual staged 6,167,546,549-byte model and pinned worker. The first pass
+took 7.444 seconds and the second took 4.601 seconds, for 12.045 seconds
+total. Both returned identical receipts. Linux reported approximately
+2.82 GB and 0.12 GB of storage-layer reads respectively, so cache state
+differed. The timing uses one process at nice level 10, unchanged caches,
+and a fixed historical fixture timestamp. This single pair is a
+scheduling observation, with no estimate of a worst-case duration.
+
+The actual launcher also creates and inspects the container before its
+final validation. Include those operations and confirm that the reviewed
+admission still has the required 300-second window at the final recheck.
+The measurement establishes the integrity-check lead time only. Current
+admission, protected staging, CUDA duration, and cleanup remain open.
+
+Verify the retained measurements and exact source references with
+`sha256sum -c runs/smollm3-two-pass-leadin.vAJvJ9/evidence.sha256`.
