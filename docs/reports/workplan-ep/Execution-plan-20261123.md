@@ -160,6 +160,17 @@ The source, archive, and missing-outcome recount are in
 requires independent outcome custody, disjoint baseline tuning, the
 frozen sequential assumptions, and exact run admission.
 
+The evaluator assigns one verdict per request ID in these scripted
+fixtures. Under that assumption, both versions have at least one more
+violation than the fixed comparator for every completion of the
+missing verdicts. Against the time box, the evidence version ties and
+the sequential version ties or has one more violation. Keep the
+original independent-unknown bounds for cases where the same request
+can produce different outcomes across arms. Separate manual and
+standing execution counts also show which authorization carries the
+uncertainty. These rates describe the executions each policy selected.
+[Public bound replay](../../../runs/l6-shared-verdict-bounds.20KxSe/OWNER.md)
+
 ## L1 budget, comparator order, and measured dispatch
 
 Three retained L1 reports reproduced byte for byte. At the same
