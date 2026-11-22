@@ -71,7 +71,15 @@ package tests and reproduced both M8 output formats.
 The next integrated cut at `74fbd84` adds Grover custody and L3
 calibration feasibility. It passed 525 lab and 34 focused package
 tests and preserved the pinned M7, M8, M5, R1, and R2 outputs.
-[Current source integration](../../../runs/m4-m9-integrated-source.ysfER0/OWNER.md)
+[525-test source integration](../../../runs/m4-m9-integrated-source.ysfER0/OWNER.md)
+
+The current 670-file research closure adds the L7 rotation,
+L8-D direct hook width and typed R3 L2 completion checks. All 572
+lab cases passed with no skips. The same closure regenerated four
+release fixtures against both the research oracle and the independent
+release CLI output. The twelve-patch release inventory binds the
+previous offline keyboard playback records.
+[Combined backend and release replay](../../../runs/tremor-current-backend-closure.4Yd9xx/OWNER.md)
 
 **Native calibration.** The short Qwen run established that the narrow
 local execution envelope could complete and release its reservation.
@@ -243,7 +251,7 @@ release verifiers use offline local files and create fresh readback
 directories.
 
 ```bash
-bash runs/m3-m5-source-integration.vMYmXV/verify.sh
+bash runs/tremor-current-backend-closure.4Yd9xx/verify.sh
 bash runs/m10-public-coordination-scope.iIc2K3/verify.sh
 bash runs/m10-static-explainer.QcO0jq/verify.sh
 ```

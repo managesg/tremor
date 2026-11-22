@@ -2228,3 +2228,17 @@ The distinct Qwen base hooks also retain their observed widths of
 passed. The witness establishes feature width only. Actual adapter
 installation, native hook values and the held-out result remain separate
 acceptance requirements.
+
+
+## Combined R3, L7, L8-D and release verification
+
+The [pinned integration](../../../runs/tremor-current-backend-closure.4Yd9xx/OWNER.md)
+retains the 670-file parent, including the L7 fixture outside the
+source directory, and overlays exactly two R3 L2 modules. The newer
+typed resource audit stays in place. All 572 lab cases passed with
+no skips or lost test IDs. The exact R3 V1/V2, public L7 and L8-D
+outputs reproduced. A cross-check using the same backend source
+regenerated four fixtures from the twelve-patch release. The release
+CLI independently reproduced the board and usage report. The
+release inventory remains tied to the previous offline browser
+results. This is source and offline release evidence.
