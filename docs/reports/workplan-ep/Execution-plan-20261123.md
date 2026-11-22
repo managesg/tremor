@@ -1667,3 +1667,21 @@ different prompts and conditions valid. The archived meter report and
 72 controller tests pass, along with 461 clean integrated lab tests.
 Protected outcomes and scientific interpretation remain outstanding.
 [Verification](../../../runs/m9-prompt-identity.Nb183C/OWNER.md)
+
+## M4 Holm boundary and M7 prospective custody inputs
+
+Holm's helper now validates each probability before testing. NaN and
+negative values previously produced a rejection flag. Integer,
+rational and Decimal alpha cutoffs now retain exact division. Float
+callers keep their inclusive comparisons. All 20 stats tests passed.
+[Focused replay](../../../runs/m4-holm-domain.8p0h8d/OWNER.md)
+
+The optional Grover custody comparison matches the independently
+pinned generator revision and configuration, exact commitment and
+block order, and branch counts by regime. Fifty-seven checks passed
+with the legacy archive output unchanged. The frozen protected inputs,
+authenticated custodian and separate admission remain open.
+[Focused custody replay](../../../runs/m7-prospective-custody.xHQCol/OWNER.md)
+
+The clean combined lab replay passed all 465 tests.
+[Integrated evidence](../../../runs/m4-m7-boundary-integration.ddTCfH/OWNER.md)
