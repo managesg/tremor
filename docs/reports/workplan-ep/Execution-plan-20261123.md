@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | DONE | 1. Spark calibration | Guarded native Qwen run, exact removal, and audited settlement. R2 charged 0.023123 GPU-hours. [Local receipt](Spark-readiness.md#calibration-result-and-settlement) |
 | BLOCKED | 2. Pilot 4 and EP-1 | EP-1 author records the prospective prompt and scoring decision. Pricing and driver reviewers clear the exact implementation. Complete and independently review all seven Pilot 4 criteria, freeze EP-1, and complete the separately admitted 60 episodes and analysis. [Local reviews](Pilot4-pricing-verification-gates.md) · [Enabled B4 reply custody replay](../../../runs/m2-enabled-response-custody.cHx1kP/OWNER.md) |
-| IN PROGRESS | 3. CPU benchmark and first R3 slices | Local Coordinator routes quiet-host qualification and independent R1 review. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
+| IN PROGRESS | 3. CPU benchmark and first R3 slices | The Coordinator nominated the exact R1 source for review. Independent host and bench reviewers still own their separate verdicts. Custodians and runner owners provide protected inputs and exact admission. Verify measured L2/L5 traces, cleanup and settlement. [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) · [Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md) · [R1 suite series](R1-corrected-candidate-suite-series-20261122.md) · [R3](R3-governed-cpu-readiness.md) · [L2 source adoption rehearsal](../../../runs/r3-l2-source-adoption.mam4fo/OWNER.md) |
 | IN PROGRESS | 4. L1–L8 research lines | Per-line authors freeze matched protocols and protected inputs. Independent reviewers verify each completed or prospectively stopped result with measured resource use. [Local protocol readiness](R2-R4-protocol-readiness.md) · [L7 combined backend replay](../../../runs/m4-l7-combined-rotation.X5jf6W/OWNER.md) |
 | IN PROGRESS | 5. L4-E to L8-D | Trainer and independent reviewer settle the actual before/after pair against the matched context comparator. L8-D author then freezes the held-out probe. Verify the checkpoint installation and actual hook readout. [Loader evidence](Qwen-base-cpu-hook-receipt.md) |
 | IN PROGRESS | 6. Coordination | Author and custodian freeze the authority-by-access comparison, exact workload and independently verified union. Verify held-out outcomes at matched resource limits and account for realized costs. [Scripted controls](Topology-matched-traversal.md) · [Local comparator checkout](../../../runs/m6-clean-comparator.38Lmux/OWNER.md) |
@@ -26,15 +26,17 @@ checkpoint, report each unmet acceptance criterion.
 
 The [13:38 UTC Coordinator acknowledgement](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1338Z-through-3111.md)
 extends Table A through Spark outbox line 3111. It records routing and
-scope. It leaves the existing execution approvals and source nomination open.
+scope and retains the existing execution approvals. The later
+[X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md) names the exact corrected cut for source review.
+The three host dispositions and independent bench verdict remain open.
 
 The [11:55 UTC Coordinator successor](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122-successor-1155Z.md)
 covers Table A fingerprints through Spark outbox line 2875, extending
 the [04:47 UTC extract](../../../coordinator-outbox/pc-ack-table-a-tremor-20261122.md).
-Under X42, the Coordinator owns the R1 corrected-source nomination
-or an explicit unknown disposition. Its three quiet-host reviews
-and independent bench verdict remain open. The A8 packet and owner
-retain the Pilot 4 and EP-1 decisions under D8. The historical
+At that checkpoint, X42 still needed the corrected-source nomination.
+The later 13:41 UTC disposition supplies that exact review target. Its
+three quiet-host reviews and independent bench verdict remain open.
+The A8 packet and owner retain the Pilot 4 and EP-1 decisions under D8. The historical
 resource reviewer retains the T7 reconciliation with the provisional
 4.0 GPU-hour hold. This acknowledgement carries routing only.
 [Exact archived R1 receipt index](../../../runs/r1-n2-three-receipts.BeDGMH/receipt-pins.sha256)
@@ -2767,3 +2769,23 @@ rebuilds the exact fourteen patches from the clean base, verifies the twelve-
 and thirteen-patch preimages and matches all 50 final files. This tests the
 complete ordered chain that includes the corrected Pilot 1 language and
 thesis fallback. The release owner still owns adoption and deployed proof.
+
+
+## R1 nominated source and grader consistency review
+
+The [Coordinator disposition](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md)
+nominates the archived e972484a source for review. The
+[pinned readback](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md)
+joins that disposition to three archived runs with 784 passes and one
+skip per window. The quiet-host reviewer still owns the three reasoned
+dispositions and the bench reviewer owns the independent Gate R1 verdict.
+
+The [detached grader correction](../../../runs/r1-execution-consistency.BtUauk/OWNER.md)
+addresses a separate inconsistency found on the nominated source.
+Two substituted summary fields changed a refused action into an
+executed norm violation while its action log still marked it rejected.
+The original source reproduces the targeted failure. The candidate
+rejects the disagreement, passes nine focused tests and preserves six
+genuine public results after verifying the distinct evaluator digests.
+The source owner decides adoption. Any revised cut needs exact review
+and appropriately bound test receipts.

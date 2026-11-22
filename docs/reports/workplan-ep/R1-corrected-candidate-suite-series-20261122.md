@@ -30,12 +30,13 @@ to 0.185% when its boundary intervals are excluded. The third drops from
 interval to the attachment. The sampled one-minute load still includes
 work from earlier in the minute. [Replay and scope](../../../runs/r1-window-counter-scope.QjV54l/OWNER.md)
 
-The Coordinator and independent reviewer still need to qualify
-quiet-host conditions and nominate this candidate. Only the windows
-they qualify can count toward the three-run gate. The protected N2
-predicate, examples and separation review remain with the author and
-independent custodian. The fresh per-module checks and separate
-adversarial bench verdict remain pending.
+The Coordinator nominated this exact candidate for source review. [X42 source nomination](../../../coordinator-outbox/pc-x42-r1-source-nomination-1341Z.md)
+The independent host reviewer still needs one reasoned disposition for
+each window. Only qualified windows can count toward the three-run gate.
+[Pinned reviewer intake](../../../runs/r1-source-nomination-readback.Lgn6EH/OWNER.md)
+The protected N2 predicate, examples and separation review remain with
+the author and independent custodian. The formal bench review remains
+a separate decision.
 
 The independent technical pre-review found that `pairwise_miss`
 silently truncates mismatched monitor rows and reports zero correlation
