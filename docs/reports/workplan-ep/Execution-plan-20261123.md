@@ -1169,3 +1169,12 @@ review linked every intent, including unmetered attempts, to the observed
 mock transport sequence. The driver owner still
 needs to adopt and independently verify mandatory capture for the exact
 pilot configuration. See `runs/m2-prepost-candidate.sRKW0e/OWNER.md`.
+
+The stock driver refused clean terminal resumes but reached mock transport
+after interruptions at either the durable intent or recorded failed-episode
+boundary. The detached Pilot 4 guard refuses both restart paths before
+preflight. Across four injected cases, both original and fresh output paths
+were refused with unchanged evidence bytes. Both normal retry-cap cases
+remain exact. See `runs/m2-driver-custody-stop.5S54It/OWNER.md` for the
+reproducer and patch. Driver adoption and persistent ledger custody remain
+owner dependencies.
