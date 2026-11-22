@@ -2364,3 +2364,16 @@ The missing charge and three charged but unclassified turns belong
 to the interrupted per-agent code cell. They remain separate from
 the classified denominator. The replay reports archived statuses.
 The prospective format rule and actual Pilot 4 clearance remain open.
+
+
+## M2 exact archived reply parser replay
+
+The [parser replay](../../../runs/m2-raw-reply-parser.zB6xq1/OWNER.md)
+uses the pinned task set, 600-byte parser and full charged reply.
+Both complete mocks reproduce one malformed core reply and 143
+parser successes with a final result. Both stopped mocks reproduce
+one malformed, 139 parser successes with a final result, three
+valid parses with no dispatch result and one turn with no charge
+or reply. The last four do not fill the terminal denominator.
+The replay uses archived mock replies and establishes no wording
+effect, new parser policy or actual Pilot 4 clearance.
