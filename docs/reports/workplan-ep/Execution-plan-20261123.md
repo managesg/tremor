@@ -2025,3 +2025,17 @@ write durations. The [zero-write intake follow-up](../../../runs/m2-cache-write-
 rejects positive write tokens in both charge and turn. All four tests
 passed and both exact no-write archives reproduced unchanged. A
 write-triggered stop requires separate settlement review.
+
+## M6 task choice sensitivity with matched delivery
+
+The [local choice replay](../../../runs/m6-local-choice-sensitivity.GcL2kL/OWNER.md)
+holds all eight cells' delivered fields, host assignments and scripted
+costs fixed. Unassigned workers either pick the first visible task or
+choose using their own stable index in sorted visible tasks. In the
+same shared-access fixture, the latter rule raises independent verified
+coverage from one to three at the same 22 units. Fixed and rotating
+assignment each retain three tasks, so their two-task gains disappear.
+Own-access outcomes and the stopped missing comparisons stay the same.
+Two controls passed, and both rules' fresh outputs reproduced exactly.
+This is a test of the scripted baseline choice, with held-out policy
+comparisons and native measurements still pending.
