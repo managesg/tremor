@@ -42,13 +42,22 @@ def _digest(value):
     return isinstance(value, str) and SHA256.fullmatch(value) is not None
 
 
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON member: {key}")
+        result[key] = value
+    return result
+
+
 def _read_pinned(path, expected):
     if not _digest(expected):
         raise ValueError(f"invalid SHA-256 for {path}")
     raw = path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != expected:
         raise ValueError(f"SHA-256 mismatch for {path}")
-    return json.loads(raw)
+    return json.loads(raw, object_pairs_hook=_unique_object)
 
 
 def _review_references(index):
