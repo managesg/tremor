@@ -1475,3 +1475,24 @@ and costs remain unavailable.
 The integrated archive retained all 436 previous lab cases and added
 six L3 and L7 regressions. All 442 tests passed.
 [Integration replay](../../../runs/m4-acceptance-integration.91EuW9/OWNER.md)
+
+## M5 matched norm capture and replay
+
+The matched summary can now verify a separate witness for every
+planned norm arm. A complete grade binds the proposal-norm endpoint,
+pair, task, seed, frame and scorer bytes. Unavailable grades keep
+their reasons and leave independent recovery measures intact.
+
+A fixed archived grader replay regenerated six public cases. Two
+cases with identical action and reference bytes and different review
+state supplied contrasting grades for a new synthetic pair. Both
+capture joins passed. The earlier V1 and V2 reports reproduce byte
+for byte. The older matched archive has no per-arm grader frames.
+The public examples leave actual adapter training, native assessment,
+settlement and L8-D open.
+[Matched capture replay](../../../runs/m5-matched-norm-captures.HtXuY3/OWNER.md) ·
+[Exact grader replay](../../../runs/m5-public-norm-regrade.mJpnfz/OWNER.md)
+
+The isolated lab suite retained all 442 case IDs and added three scoped
+norm witness tests. All 445 passed.
+[Integrated archive](../../../runs/m5-norm-integration.CMVIor/OWNER.md)
