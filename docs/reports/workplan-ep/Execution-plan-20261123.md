@@ -1685,3 +1685,20 @@ authenticated custodian and separate admission remain open.
 
 The clean combined lab replay passed all 465 tests.
 [Integrated evidence](../../../runs/m4-m7-boundary-integration.ddTCfH/OWNER.md)
+
+## M2 full response-shape evidence
+
+The detached client and episode-loop candidate classifies the full
+response array before truncating display types, preserving the
+existing thinking stop beyond the first 16 blocks. The charge and
+logical turn both retain the bounded shape summary. The offline
+reconciler rejects crossed or missing evidence, including an
+uncharged turn claiming a response-derived status.
+
+Seven focused driver tests and seven evidence tests passed. Two fresh
+260-attempt mock replays reproduced the archived request-custody
+results. They verified 240 and 239 metered shapes and retained 20 and
+21 unresolved responses. Local shape disposition remains unavailable
+in both controls. The candidate is detached from owner code. Author,
+driver, pricing and current named release requirements remain open.
+[Driver and evidence replay](../../../runs/m2-shape-evidence.aIDSOk/OWNER.md)
