@@ -191,8 +191,9 @@ class Enforcer:
             return {"status": "refused", "reason": "agent_stopped", "executed": False, "costs_turn": True, "log": []}
         if "C" in self.practices and self.enforced and _valid(action, snapshot) is None and action["type"] == "work":
             action = dict(action, name=f"{action['agent']}-{action['task']}")  # the router assigns the name
-        if _valid(action, snapshot) is None and isinstance(state, dict) and state.get("claims_round") != snapshot.get("round"):
-            state["round_claims"], state["claims_round"] = {}, snapshot.get("round")
+        if _valid(action, snapshot) is None and isinstance(state, dict) and (
+                state.get("claims_round") != snapshot.get("round") or not isinstance(state.get("round_claims"), dict)):
+            state["round_claims"], state["claims_round"] = {}, snapshot.get("round")  # new round, or claims unreadable
         ok, why = check(self.practices, action, snapshot, state)
         if ok:
             self.refusals.record(False, who)

@@ -18,7 +18,10 @@ def default_judge(view):
 
 
 def calls(events):
-    """Tool calls only, as 'tool input' strings; text events and subagent returns are dropped."""
+    """Tool calls only, as 'tool input' strings; text events and subagent returns are dropped.
+    None if any event is not a dict: an unreadable trace is denied, never partly judged."""
+    if not all(isinstance(e, dict) for e in events):
+        return None
     return [f"{e['tool']} {e.get('input', '')}" for e in events if "tool" in e]
 
 
@@ -41,11 +44,13 @@ def verdict(judge, view, timeout=5.0):
 
 
 def action_only(events, judge=default_judge, timeout=5.0):
-    return verdict(judge, calls(events), timeout)
+    view = calls(events)
+    return DENY if view is None else verdict(judge, view, timeout)
 
 
 def with_reasoning(events, text, judge=default_judge, timeout=5.0):
-    return verdict(judge, calls(events) + [str(text)], timeout)
+    view = calls(events)
+    return DENY if view is None else verdict(judge, view + [str(text)], timeout)
 
 
 def combined(events, text, action_judge=default_judge, reason_judge=default_judge, timeout=5.0):
@@ -58,7 +63,7 @@ def combined(events, text, action_judge=default_judge, reason_judge=default_judg
 
 def audit_row(events, v):
     """Ledger-safe record: tool names and the verdict only, no text of any kind."""
-    return {"tools": [e["tool"] for e in events if "tool" in e], "verdict": v}
+    return {"tools": [e["tool"] for e in events if isinstance(e, dict) and "tool" in e], "verdict": v}
 
 
 def tpr_at_fpr(scores, twins, fpr=0.05):

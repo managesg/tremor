@@ -66,6 +66,8 @@ class T(unittest.TestCase):
             self.run_e_cap()
         with self.assertRaises(ValueError):
             C.dream("Z", self.mem, TR, "t1")
+        with self.assertRaises(ValueError):  # row-155 review defect 9: was TypeError on replay=None
+            C.dream("E", self.mem, TR, "t1")
 
     def run_e_cap(self):
         return C.dream("E", self.mem, TR, "t1", cap=1, replay=poison.replay, world=self.g["world"])

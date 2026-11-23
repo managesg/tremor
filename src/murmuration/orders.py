@@ -8,6 +8,7 @@ claim_collision_rate is EXECUTED collisions (board log); claim_collision_attempt
 too; report them side by side. false_done_rate is None unless a trace (or board work events) can back it.
 """
 import math
+import os
 import re
 from collections import Counter
 
@@ -79,7 +80,12 @@ def _marker_spread(ev, agents):
 
 
 def compute(log, f=0.75, trace=None):
-    ev = read_log(log) if isinstance(log, str) else list(log)
+    if isinstance(log, (str, os.PathLike)):
+        if not os.path.exists(log):  # read_log loads a missing file as empty; a missing log is an error here
+            raise FileNotFoundError(log)
+        ev = read_log(os.fspath(log))
+    else:
+        ev = list(log)
     agents = sorted({e["agent"] for e in ev if e.get("agent") is not None})
     n_agents = len(agents)
 

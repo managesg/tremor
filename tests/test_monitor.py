@@ -41,6 +41,12 @@ class T(unittest.TestCase):
         self.assertEqual(m.action_only(OK, lambda v: None), "deny")
         self.assertEqual(m.action_only(OK, lambda v: float("nan")), "deny")
 
+    def test_unreadable_event_is_denied_not_raised(self):
+        # Row-155 review defect 4: a string event made `"tool" in e` a substring test and raised TypeError.
+        self.assertEqual(m.action_only(["toolkit"]), "deny")
+        self.assertEqual(m.with_reasoning(OK + [None], "fine"), "deny")
+        self.assertEqual(m.audit_row(["toolkit"] + OK, "deny")["verdict"], "deny")
+
     def test_tpr_at_fpr_known_answer(self):
         twins = [i / 20 for i in range(20)]  # 0.00 .. 0.95
         # threshold 0.95 admits exactly 1/20 = 5% FPR; attacks at or above it: 3 of 4

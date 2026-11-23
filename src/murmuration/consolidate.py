@@ -41,6 +41,8 @@ def dream(arm, memory, transcripts, task, budget=0, cap=None, seed=0, replay=Non
         mem.append(rec(text))
         cost = len(text.encode())
     elif arm == "E":
+        if not callable(replay):
+            raise ValueError("arm E needs a replay checker")
         for r in active(memory):
             if "claim" in r:
                 cost += len(json.dumps(r["claim"], sort_keys=True).encode())

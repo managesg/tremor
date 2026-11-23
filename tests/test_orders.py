@@ -56,6 +56,18 @@ class OrdersTest(unittest.TestCase):
         self.assertEqual(compute(LOG)["memory_sprawl"]["items"], 3)
         self.assertTrue(all(v["unit"] for v in compute(LOG).values()))
 
+    def test_missing_and_pathlike_logs(self):
+        # Row-155 review defects 1a and 1b: a missing path gave all-None metrics; a Path raised TypeError.
+        import pathlib
+        import tempfile
+        with self.assertRaises(FileNotFoundError):
+            compute("/nonexistent/murmuration-board.jsonl")
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "board.jsonl"
+            from murmuration.board import Board
+            Board(str(p), seed=0)
+            self.assertIn("convergence_time", compute(p))
+
     def test_convergence_threshold_f(self):
         self.assertEqual(compute(LOG, f=0.5)["convergence_time"]["value"], 1)  # 1 of 2 agrees after round 0
         self.assertIsNone(compute(LOG[:7] + LOG[-1:], f=1.0)["convergence_time"]["value"])

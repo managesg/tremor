@@ -42,6 +42,13 @@ class Practices(unittest.TestCase):
         self.assertEqual(e.act({"type": "claim", "agent": "a2", "item": "t2"}, nxt, st)["status"], "admitted")
         self.assertEqual(st["round_claims"], {"t2": "a2"})
 
+    def test_state_without_round_claims_does_not_raise(self):
+        # Row-155 review defect 5: claims_round equal to the round but no round_claims raised KeyError.
+        st = {"claims_round": 1}
+        r = E.Enforcer("A").act({"type": "claim", "agent": "a1", "item": "t1"}, SNAP, st)
+        self.assertEqual(r["status"], "admitted")
+        self.assertEqual(st["round_claims"], {"t1": "a1"})
+
     def test_B(self):
         w = {"type": "write", "agent": "a1", "page": "p"}
         self.assertFalse(chk("B", w, st={"pages": {"p": "a2"}})[0])
