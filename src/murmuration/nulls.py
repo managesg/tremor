@@ -2,8 +2,8 @@
 
 Each null is computed by exact enumeration in Fractions; the tests compare it with a hand-derived
 closed form. This module covers the lines the bench review found missing or too weak: L1, L2, L4, L6
-and L7. L3 (correlated monitors) and L5 (random-order task choice) controls exist only as uncommitted
-lab files (lab/r1_readout_controls.py, lab/r1_l5_random_order_null.py) and are not part of this module.
+and L7. The L3 (correlated monitors) and L5 (random-order task choice) controls are the lab modules
+lab/r1_readout_controls.py and lab/r1_l5_random_order_null.py, with their own tests.
 
 Reading (L1): scripted adopters adopt independently with a caller-given probability per dose.
 Reading (L2): well-mixed epidemic with immunity is the Reed-Frost chain binomial over all generations

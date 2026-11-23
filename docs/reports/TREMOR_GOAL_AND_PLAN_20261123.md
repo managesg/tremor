@@ -85,7 +85,13 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - [x] Row 165 `monsel` (L3) `fb9fb62`, `vreplay` (L4) `7d28822`, `blocks` (L7) `b264d8f`. Full suites on `b264d8f`: lab 384 OK (2 skips), package 804 OK (1 skip), both exit 0 (`runs/commit-suite-row165.fymZzN`).
 - [x] Row 159 `susceptibility.py` `da38c43`. The worker draft was reviewed by this chat. Its ports match the lab originals in 0/500 differential cases each (`runs/r1-row159-port-check.wu8GlM`, EVIDENCE `94734818…`). This chat fixed the worker's wrong hand value (slope 2/5) and removed the test's dependency on an uncommitted lab file.
 - [x] Row 162 `nulls.py` `00619ed`: exact enumerated nulls for L1, L2 (all generations), L4, L6 and L7, each checked against a closed form (11 tests). The L3 and L5 controls remain in untracked lab files.
-- [ ] Full suites on `00619ed` and an independent adversarial verifier on the nine modules: running.
+- [x] Full suites on `00619ed`: lab and package OK, exit 0 (`runs/commit-suite-r1build.5wKvBH`).
+- [x] **Independent verifier on `00619ed`** (fresh-context Opus, briefed with interrogate, host check `seabridge-spark`). ACCEPT: `evapclaim`, `quarantine`, `monsel`, `lease`, `susceptibility`. REJECT: `vreplay` (truncated readings), `blocks` (ZeroDivisionError; not proportional), `nulls` (`recovery_nights` hangs at tol 0; `immune` has no effect). Also flagged: `sgv` used raw variance instead of overdispersion; a parent counted as independent support in `quarantine`; lab files cited but not committed.
+- [x] **All findings fixed** in `de56a29`, with a test for each.
+- [x] **Ten lab files committed** in `7f1de86`: the row-159 port originals, the L3 and L5 null controls, the L6 lease fixture, and their tests. All were created by the `01a1fa3a` lineage (`runs/r1-lab-controls-custody.Bxz1nK/CUSTODY.md`). Lab suite: 406 tests OK.
+- [x] **Row 155 receipt:** fresh-context body read of all ten modules at `00619ed` (`runs/r1-row155-body-review.ipRvT9/REVIEW.md`). The row's `poison` path is wrong: the module is `trapbench/poison.py`. Eight defects were demonstrated in the core modules: orders, ledger `deny_keys`, monitor, enforce, coupling git-option injection, perturb `passed` coercion, and consolidate arm E. They are recorded and not yet fixed.
+- [ ] **Next:** full suites on the final commit; a re-verify of the fixed modules; the row-169 per-module receipts; triage of the row-155 core-module defects.
+- [ ] **Row 157:** the preregistration-author role is named in Table A rows 238 and 242, but no person or session is designated. The contention definition stays held until PC designates one.
 - [ ] Rows 155 and 169: module-body review and per-module verification receipts.
 - [ ] Then: PC fresh nomination of the new cut, and bench re-review.
 
