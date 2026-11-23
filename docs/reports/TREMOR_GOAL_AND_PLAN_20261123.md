@@ -25,6 +25,9 @@ Paths are relative to the repository root.
     - PC 7ce2c340 then launches the designated bench reviewer, or delegates the launch to this lane.
     - The N2 custodian supplies the sealed commitment.
     - The Assistant reviews the host evidence.
+  - **X42 Gate R1 bench verdict: REJECT** on e972484a (`runs/x42-r1-bench-verdict.uPqmQ9/VERDICT.md`, EVIDENCE `a770a1dd…`). The reviewer was a fresh-context Opus subagent briefed with interrogate, launched under the owner's chat authorization. Rows 159 (no `susceptibility.py`), 162 (missing L4 and L6 nulls) and 165 (no technique modules) are REJECT. Rows 155, 157, 167 (custody-gated) and 169 are INCOMPLETE. Row 158 is ACCEPT with a caveat.
+  - **Defect D1 fixed:** local commit `899ffeb`. Undefined Kish values now return None. Lab 384 OK and package 776 OK on a clean archive (`runs/commit-suite-d1fix.5AglpS`, EVIDENCE `1a17ed73…`).
+  - **Next for M3 R1:** build the missing row-159, 162 and 165 deliverables, then get a fresh PC nomination and a bench re-review. Owner: this lane for the build. The preregistration author owns definitions such as "contention above 1".
   - **R3 L2/L5 blocker owners:** the runner owner, custodian, admission reviewer and Alejandro. Register: `docs/reports/workplan-ep/R3-L2-admission-inventory.md`.
 - [ ] **M4 BLOCKED on protocol freezes · L1–L8.** Offline L7 rotation and L8-D lineage groundwork exist. Evidence: `runs/m4-l7-combined-rotation.X5jf6W/OWNER.md`.
   - **Blocker owners:** the line authors, custodians and reviewers. Alejandro owns the R2 sensitivity release.
