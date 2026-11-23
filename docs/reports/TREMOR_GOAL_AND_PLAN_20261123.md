@@ -75,9 +75,26 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 
 ## Next action
 
-**WAITING.** No row can run without an owner decision. The first reply should answer the ordered X42 request in `coordinator-outbox/overnight-20261121.md`:
+**ACTIVE, Table A row X42 (`PC_ALL_BLOCKERS_WORKPLAN_V2_20261122-2d2173c9.md`, rows 232–242).** Source-only R1 build-out after the Gate R1 bench REJECT:
 
-1. Source owners decide whether to adopt the BtUauk grader fix.
-2. PC then launches the bench reviewer on the final cut, or delegates that launch to this lane.
+- [x] D1 Kish guard, `899ffeb`.
+- [x] Row 165 `evapclaim` (L5), `bf304de`: 4 focused tests pass; full suites on that commit are running (`runs/commit-suite-evapclaim.wXXQ8w`).
+- [x] Row 165 `lease` (L6), `4464b7e`: 4 focused tests pass. The bound and the pooling groups are caller-supplied; no method or threshold is invented.
+- [x] Row 165 `sgv` (L1), `44e19cc`: 4 focused tests pass. It uses the proposal's 10-rerun minimum.
+- [x] Row 165 `quarantine` (L2), `604fa25`: 4 focused tests pass. R comes from `readouts.reproduction_number`.
+- [ ] Row 165, the remaining modules: `monsel` (L3), `vreplay` (L4), `blocks` (L7). Then the full suites on the final commit.
+- [ ] Row 159 `susceptibility.py`: an untracked worker draft is on disk, unaccepted until provenance and tests are verified.
+- [ ] Row 162: L4 iterated-map and L6 fixed K/D lease nulls; strengthen the L1, L2 and L7 nulls.
+- [ ] Rows 155 and 169: module-body review and per-module verification receipts.
+- [ ] Then: PC fresh nomination of the new cut, and bench re-review.
+
+Routed, not done by this lane:
+- Row 157 "contention above 1": preregistration author.
+- Row 167 sealed N2: custodian.
+- Grader-fix adoption: source owners.
+- Host windows: PC and the Assistant.
+- D8 and spend: Alejandro.
+
+The seven row-165 workers ran on a Windows read-only host (`C:\Users\adelm\.omniroute\cxa`) and could not reach the Spark repository. Their claims stay unaccepted.
 
 Limits are unchanged: no push or PR, no deletion, no paid calls, no AWS access, no secrets printed, one session per lane.
