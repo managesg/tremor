@@ -53,3 +53,23 @@ Sources:
 ### After all three
 
 The bounded yes stays as written in the packet: reserve 0.1 GPU-hour in `spark-replication` from the 9.5 GPU-hour residual and issue one one-use admission for the exact SmolLM3 smoke on the adopted launcher, for one fresh UTC window. This needs Alejandro's or PC's named approval, because it is a spend and runtime gate.
+
+### Decision 3 follow-up: patched launcher adopted in `0b1e394`
+
+The exact bytes from `runs/m8-smoke-bound-opening.xlu84i` are committed: 17 new lab files plus that packet's `lab/r3_resource_audit.py`. They were verified in `runs/m8-launcher-adoption-prep.551eS6` (EVIDENCE.sha256 `d5115eb2…`, ADOPT.sha256).
+
+- **Recipe digest:** unchanged by the patch, `27a220e968184f3be53c5bbe5bbf9c1c049d730f0b229e01d87ccf873e8b6a43` for both stock and patched. It matches the vt3Sj1 pin.
+- **Tests:** the xlu84i `verify.sh` exited 0 (75 tests). The smoke tests passed, 50 OK.
+- **Superseded:** the stock source-manifest pin `c8164f59…`. The patched source manifest that replaces it, by sha256 of the committed bytes at `0b1e394`:
+
+```
+fd0fac7a8ef749adba676021c854fbbfbc2d726d4be89d3f9cea73671d1f286e  lab/smollm3_opening_balance.py
+614bf82974a1b3335fca55743992ac8b518eb7c43998cc670303c6c44189e1f2  lab/smollm3_smoke_launch.py
+78fe23335856eec34b5936fd191829721060022108f86cfdc1364b21b3fb74a3  lab/smollm3_smoke_preflight.py
+980c09cdb9b4106eef02c40264fd5246a2f4c9fc7482de8e934fb7a0b636ff56  lab/tests/test_smollm3_smoke_launch.py
+```
+
+- **Remaining gaps:**
+  - an independent review of `0b1e394` (requested);
+  - the runner reviewer's acceptance of this manifest for the admission;
+  - memory and storage, as in Decisions 1 and 2.
