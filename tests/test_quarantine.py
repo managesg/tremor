@@ -23,6 +23,10 @@ class Quarantine(unittest.TestCase):
         self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["a"]}), set())
         self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["e"]}), {"b"})
 
+    def test_sibling_from_same_source_is_not_independent(self):
+        # b and c both derive from a: c supporting b shares provenance; d (child of b) is also refused.
+        self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["c"], "c": ["d"]}), set())
+
     def test_verified_notes_are_released(self):
         self.assertEqual(Q.releasable(NOTES, verified={"c"}), {"c"})
 
