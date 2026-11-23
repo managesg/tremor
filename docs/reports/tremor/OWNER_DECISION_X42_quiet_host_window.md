@@ -25,7 +25,7 @@
 
 - **Suites in one window:** package (`discover -s tests`) and lab (`discover -s lab/tests -t .`), in that order, in two containers created before the window and run back to back.
 - **Recorded at d918428 on the host** (clean `git archive`, no container, `runs/commit-suite-rebuild.gtQgQg/`): package 869 tests, OK, skipped 1, 755.6 s; lab 832 tests, errors 10, skipped 9, 62.3 s. The 10 lab errors are 4 numpy-dependent (`test_adapter_tensor_lineage`), 3 torch-dependent (`test_l8_loader_receipt`) and 3 that read `runs/ep1-live/pilot3/episodes.jsonl` (`test_pilot4_preflight_manifest`).
-- **Container baseline (finished):** `runs/container-suite-d918428.Q1iSRQ/` (its `DONE` file and exit files exist; `OWNER.md` read). In the pinned image, with read-only mounts for the Lean toolchain, `runs/ep1-live/pilot3` and (lab only) `runs/spend/pilot3.jsonl`: package 869 tests, OK, skipped 1, exit 0 (`package.exit`); lab 832 tests, OK, skipped 2, exit 0 (`lab.exit`). The first lab run had 2 errors (`test_pilot4_preflight_manifest`) only because the spend ledger `runs/spend/pilot3.jsonl` was not mounted; that is a mount omission, not a code fault. Note for the runner: it currently mounts four binds and does not mount `runs/spend/pilot3.jsonl`, so it must add that read-only bind to the lab container (and the `.Mounts | length` check becomes 5) before it is admitted.
+- **Container baseline (finished):** `runs/container-suite-d918428.Q1iSRQ/` (its `DONE` file and exit files exist; `OWNER.md` read). In the pinned image, with read-only mounts for the Lean toolchain, `runs/ep1-live/pilot3` and (lab only) `runs/spend/pilot3.jsonl`: package 869 tests, OK, skipped 1, exit 0 (`package.exit`); lab 832 tests, OK, skipped 2, exit 0 (`lab.exit`). The first lab run had 2 errors (`test_pilot4_preflight_manifest`) only because the spend ledger `runs/spend/pilot3.jsonl` was not mounted; that is a mount omission, not a code fault. The runner now binds `runs/spend/pilot3.jsonl` read-only into both containers, pinned at sha256 `142b7fef649bb0fe187ebf7fc5cb21e13a7bf4be17756cd9927c1eceae6117e1`, and checks five read-only mounts. The same setup ran green on candidate e11df9d (`runs/container-suite-e11df9d.hZjTis`: package 869 OK, lab 860 OK).
 - **Open decision D2 (reviewer decides with reasons, before W1):** what "green" means for the lab suite. The policy has no allowance for errors. The container baseline settles the practical question: in the pinned image the lab suite is green, so D2 reduces to "green = both suites exit 0 in the pinned image with those read-only mounts". The host-only lab errors (numpy, torch, pilot3) do not occur in the container, so no named error allowance is needed. I recommend that rule. A window whose suite is not green under the pinned rule is not an eligible green window.
 - **Pinning the roster:** the expected roster is the sorted list of test ids from discovery, produced without running a test, in a container with the section 6 flags, and its sha256 recorded by PC. Command (replace the final argument with `lab` for the lab suite, with `-t .` semantics built in):
 
@@ -57,6 +57,7 @@ tree=6b15853eafadb433b6f53fa62ac41caa5b9b5fff
 image=sha256:c74c8710f2bc017b5de956853c50d896af4aa49b751bb87cbebf69e5206befb7
 lean=$repo/data/tools/lean/lean-4.35.0-linux_aarch64
 pilot3=$repo/runs/ep1-live/pilot3
+spend=$repo/runs/spend/pilot3.jsonl
 cadence=5
 D=(docker --host unix:///var/run/docker.sock)
 bundle=$(mktemp -d "$repo/runs/x42-quiet-$window.XXXXXX")
@@ -108,7 +109,9 @@ git -C "$repo" ls-tree -r "$commit" | while read -r mode type blob path; do
   test "$(git -C "$repo" hash-object --no-filters -- "$bundle/source/$path")" = "$blob"
 done
 test "$(find "$bundle/source" -type f | wc -l)" = "$(git -C "$repo" ls-tree -r --name-only "$commit" | wc -l)"
-mkdir -p "$bundle/source/runs/ep1-live/pilot3" "$bundle/source/data/tools/lean/lean-4.35.0-linux_aarch64"
+mkdir -p "$bundle/source/runs/ep1-live/pilot3" "$bundle/source/runs/spend" "$bundle/source/data/tools/lean/lean-4.35.0-linux_aarch64"
+: > "$bundle/source/runs/spend/pilot3.jsonl"  # mountpoint for the read-only spend ledger
+test "$(sha256sum < "$spend" | cut -d" " -f1)" = 142b7fef649bb0fe187ebf7fc5cb21e13a7bf4be17756cd9927c1eceae6117e1  # spend ledger pin (observed 2026-11-23)
 manifest > "$bundle/source.before.sha256"
 (cd "$pilot3" && sha256sum -c --quiet - <<'PINS'
 04401ed5cf7d07e82e65bfa95d792234ac201cb591b12419434bbff6c2e4e0f6  episodes.jsonl
@@ -134,6 +137,7 @@ mk() {  # $1 name, $2 PYTHONPATH, rest = unittest discover arguments
     --mount "type=bind,source=$bundle/source/formal/alloc_score,target=/lean-source,readonly" \
     --mount "type=bind,source=$lean,target=/repo/data/tools/lean/lean-4.35.0-linux_aarch64,readonly" \
     --mount "type=bind,source=$pilot3,target=/repo/runs/ep1-live/pilot3,readonly" \
+    --mount "type=bind,source=$spend,target=/repo/runs/spend/pilot3.jsonl,readonly" \
     --workdir /repo -e HOME=/tmp -e CUDA_VISIBLE_DEVICES= -e PYTHONDONTWRITEBYTECODE=1 \
     -e PYTHONPATH="$pp" -e OMP_NUM_THREADS=2 --entrypoint /bin/sh "$image" \
     -c 'cp -R /lean-source/. /repo/formal/alloc_score/ || exit 70; cg() { echo "== CGROUP $1"; cat /sys/fs/cgroup/cpu.stat /sys/fs/cgroup/io.stat /sys/fs/cgroup/memory.peak 2>&1 || true; }; cg start; timeout 1500s python -B -m unittest discover "$@"; s=$?; cg end; exit $s' sh "$@")
@@ -145,7 +149,7 @@ mk() {  # $1 name, $2 PYTHONPATH, rest = unittest discover arguments
      (.Host | .NetworkMode == "none" and .Memory == 4294967296 and .NanoCpus == 2000000000 and
        .PidsLimit == 256 and .ReadonlyRootfs and .Runtime == "runc" and
        (.Devices | length) == 0 and (.DeviceRequests | length) == 0 and (.PortBindings | length) == 0) and
-     (.Mounts | length) == 4 and all(.Mounts[]; .RW == false)' "$bundle/$n.inspection.json" >/dev/null
+     (.Mounts | length) == 5 and all(.Mounts[]; .RW == false)' "$bundle/$n.inspection.json" >/dev/null
 }
 mk package /repo/src:/repo/tests:/repo -s tests -v
 mk lab /repo/src:/repo/lab:/repo/tests:/repo -s lab/tests -t . -v
