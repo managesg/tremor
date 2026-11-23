@@ -10,7 +10,7 @@ from lab import smollm3_smoke_admission as admission
 from lab import smollm3_smoke_settlement as smoke
 
 
-FIXTURE = Path(__file__).resolve().parents[3] / "fixture"
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / "smollm3_opening"  # committed copy of the xlu84i fixture
 LEDGER_PIN = "4394d1c6d09eabd9b463b08e03956d9977bd6c28fbe74c2f1fb7a34ee65cdadd"
 GUARD_PIN = "369cbc6ee59dc9ae50a0b0dde8189d7be418fca4c91a658f6245e0707fa48af9"
 CUT = "2026-11-21T20:00:00Z"
