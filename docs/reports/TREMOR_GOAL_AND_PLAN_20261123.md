@@ -82,9 +82,10 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - [x] Row 165 `lease` (L6), `4464b7e`: 4 focused tests pass. The bound and the pooling groups are caller-supplied; no method or threshold is invented.
 - [x] Row 165 `sgv` (L1), `44e19cc`: 4 focused tests pass. It uses the proposal's 10-rerun minimum.
 - [x] Row 165 `quarantine` (L2), `604fa25`: 4 focused tests pass. R comes from `readouts.reproduction_number`.
-- [ ] Row 165, the remaining modules: `monsel` (L3), `vreplay` (L4), `blocks` (L7). Then the full suites on the final commit.
-- [ ] Row 159 `susceptibility.py`: an untracked worker draft is on disk, unaccepted until provenance and tests are verified.
-- [ ] Row 162: L4 iterated-map and L6 fixed K/D lease nulls; strengthen the L1, L2 and L7 nulls.
+- [x] Row 165 `monsel` (L3) `fb9fb62`, `vreplay` (L4) `7d28822`, `blocks` (L7) `b264d8f`. Full suites on `b264d8f`: lab 384 OK (2 skips), package 804 OK (1 skip), both exit 0 (`runs/commit-suite-row165.fymZzN`).
+- [x] Row 159 `susceptibility.py` `da38c43`. The worker draft was reviewed by this chat. Its ports match the lab originals in 0/500 differential cases each (`runs/r1-row159-port-check.wu8GlM`, EVIDENCE `94734818…`). This chat fixed the worker's wrong hand value (slope 2/5) and removed the test's dependency on an uncommitted lab file.
+- [x] Row 162 `nulls.py` `00619ed`: exact enumerated nulls for L1, L2 (all generations), L4, L6 and L7, each checked against a closed form (11 tests). The L3 and L5 controls remain in untracked lab files.
+- [ ] Full suites on `00619ed` and an independent adversarial verifier on the nine modules: running.
 - [ ] Rows 155 and 169: module-body review and per-module verification receipts.
 - [ ] Then: PC fresh nomination of the new cut, and bench re-review.
 
