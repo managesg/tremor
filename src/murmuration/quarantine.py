@@ -10,7 +10,8 @@ Reading: notes are dicts with "id" and "parents" (provenance), as in readouts.re
 Reading: support is a caller mapping note id -> ids of notes offered as corroboration; a supporter counts
 only if it shares no provenance with the note: the two lineages (each note plus all its ancestors) are
 disjoint. This covers the cycle check (support descending from the note), a note's own source, and a
-sibling derived from the same source.
+sibling derived from the same source. A supporter must itself be verified: two unverified notes
+cannot release each other (planted copies of one wrong note need not be linked by provenance).
 Reading: a note's measured R is readouts.reproduction_number with that note as the only planted root;
 ties are broken by note id.
 """
@@ -42,6 +43,9 @@ def ancestors(notes, note_id):
 def releasable(notes, verified, support=None):
     """Ids that may be relayed or promoted: verified, or with at least one independent supporter."""
     byid = _index(notes)
+    if isinstance(verified, (str, bytes)) or not isinstance(verified, (set, frozenset, list, tuple)):
+        raise ValueError("verified must be a set of note ids")
+    verified = set(verified)
     support = support or {}
     out = set()
     for nid in byid:
@@ -49,8 +53,11 @@ def releasable(notes, verified, support=None):
             out.add(nid)
             continue
         own = ancestors(notes, nid) | {nid}
-        for s in support.get(nid, ()):
-            if s in byid and own.isdisjoint(ancestors(notes, s) | {s}):
+        offered = support.get(nid, ())
+        if isinstance(offered, (str, bytes)):
+            raise ValueError(f"support for {nid!r} must be a list of note ids, not a string")
+        for s in offered:
+            if s in byid and s in verified and own.isdisjoint(ancestors(notes, s) | {s}):
                 out.add(nid)
                 break
     return out

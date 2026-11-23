@@ -44,13 +44,13 @@ class EvidenceLeases(unittest.TestCase):
         L = EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate,
                           irreversible={"rm"}, group={"a": "fs", "b": "fs"})
         L.observe("b", False); L.observe("b", False)
-        L.counts["a"] = [0, 0]
+        L.register("a")
         L.observe("rm", False)
         L.end_round(used=())
         self.assertTrue(L.allowed("a") and L.allowed("b"))
         self.assertFalse(L.allowed("rm"))
         solo = EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate)
-        solo.counts["a"] = [0, 0]
+        solo.register("a")
         solo.end_round(used=())
         self.assertFalse(solo.allowed("a"))   # no pooling: no trials, no bound, no grant
 
@@ -61,6 +61,17 @@ class EvidenceLeases(unittest.TestCase):
                 EvidenceLease(**args)
         with self.assertRaises(ValueError):
             EvidenceLease(target=0.5, idle_rounds=1, bound=pooled_rate).observe("x", 1)
+        # row-169 verifier: irreversible="rm" protected {'r','m'} and widened "rm"; used="edit" was split
+        with self.assertRaises(ValueError):
+            EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate, irreversible="rm")
+        with self.assertRaises(ValueError):
+            EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate).end_round(used="edit")
+
+    def test_solo_scope_does_not_pool_with_a_lookalike_group_key(self):
+        L = EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate, group={"x": ("solo", "y")})
+        L.observe("x", True)
+        L.register("y")
+        self.assertEqual(L._pooled("y"), (0, 0))
 
 
 if __name__ == "__main__":

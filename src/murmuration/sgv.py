@@ -8,13 +8,15 @@ type. The reruns are charged to the budget.
 Reading: a unit has `items[u]` checked items; each rerun yields the count of items that passed. Its
 overdispersion is the sample variance of those counts over the binomial variance n p (1 - p), with p the
 mean pass share (McCullagh and Nelder, as in readouts.overdispersion): 1 when items pass independently,
-above 1 when reruns swing together. It is undefined (None) when p is 0 or 1, and when n is 1, because a
-single pass/fail item's variance is fixed by its mean and carries no overdispersion signal.
+above 1 when reruns swing together. It is undefined (None) when p is 0 or 1, with fewer than 2 reruns,
+and when n is 1, because a single pass/fail item's variance is fixed by its mean and carries no
+overdispersion signal.
 Reading: a unit with fewer than `min_reruns` reruns takes the mean overdispersion of the units of its
 task type that have enough reruns and a defined estimate; with none, its estimate is None and it
 receives no share.
 Reading: if every estimate is zero or None there is no signal to allocate on, and the result is None.
 """
+import math
 import statistics as st
 
 MIN_RERUNS = 10  # stated in the proposal, not tuned here
@@ -60,8 +62,8 @@ def dispersion(reruns, items, task_type=None, min_reruns=MIN_RERUNS):
 def allocate(reruns, items, budget, rerun_cost, task_type=None, min_reruns=MIN_RERUNS):
     """Verification budget per unit, proportional to overdispersion, after charging the reruns."""
     for name, x in (("budget", budget), ("rerun_cost", rerun_cost)):
-        if isinstance(x, bool) or not isinstance(x, (int, float)) or x < 0:
-            raise ValueError(f"{name} must be a non-negative number")
+        if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) or x < 0:
+            raise ValueError(f"{name} must be a finite non-negative number")
     remaining = budget - rerun_cost * sum(len(cs) for cs in reruns.values())
     if remaining < 0:
         raise ValueError("reruns cost more than the budget")

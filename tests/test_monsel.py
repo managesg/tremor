@@ -38,6 +38,19 @@ class MonitorSelection(unittest.TestCase):
             M.hidden_view([], seed=0)
         with self.assertRaises(ValueError):
             M.ensemble_catch({"a": [1, 0]}, ["z"])  # was KeyError
+        # row-169 verifier: unreplayable seed, string and duplicate selections, non-dict table
+        for call in (lambda: M.hidden_view(["a", "b"], None),
+                     lambda: M.hidden_view(["a", "a", "b"], 0),
+                     lambda: M.hidden_view("abc", 0),
+                     lambda: M.ensemble_catch({"a": [1, 0], "b": [0, 1]}, "ab"),
+                     lambda: M.select([[0, 1]], 1),
+                     lambda: M.select({1: [0, 1], "a": [1, 0]}, 1)):
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_hidden_view_covers_every_selected_view_across_seeds(self):
+        sel = ["actions", "board", "counts"]
+        self.assertEqual({M.hidden_view(sel, s) for s in range(50)}, set(sel))
 
 
 if __name__ == "__main__":

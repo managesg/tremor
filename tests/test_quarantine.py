@@ -14,18 +14,25 @@ NOTES = [
 
 class Quarantine(unittest.TestCase):
     def test_cycle_check_rejects_self_tracing_support(self):
-        # d supporting b does not count: d descends from b. e supporting a counts: e is independent.
-        out = Q.releasable(NOTES, verified=set(), support={"b": ["d"], "a": ["e"], "c": ["c"]})
-        self.assertEqual(out, {"a"})
+        # Supporters d, e and c are verified. d supporting b does not count: d descends from b.
+        # e supporting a counts: e is independent. c supporting itself does not count.
+        out = Q.releasable(NOTES, verified={"d", "e"}, support={"b": ["d"], "a": ["e"], "c": ["c"]})
+        self.assertEqual(out, {"a", "d", "e"})
 
     def test_source_cannot_corroborate_its_own_derivative(self):
-        # a is b's parent, so a supporting b is not independent; e is.
-        self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["a"]}), set())
-        self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["e"]}), {"b"})
+        # a is b's parent, so a (verified) supporting b is not independent; verified e is.
+        self.assertEqual(Q.releasable(NOTES, {"a"}, support={"b": ["a"]}), {"a"})
+        self.assertEqual(Q.releasable(NOTES, {"e"}, support={"b": ["e"]}), {"b", "e"})
 
     def test_sibling_from_same_source_is_not_independent(self):
-        # b and c both derive from a: c supporting b shares provenance; d (child of b) is also refused.
-        self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["c"], "c": ["d"]}), set())
+        # b and c both derive from a: verified c supporting b shares provenance; so does d for c.
+        self.assertEqual(Q.releasable(NOTES, {"c", "d"}, support={"b": ["c"], "c": ["d"]}), {"c", "d"})
+
+    def test_unverified_notes_cannot_release_each_other(self):
+        # row-169 verifier: two unrelated unverified copies offered as support for each other.
+        copies = [{"id": "p1", "parents": []}, {"id": "p2", "parents": []}]
+        self.assertEqual(Q.releasable(copies, set(), {"p1": ["p2"], "p2": ["p1"]}), set())
+        self.assertEqual(Q.releasable(copies, {"p2"}, {"p1": ["p2"]}), {"p1", "p2"})
 
     def test_verified_notes_are_released(self):
         self.assertEqual(Q.releasable(NOTES, verified={"c"}), {"c"})
@@ -40,6 +47,10 @@ class Quarantine(unittest.TestCase):
             Q.releasable([{"id": "x"}], set())
         with self.assertRaises(ValueError):
             Q.releasable([{"id": "x", "parents": []}, {"id": "x", "parents": []}], set())
+        with self.assertRaises(ValueError):
+            Q.releasable(NOTES, None)
+        with self.assertRaises(ValueError):
+            Q.releasable(NOTES, {"e"}, {"b": "e"})  # a string support list
 
 
 if __name__ == "__main__":

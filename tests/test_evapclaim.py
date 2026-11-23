@@ -34,6 +34,13 @@ class EvaporatingClaims(unittest.TestCase):
             E.choose({"a": -1}, {"a"}, 0)
         with self.assertRaises(ValueError):
             E.choose({}, {"a"}, -1)
+        # row-169 verifier: a bare string was split into one-letter tasks
+        for call in (lambda: E.evaporate({"task1": 1.0}, "task1", 0.5),
+                     lambda: E.choose({}, "ab", 0),
+                     lambda: E.evaporate([("a", 1.0)], (), 0.5),
+                     lambda: E.choose({}, {1, "a"}, 0)):
+            with self.assertRaises(ValueError):
+                call()
 
 
 if __name__ == "__main__":

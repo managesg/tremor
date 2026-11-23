@@ -44,7 +44,11 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
                      lambda: sgv.dispersion({"A": []}, ITEMS),
                      lambda: sgv.dispersion({"Z": [1, 2]}, ITEMS),                # no item count
                      lambda: sgv.dispersion({"A": [1, 2]}, {"A": 0}),
-                     lambda: sgv.dispersion({"A": [1, 2]}, ITEMS, min_reruns=2.5)):
+                     lambda: sgv.dispersion({"A": [1, 2]}, ITEMS, min_reruns=2.5),
+                     # row-169 verifier: NaN and infinite budgets produced NaN and infinite shares
+                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("nan"), 1),
+                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, 100, float("nan")),
+                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("inf"), 1)):
             with self.assertRaises(ValueError):
                 call()
 

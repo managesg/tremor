@@ -20,6 +20,11 @@ class BlockAndSummarise(unittest.TestCase):
         self.assertEqual([len(b) for b in B.assign(range(10), [list("abcdefghi"), ["j"]])], [9, 1])
         # 3 agents over 8, 1, 1 tasks: shares 2.4, 0.3, 0.3; the minimum of one forces 1, 1, 1.
         self.assertEqual([len(b) for b in B.assign(range(3), [list("abcdefgh"), ["i"], ["j"]])], [1, 1, 1])
+        # row-169 verifier: 10 agents over 15, 5, 15, 11, 5 tasks: shares 2.94, 0.98, 2.94, 2.16, 0.98.
+        # Floors 2, 0, 2, 2, 0 leave 4 seats; largest fractions .98, .98, .94, .94 -> 3, 1, 3, 2, 1.
+        # (The clamped version gave 2, 2, 2, 2, 2.)
+        sizes = [len(b) for b in B.assign(range(10), [["x"] * k for k in (15, 5, 15, 11, 5)])]
+        self.assertEqual(sizes, [3, 1, 3, 2, 1])
 
     def test_upward_one_line_per_block(self):
         out = B.upward([["x ok", "y ok"], ["z failed"]], lambda ls: "; ".join(ls))
@@ -33,6 +38,13 @@ class BlockAndSummarise(unittest.TestCase):
             B.assign(range(1), [["a"], ["b"]])
         with self.assertRaises(ValueError):
             B.assign(range(3), [[], []])  # was ZeroDivisionError
+        for call in (lambda: B.groups("ab", {("a", "b"): 1.0}, float("nan")),
+                     lambda: B.groups("ab", {("a", "b"): float("nan")}, 0.5),
+                     lambda: B.groups("ab", {("a", "b"): None}, 0.5),
+                     lambda: B.upward([["a"]], lambda ls: "one\rtwo"),
+                     lambda: B.upward([["a"]], lambda ls: "one two")):
+            with self.assertRaises(ValueError):
+                call()
         with self.assertRaises(ValueError):
             B.upward([["a"]], lambda ls: "two\nlines")
         self.assertEqual(B.assign(range(3), []), [])

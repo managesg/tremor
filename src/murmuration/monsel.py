@@ -14,9 +14,19 @@ Reading: greedy ties are broken by view name; the hidden view uses an explicit s
 import random
 
 
+def _views(views):
+    if isinstance(views, (str, bytes)) or not isinstance(views, (list, tuple, set, frozenset)):
+        raise ValueError("views must be a list, tuple or set of view names, not a string")
+    if len(set(views)) != len(views):
+        raise ValueError("views must not repeat")
+    return list(views)
+
+
 def _check(misses):
-    if not misses:
-        raise ValueError("at least one view is required")
+    if not isinstance(misses, dict) or not misses:
+        raise ValueError("misses must be a nonempty dict of view name -> miss list")
+    if any(not isinstance(v, str) for v in misses):
+        raise ValueError("view names must be strings")
     lengths = {len(row) for row in misses.values()}
     if len(lengths) != 1 or 0 in lengths:
         raise ValueError("every view needs the same nonzero number of calibration episodes")
@@ -29,6 +39,7 @@ def _check(misses):
 def ensemble_catch(misses, views):
     """Share of calibration episodes caught by at least one of `views`."""
     episodes = _check(misses)
+    views = _views(views)
     unknown = set(views) - set(misses)
     if unknown:
         raise ValueError(f"unknown views: {sorted(unknown)}")
@@ -56,6 +67,9 @@ def select(misses, k):
 
 def hidden_view(selected, seed):
     """The one view hidden from the output selector for this run."""
+    selected = _views(selected)
     if not selected:
         raise ValueError("no selected views to hide")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("seed must be an explicit integer")  # None would draw from the OS: not replayable
     return random.Random(seed).choice(sorted(selected))

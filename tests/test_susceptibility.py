@@ -4,9 +4,7 @@ import unittest
 from murmuration import readouts as R
 from murmuration import susceptibility as S
 from lab import r1_kish_spread as lab_kish
-
-# lab/r1_response_fluctuation.py is not committed, so the fluctuation port is checked by hand values
-# here; its 500-case differential against the lab original is recorded in runs/r1-row159-port-check.wu8GlM.
+from lab import r1_response_fluctuation as lab_fluct
 
 NAMES = ("rerun_variance", "dose_slope", "response_fluctuation_ratio", "adoption", "cascade_depth",
          "reproduction_number", "recovery_time", "pairwise_miss", "kish_spread_check")
@@ -66,6 +64,11 @@ class FluctuationPort(unittest.TestCase):
         (list(enumerate(((0,) * 5,) * 3)), 2, 1),                                       # zero binomial variance
         ([(0, (0, 1)), (1, (1,)), (2, (2,))], 2, 1),                                    # single rerun: variance None
     ]
+
+    def test_identical_to_lab(self):
+        for groups, team, ref in self.CASES:
+            self.assertEqual(S.response_fluctuation_ratio(groups, team_size=team, reference_dose=ref),
+                             lab_fluct.measure(groups, team_size=team, reference_dose=ref))
 
     def test_degenerate_values_are_none(self):
         r = S.response_fluctuation_ratio(self.CASES[1][0], team_size=2, reference_dose=1)

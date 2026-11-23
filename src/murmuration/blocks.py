@@ -6,16 +6,18 @@ one summary line upward; the level above treats a block as one agent.
 
 Reading: coupling is a caller mapping {(task_a, task_b): weight}, e.g. from coupling.coupling; groups
 are connected components over pairs with weight >= `threshold`, a required parameter with no default.
-Reading: agents are split across groups in proportion to task count (largest remainder, ties by group
-order), at least one agent per group; fewer agents than groups is an error.
+Reading: "sized by coupling" is read as sized by the number of coupled tasks: agents are split across
+groups in proportion to task count by largest remainder (ties by group order); a group left with none
+then takes one agent from the most over-served block. Fewer agents than groups is an error.
 Reading: the summariser is caller-supplied; a block's summary must be a single line.
 """
+import math
 
 
 def groups(tasks, coupling, threshold):
     """Tasks partitioned into coupled groups, each sorted, groups ordered by their first task."""
-    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
-        raise ValueError("threshold must be a number")
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or not math.isfinite(threshold):
+        raise ValueError("threshold must be a finite number")
     tasks = sorted(set(tasks))
     parent = {t: t for t in tasks}
 
@@ -28,6 +30,8 @@ def groups(tasks, coupling, threshold):
     for (a, b), w in coupling.items():
         if a not in parent or b not in parent:
             raise ValueError(f"coupling pair {(a, b)!r} names an unknown task")
+        if isinstance(w, bool) or not isinstance(w, (int, float)) or not math.isfinite(w):
+            raise ValueError(f"coupling weight for {(a, b)!r} must be a finite number")
         if w >= threshold:
             parent[find(a)] = find(b)
     out = {}
@@ -47,13 +51,14 @@ def assign(agents, task_groups):
         raise ValueError("need at least one agent per group")
     total = sum(len(g) for g in task_groups)
     exact = [len(agents) * len(g) / total for g in task_groups]
-    sizes = [max(1, int(x)) for x in exact]
+    sizes = [int(x) for x in exact]  # largest-remainder (Hamilton) apportionment
     by_remainder = sorted(range(n), key=lambda i: (-(exact[i] - int(exact[i])), i))
-    for i in by_remainder[:max(0, len(agents) - sum(sizes))]:  # remainder < n, largest fraction first
+    for i in by_remainder[:len(agents) - sum(sizes)]:  # fewer than n seats left, largest fraction first
         sizes[i] += 1
-    while sum(sizes) > len(agents):  # the minimum of one overshot: take back from the most over-served
-        i = max((i for i in range(n) if sizes[i] > 1), key=lambda i: (sizes[i] - exact[i], -i))
-        sizes[i] -= 1
+    for j in range(n):  # then the minimum of one: move a seat from the most over-served block
+        if sizes[j] == 0:
+            i = max((i for i in range(n) if sizes[i] > 1), key=lambda i: (sizes[i] - exact[i], -i))
+            sizes[i], sizes[j] = sizes[i] - 1, 1
     blocks, at = [], 0
     for s in sizes:
         blocks.append(agents[at:at + s])
@@ -66,7 +71,7 @@ def upward(block_lines, summarise):
     out = []
     for i, lines in enumerate(block_lines):
         line = summarise(lines)
-        if not isinstance(line, str) or "\n" in line:
+        if not isinstance(line, str) or len(line.splitlines()) > 1 or line.endswith(("\n", "\r")):
             raise ValueError(f"block {i} summary must be a single line of text")
         out.append({"agent": f"block-{i}", "summary": line})
     return out

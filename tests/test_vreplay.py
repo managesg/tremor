@@ -32,6 +32,24 @@ class VerifiedReplay(unittest.TestCase):
             V.next_strength(-1, (1, 1), (1, 1))
         with self.assertRaises(ValueError):
             V.next_strength(3, (5,), (5, 9))  # was silently truncated by zip, hiding the rise in R
+        # row-169 verifier: text compared as text, NaN read as missing, strings read as lists, duplicates
+        for call in (lambda: V.next_strength(3, ("10", 0), ("9", 0)),
+                     lambda: V.next_strength(3, (float("nan"), 0.1), (9, 0.1)),
+                     lambda: V.next_strength(3, None, (1, 1)),
+                     lambda: V.retain(["a", "a"], {"a": 5}, 2),
+                     lambda: V.retain(["a", 1], {}, 2),
+                     lambda: V.retain(["a"], None, 1),
+                     lambda: V.gate("xy", lambda c: True),
+                     lambda: V.replay_batch("ab", ["c"])):
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_crashing_check_drops_the_claim(self):
+        self.assertEqual(V.gate([1, 2], lambda c: 1 / (c - 1) > 0), [2])
+
+    def test_retain_ties_and_unrecorded_use(self):
+        # "c" has 1 use; "a" and "b" have none recorded (0) and tie, broken by id.
+        self.assertEqual(V.retain(["b", "a", "c"], {"c": 1}, 2), ["c", "a"])
         with self.assertRaises(ValueError):
             V.retain(["a"], {"a": -1}, 1)
 

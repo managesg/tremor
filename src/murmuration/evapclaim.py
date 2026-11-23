@@ -12,6 +12,12 @@ Reading: the per-agent tie-break picks, among equally weak open tasks sorted by 
 """
 
 
+def _tasks(x, name):
+    if isinstance(x, (str, bytes, dict)) or not isinstance(x, (list, tuple, set, frozenset)):
+        raise ValueError(f"{name} must be a list, tuple or set of task ids, not a string")
+    return set(x)
+
+
 def _check_strength(task, s):
     if isinstance(s, bool) or not isinstance(s, (int, float)) or not 0 <= s <= 1:
         raise ValueError(f"mark strength for {task!r} must be a number in [0, 1]")
@@ -21,7 +27,9 @@ def evaporate(marks, renewed, retain):
     """One round: tasks in `renewed` go to 1.0, every other mark is multiplied by `retain`."""
     if isinstance(retain, bool) or not isinstance(retain, (int, float)) or not 0 < retain < 1:
         raise ValueError("retain must be a number strictly between 0 and 1")
-    renewed = set(renewed)
+    if not isinstance(marks, dict):
+        raise ValueError("marks must be a dict of task id -> strength")
+    renewed = _tasks(renewed, "renewed")
     out = {}
     for task, s in marks.items():
         _check_strength(task, s)
@@ -35,7 +43,12 @@ def choose(marks, open_tasks, agent_rank):
     """The weakest-marked open task for this agent, or None when no task is open."""
     if isinstance(agent_rank, bool) or not isinstance(agent_rank, int) or agent_rank < 0:
         raise ValueError("agent_rank must be a non-negative integer")
-    tasks = sorted(set(open_tasks))
+    if not isinstance(marks, dict):
+        raise ValueError("marks must be a dict of task id -> strength")
+    tasks = _tasks(open_tasks, "open_tasks")
+    if any(not isinstance(t, str) for t in tasks):
+        raise ValueError("task ids must be strings")
+    tasks = sorted(tasks)
     if not tasks:
         return None
     for task in tasks:
