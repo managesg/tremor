@@ -86,9 +86,31 @@ class L4IteratedMap(unittest.TestCase):
         self.assertEqual(N.recovery_nights(F(1), F(1, 10 ** 400), F(1, 2)), 1)
         self.assertEqual(N.recovery_nights(F(1), F(1, 2), F(1, 10 ** 400)), 1329)
 
+    def test_recovery_nights_no_overshoot_on_huge_fractions(self):
+        # 7b4ea36 diff review: a float estimate of ~65536 nights on 30000-digit fractions hung for minutes
+        # although the true answer is 1.
+        d = 30000
+        x = F(10 ** d - 2, 2 * 10 ** d)
+        keep, tol = 1 - F(1, 2 ** 52), x - F(1, 10 ** (d + 8))
+        start = time.monotonic()
+        self.assertEqual(N.recovery_nights(x, keep, tol), 1)
+        self.assertLess(time.monotonic() - start, 10)
+
+    def test_recovery_nights_exact_on_random_fractions(self):
+        import random
+        rng = random.Random(0)
+        for _ in range(300):
+            keep = F(rng.randint(1, 10 ** 6 - 1), 10 ** 6)
+            x = F(rng.randint(1, 1000), 1000)
+            tol = x * F(rng.randint(1, 10 ** 4), 10 ** 6)
+            t = N.recovery_nights(x, keep, tol)
+            self.assertLessEqual(x * keep ** t, tol)
+            self.assertTrue(t == 0 or x * keep ** (t - 1) > tol)
+
     def test_recovery_nights_refuses_answers_too_large_to_settle(self):
         # keep within 1e-17 of 1 divided by zero; keep 99999/100000 took 16 s. Both now refuse quickly.
-        for keep, tol in ((1 - F(1, 10 ** 17), F(1, 2)), (F(99999, 100000), F(1, 10 ** 6))):
+        for keep, tol in ((1 - F(1, 10 ** 17), F(1, 2)), (F(99999, 100000), F(1, 10 ** 6)),
+                          (1 - F(1, 10 ** 400), F(1, 2)), (1 - F(1, 2 ** 1075), F(1, 2))):
             start = time.monotonic()
             with self.assertRaises(ValueError):
                 N.recovery_nights(F(1), keep, tol)

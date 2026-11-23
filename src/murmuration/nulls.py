@@ -21,10 +21,9 @@ Reading (L7): random blocks are uniformly random partitions of n labelled agents
 """
 from fractions import Fraction
 from itertools import combinations, product
-import math
 from math import comb
 
-EXACT_BITS = 2 ** 24  # compute guard for recovery_nights, not a scientific parameter
+EXACT_BITS = 2 ** 22  # compute guard for recovery_nights (about 1 s of exact arithmetic), not a scientific parameter
 
 
 def _frac(x, name, lo=0, hi=1):
@@ -101,25 +100,31 @@ def recovery_nights(x0, keep, tol):
         return 1 if keep == 0 else None
     if tol == 0:  # keep^t * x stays positive for every finite t
         return None
-    # x * keep^t <= tol from t = log(tol / x) / log(keep): estimate with logs that stay accurate for any
-    # exact fraction, then settle exactly, because stepping one night at a time is too slow near keep = 1.
-    t = max(1, math.ceil((_log(tol) - _log(x)) / _log(keep)))
-    # shortcut: exact settlement needs keep**t, so refuse answers whose numbers would exceed EXACT_BITS
-    # rather than guess; raise the limit if an experiment needs keep closer to 1.
-    if (t + 1) * max(keep.numerator.bit_length(), keep.denominator.bit_length()) > EXACT_BITS:
-        raise ValueError(f"recovery takes about {t} nights: too many to settle exactly")
-    while x * keep ** t > tol:
-        t += 1
-    while t > 1 and x * keep ** (t - 1) <= tol:
-        t -= 1
-    return t
+    # Exact search by binary lifting: x * keep^t falls as t grows. Square keep until x * keep^(2^i) is at
+    # or below tol, then build the answer bit by bit, one exact integer multiplication per step. Every
+    # comparison is exact, so the answer cannot be overshot.
+    bits = max(keep.numerator.bit_length(), keep.denominator.bit_length())
 
+    def low_enough(num, den):  # x * (num / den) <= tol, cross-multiplied in integers
+        return x.numerator * num * tol.denominator <= tol.numerator * x.denominator * den
 
-def _log(q):
-    """Natural log of a positive Fraction without float overflow or cancellation."""
-    if q > Fraction(1, 2):
-        return math.log1p(float(q - 1))  # accurate for q near 1
-    return math.log(q.numerator) - math.log(q.denominator)  # math.log takes arbitrarily large ints
+    powers = [(keep.numerator, keep.denominator)]  # keep^(2^i)
+    while not low_enough(*powers[-1]):
+        # shortcut: powers are exact integers, so refuse rather than guess past EXACT_BITS; raise the
+        # limit if an experiment needs keep closer to 1.
+        if 2 ** len(powers) * bits > EXACT_BITS:
+            raise ValueError(f"recovery takes more than {2 ** (len(powers) - 1)} nights: "
+                             "too many to settle exactly")
+        n, d = powers[-1]
+        powers.append((n * n, d * d))
+    if len(powers) == 1:
+        return 1
+    t, (an, ad) = 2 ** (len(powers) - 2), powers[-2]  # x * keep^t > tol
+    for i in range(len(powers) - 3, -1, -1):
+        cn, cd = an * powers[i][0], ad * powers[i][1]
+        if not low_enough(cn, cd):
+            t, an, ad = t + 2 ** i, cn, cd
+    return t + 1
 
 
 def correlated_monitors(m, p, c):
