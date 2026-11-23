@@ -205,4 +205,6 @@ def mine_allowlist(events, train_frac=0.7, promote_after=3, deny_keys=()):
 
 def cli_report(events, **kw):
     """Hold-out section for the CLI report; wiring into __main__ is the caller's job."""
-    return {"counts": counts(events), "tau_sweep": tau_sweep(events, **kw), "allowlist": mine_allowlist(events)}
+    mine_kw = {k: v for k, v in kw.items() if k != "taus"}  # same train split, threshold and deny_keys
+    return {"counts": counts(events), "tau_sweep": tau_sweep(events, **kw),
+            "allowlist": mine_allowlist(events, **mine_kw)}

@@ -22,6 +22,16 @@ def commit(d, files, msg):
 
 
 class CouplingTest(unittest.TestCase):
+    def test_option_like_revision_is_refused(self):
+        # Row-155 review defect 6: "--output=<file>" reached git as an option and wrote the file.
+        with tempfile.TemporaryDirectory() as d:
+            git(d, "init", "-q")
+            commit(d, ["a", "b"], "1")
+            target = os.path.join(d, "pwned")
+            with self.assertRaises(ValueError):
+                coupling.coupling(d, "--output=" + target)
+            self.assertFalse(os.path.exists(target))
+
     def test_cutoff(self):
         with tempfile.TemporaryDirectory() as d:
             git(d, "init", "-q")

@@ -8,6 +8,8 @@ from itertools import combinations
 # bulk edits), no rename tracking, no weighting by recency; upgrade if E2.1 needs normalisation.
 def coupling(repo_path, before_sha, max_files=50):
     """{(file_a, file_b): commits touching both}, using history reachable from before_sha."""
+    if not isinstance(before_sha, str) or not before_sha or before_sha.startswith("-"):
+        raise ValueError("before_sha must be a revision, not an option")  # git would read '-…' as a flag
     git = ["git", "-C", repo_path, "-c", "core.quotePath=false"]
     if not subprocess.run(git + ["for-each-ref", "--count=1"], capture_output=True, text=True,
                           check=True).stdout.strip():

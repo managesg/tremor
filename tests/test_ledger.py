@@ -117,6 +117,12 @@ class HoldoutTests(unittest.TestCase):
         self.assertEqual((r["false_deny"], r["excess_grant"], r["covered"]), (0, 0, 1))
         self.assertEqual(ledger.mine_allowlist(e, 0.5, promote_after=3)["false_deny"], 0)  # rm never reached 3 approvals
 
+    def test_cli_report_applies_deny_keys_to_the_allowlist(self):
+        # Row-155 review defect 2: cli_report dropped deny_keys for the mined allowlist.
+        e = [ev(d, "Bash:rm", session="a") for d in range(10)] + [ev(20, "Read", session="b")]
+        r = ledger.cli_report(e, train_frac=0.5, deny_keys=("Bash:rm",))
+        self.assertNotIn("Bash:rm", r["allowlist"]["allowlist"])
+
 
 class CliTests(unittest.TestCase):
     def test_synth_pipeline_end_to_end(self):
