@@ -100,7 +100,10 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - [x] **Row 157 contention definition frozen:** `docs/reports/workplan-ep/R1-row157-contention-definition.md`, sha256 `b9db8f83…`, commit `8a16e88`. Sent to the Assistant for leakage review.
 - [x] **Delegated decisions (owner 08:00Z):** rebuild on e972484a; adopt the L5 grader fix (`1f45463`); N2 by an independent sealed author with the commitment `6def4efc…` held by the Assistant; row-157 addendum pinning scheduled counts (`5cabfe7`).
 - [x] **Candidate `d918428`** = the e972484a archive plus the R1 build. Receipt: `runs/x42-rebuild-lineage-receipt.fPcr5u`. Independent Opus review: ACCEPT. Suites: package 869 OK; lab 832 ran with 10 environmental errors (numpy, torch, pilot3 data). **Nominated to PC** for the bench re-review. Superseded: `6e33ad2`, `7b4ea36`, `9203700`, `cf9572e`.
-- [ ] **Waiting:** PC forwards the nomination and the bench reviewer re-reviews. The Assistant reviews the row-157 addendum.
+- [x] **Row 157 built:** episode v3 with scheduled κ 4/3, 4/3, 4/3, 2 (`ea24c1f`, review ACCEPT); pin frozen before the reveal (`1d333f7`, pin `6fa1d9e5…`); realized readouts ρ_r and c_r (`8de57ef`, review findings fixed). Addendum accepted at source scope.
+- [x] **Candidate `e11df9d` replaces `d918428`:** diff review ACCEPT (only new lab files and docs). Pinned-container suites: package 869 OK, lab 860 OK, exit 0 (`runs/container-suite-e11df9d.hZjTis`). Nomination update sent to PC (`msg_c6c4c6ebfb69`); packet `docs/reports/tremor/X42_BENCH_REREVIEW_PACKET_e11df9d.md`.
+- [x] **Owner-decision packets** (`docs/reports/tremor/`): D8, protected admissions, M10, quiet-host window, each independently reviewed and fixed (`e11df9d`, `52d4899`).
+- [ ] **Waiting:** PC forwards `e11df9d` to the bench reviewer; Alejandro decides the packets.
 - [ ] **Next:** PC nominates the cut, the bench reviewer re-reviews it (the row-169 `interrogate` pass), and this lane fixes any finding. Rows 157 and 167 stay held with their owners.
 - [ ] **Row 157:** the preregistration-author role is named in Table A rows 238 and 242, but no person or session is designated. The contention definition stays held until PC designates one.
 - [ ] Rows 155 and 169: module-body review and per-module verification receipts.
