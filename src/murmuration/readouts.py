@@ -9,6 +9,7 @@ Formulas (standard statistics, not results of this project):
   to R for a subcritical Galton-Watson process (Harris 1963).
 - n_eff: Kish design effect n / (1 + (n-1) rho_bar) (Kish, Survey Sampling, 1965), exchangeable members.
 """
+import math
 import random
 import statistics as st
 
@@ -103,7 +104,9 @@ def first_generation_offspring(notes, planted):
 
 def pairwise_miss(misses):
     """misses[m][e] in {0,1}: monitor m missed failure episode e. Returns dict with the joint-miss matrix,
-    mean pairwise phi correlation (pairs with a constant monitor are skipped), its spread, and Kish n_eff."""
+    mean pairwise phi correlation (pairs with a constant monitor are skipped), its spread, and Kish n_eff.
+    rho_bar/rho_min/rho_max are None when no pair is defined; n_eff is None then and whenever the Kish
+    denominator is not positive beyond rounding (as lab/r1_kish_spread.diagnose)."""
     m, E = len(misses), len(misses[0])
     joint = [[sum(a and b for a, b in zip(misses[i], misses[j])) / E for j in range(m)] for i in range(m)]
     rhos = []
@@ -113,10 +116,13 @@ def pairwise_miss(misses):
             d = (pi * (1 - pi) * pj * (1 - pj)) ** 0.5
             if d > 0:
                 rhos.append((joint[i][j] - pi * pj) / d)
-    rho = st.fmean(rhos) if rhos else 0.0
+    if not rhos:  # missing is not zero: no defined pair means no correlation estimate
+        return {"joint": joint, "rho_bar": None, "rho_min": None, "rho_max": None, "n_eff": None}
+    rho = st.fmean(rhos)
     den = 1 + (m - 1) * rho
-    return {"joint": joint, "rho_bar": rho, "rho_min": min(rhos, default=0.0),
-            "rho_max": max(rhos, default=0.0), "n_eff": m / den if den > 0 else float("inf")}
+    # Correlation rounding accumulates across pairs near cancellation (same bound as r1_kish_spread).
+    n_eff = m / den if den > 2 * (m - 1) * math.ulp(1.0) else None
+    return {"joint": joint, "rho_bar": rho, "rho_min": min(rhos), "rho_max": max(rhos), "n_eff": n_eff}
 
 
 def recovery_time(series, shock, baseline=None, tol=0.0, hold=1):
