@@ -196,7 +196,7 @@ def _unique_object(pairs):
     return result
 
 
-def _read_host_capture(path, expected, *, exact_container=False, admission_id=None):
+def _read_host_capture(path, expected, *, exact_container=False, admission_id=None, include_created=False):
     raw = _private_capture_bytes(path, 16 * 1024)
     digest = hashlib.sha256(raw).hexdigest()
     _require(digest == expected, "external host capture digest mismatch")
@@ -214,8 +214,15 @@ def _read_host_capture(path, expected, *, exact_container=False, admission_id=No
             fields = EXACT_CAPTURE_FIELDS if version == 2 else CAPTURE_FIELDS
         _require(row["version"] == version, "host capture mixes envelope versions")
         event, record = row["event"], row["record"]
-        _require(event in fields and event not in events and type(record) is dict
-                 and record.keys() == fields[event], "unknown, duplicate or malformed host capture event")
+        _require(event in fields and event not in events and type(record) is dict,
+                 "unknown, duplicate or malformed host capture event")
+        expected_fields = fields[event]
+        if include_created and version == 2 and event == "created" and "prestart_inspect_sha256" in record:
+            expected_fields = expected_fields | {"prestart_inspect_sha256"}
+            pin = record["prestart_inspect_sha256"]
+            _require(pin is None or (type(pin) is str and len(pin) == 64
+                     and all(digit in "0123456789abcdef" for digit in pin)), "invalid prestart inspection digest")
+        _require(record.keys() == expected_fields, "unknown, duplicate or malformed host capture event")
         events[event] = record
     _require("start" in events and list(events) == [event for event in fields if event in events],
              "host capture events are out of order")
@@ -254,7 +261,8 @@ def _read_host_capture(path, expected, *, exact_container=False, admission_id=No
                      "worker evidence size or capture-limit receipt differs")
             _require(hashlib.sha256(worker).hexdigest() == export["sha256"],
                      "worker evidence digest differs from the host terminal")
-    return events.get("outcome"), terminal, events.get("decision"), digest
+    result = events.get("outcome"), terminal, events.get("decision"), digest
+    return (*result, events.get("created")) if include_created else result
 
 
 def main(argv=None):
