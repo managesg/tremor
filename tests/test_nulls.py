@@ -107,6 +107,15 @@ class L4IteratedMap(unittest.TestCase):
             self.assertLessEqual(x * keep ** t, tol)
             self.assertTrue(t == 0 or x * keep ** (t - 1) > tol)
 
+    def test_recovery_nights_huge_x_and_tol_refuse_fast(self):
+        # 9203700 review: the guard ignored x and tol, so 10^6-digit inputs took 23 s to refuse.
+        d = 300000
+        x, tol = F(10 ** d - 1, 10 ** d), F(1, 10 ** d + 7)
+        start = time.monotonic()
+        with self.assertRaises(ValueError):
+            N.recovery_nights(x, F(999, 1000), tol)
+        self.assertLess(time.monotonic() - start, 2)
+
     def test_recovery_nights_refuses_answers_too_large_to_settle(self):
         # keep within 1e-17 of 1 divided by zero; keep 99999/100000 took 16 s. Both now refuse quickly.
         for keep, tol in ((1 - F(1, 10 ** 17), F(1, 2)), (F(99999, 100000), F(1, 10 ** 6)),

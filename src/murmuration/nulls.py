@@ -104,15 +104,19 @@ def recovery_nights(x0, keep, tol):
     # or below tol, then build the answer bit by bit, one exact integer multiplication per step. Every
     # comparison is exact, so the answer cannot be overshot.
     bits = max(keep.numerator.bit_length(), keep.denominator.bit_length())
+    # x and tol enter every comparison too, so they count against the guard
+    fixed = sum(v.bit_length() for v in (x.numerator, x.denominator, tol.numerator, tol.denominator))
 
     def low_enough(num, den):  # x * (num / den) <= tol, cross-multiplied in integers
         return x.numerator * num * tol.denominator <= tol.numerator * x.denominator * den
 
+    if fixed > EXACT_BITS // 4:  # keep most of the guard for keep's powers, else every step is near the cap
+        raise ValueError("x, keep and tol are too large to compare exactly")
     powers = [(keep.numerator, keep.denominator)]  # keep^(2^i)
     while not low_enough(*powers[-1]):
         # shortcut: powers are exact integers, so refuse rather than guess past EXACT_BITS; raise the
         # limit if an experiment needs keep closer to 1.
-        if 2 ** len(powers) * bits > EXACT_BITS:
+        if 2 ** len(powers) * bits + fixed > EXACT_BITS:
             raise ValueError(f"recovery takes more than {2 ** (len(powers) - 1)} nights: "
                              "too many to settle exactly")
         n, d = powers[-1]
