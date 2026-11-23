@@ -30,6 +30,8 @@ def next_strength(rung, last, now):
     """Tonight's rung from last night's and tonight's (recovery_time, R) readings."""
     if isinstance(rung, bool) or not isinstance(rung, int) or rung < 0:
         raise ValueError("rung must be a non-negative integer")
+    if len(last) != 2 or len(now) != 2:
+        raise ValueError("readings must be (recovery_time, R) pairs")
     rose = any(a is not None and b is not None and b > a for a, b in zip(last, now))
     return max(rung - 1, 0) if rose else rung
 

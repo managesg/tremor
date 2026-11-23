@@ -18,6 +18,11 @@ class Quarantine(unittest.TestCase):
         out = Q.releasable(NOTES, verified=set(), support={"b": ["d"], "a": ["e"], "c": ["c"]})
         self.assertEqual(out, {"a"})
 
+    def test_source_cannot_corroborate_its_own_derivative(self):
+        # a is b's parent, so a supporting b is not independent; e is.
+        self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["a"]}), set())
+        self.assertEqual(Q.releasable(NOTES, set(), support={"b": ["e"]}), {"b"})
+
     def test_verified_notes_are_released(self):
         self.assertEqual(Q.releasable(NOTES, verified={"c"}), {"c"})
 

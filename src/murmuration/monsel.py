@@ -29,6 +29,9 @@ def _check(misses):
 def ensemble_catch(misses, views):
     """Share of calibration episodes caught by at least one of `views`."""
     episodes = _check(misses)
+    unknown = set(views) - set(misses)
+    if unknown:
+        raise ValueError(f"unknown views: {sorted(unknown)}")
     if not views:
         return 0.0
     all_missed = sum(all(misses[v][e] for v in views) for e in range(episodes))

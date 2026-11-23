@@ -4,7 +4,8 @@ A grant has a scope and an expiry. Scope widens when an anytime-valid confidence
 violation rate, with a prior pooled across similar scopes, falls below a target; it shrinks with idle
 rounds and is revoked on a violation, taking effect on the next action. Irreversible actions are never
 widened automatically. Readout: over-grant exposure, rounds in which a grant was held and not used.
-Idle expiry and immediate revocation follow lab/evidence_lease_control.py.
+Idle expiry and immediate revocation follow the lab fixture evidence_lease_control.py, which is not
+committed; this module does not depend on it.
 
 Reading: the bound is a caller-supplied `bound(scope_counts, pooled_counts) -> upper bound`; this module
 fixes no statistical method. Counts are (violations, trials).

@@ -8,7 +8,9 @@ first to the notes with the highest measured R.
 
 Reading: notes are dicts with "id" and "parents" (provenance), as in readouts.reproduction_number.
 Reading: support is a caller mapping note id -> ids of notes offered as corroboration; a supporter counts
-only if it is a different note and the quarantined note is not among the supporter's ancestors.
+only if it is a different note that shares no provenance line with it: the quarantined note is not among
+the supporter's ancestors (the cycle check) and the supporter is not among the note's own ancestors (a
+note's source cannot independently corroborate it).
 Reading: a note's measured R is readouts.reproduction_number with that note as the only planted root;
 ties are broken by note id.
 """
@@ -46,8 +48,9 @@ def releasable(notes, verified, support=None):
         if nid in verified:
             out.add(nid)
             continue
+        own = ancestors(notes, nid)
         for s in support.get(nid, ()):
-            if s in byid and s != nid and nid not in ancestors(notes, s):
+            if s in byid and s != nid and s not in own and nid not in ancestors(notes, s):
                 out.add(nid)
                 break
     return out

@@ -36,6 +36,8 @@ class MonitorSelection(unittest.TestCase):
             M.select({"a": [0, 2]}, 1)
         with self.assertRaises(ValueError):
             M.hidden_view([], seed=0)
+        with self.assertRaises(ValueError):
+            M.ensemble_catch({"a": [1, 0]}, ["z"])  # was KeyError
 
 
 if __name__ == "__main__":

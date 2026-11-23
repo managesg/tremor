@@ -1,13 +1,15 @@
 """Scripted nulls with exact expected values (WORKPLAN-RESIDENCY-V3 policy row 162).
 
 Each null is computed by exact enumeration in Fractions; the tests compare it with a hand-derived
-closed form. L3 (correlated monitors) and L5 (random-order task choice) controls exist in lab; this module
-adds the lines the bench review found missing or too weak: L1, L2, L4, L6 and L7.
+closed form. This module covers the lines the bench review found missing or too weak: L1, L2, L4, L6
+and L7. L3 (correlated monitors) and L5 (random-order task choice) controls exist only as uncommitted
+lab files (lab/r1_readout_controls.py, lab/r1_l5_random_order_null.py) and are not part of this module.
 
 Reading (L1): scripted adopters adopt independently with a caller-given probability per dose.
-Reading (L2): well-mixed epidemic with immunity is the Reed-Frost chain binomial over all generations;
-each infective-susceptible contact transmits independently with probability q; immune members never
-become infected.
+Reading (L2): well-mixed epidemic with immunity is the Reed-Frost chain binomial over all generations
+in a population of fixed size; immune members are part of the population but never become infected, so
+susceptibles = population - immune - seeds; each infective-susceptible contact transmits independently
+with probability q.
 Reading (L4): iterated-map consolidation is the linear map x' = keep * x + add on the false-note share
 (daily errors `add`, consolidation retains a `keep` fraction); recovery is the first night a planted
 false share `x0` with no new errors falls to or below `tol`.
@@ -48,11 +50,14 @@ def scripted_adopters(n, p_by_dose):
     return out
 
 
-def reed_frost(susceptible, immune, seeds, q):
+def reed_frost(population, immune, seeds, q):
     """L2: exact final-size distribution (total infected, seeds included) of the Reed-Frost chain."""
-    for name, v in (("susceptible", susceptible), ("immune", immune)):
-        _posint(v, name, 0)
+    _posint(population, "population")
+    _posint(immune, "immune", 0)
     _posint(seeds, "seeds")
+    if immune + seeds > population:
+        raise ValueError("immune members and seeds cannot exceed the population")
+    susceptible = population - immune - seeds
     q = _frac(q, "q")
     final, live = {}, {(susceptible, seeds, seeds): Fraction(1)}  # (S, I, total) -> probability
     while live:
@@ -88,6 +93,8 @@ def recovery_nights(x0, keep, tol):
         return 0
     if keep in (0, 1):
         return 1 if keep == 0 else None
+    if tol == 0:  # keep^t * x stays positive for every finite t
+        return None
     t = 0
     while x > tol:
         x, t = x * keep, t + 1

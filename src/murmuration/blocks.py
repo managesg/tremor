@@ -41,15 +41,19 @@ def assign(agents, task_groups):
     agents, n = list(agents), len(task_groups)
     if n == 0:
         return []
+    if any(len(g) == 0 for g in task_groups):
+        raise ValueError("every group needs at least one task")
     if len(agents) < n:
         raise ValueError("need at least one agent per group")
     total = sum(len(g) for g in task_groups)
-    spare = len(agents) - n
-    exact = [spare * len(g) / total for g in task_groups]
-    sizes = [1 + int(x) for x in exact]
-    left = len(agents) - sum(sizes)
-    for i in sorted(range(n), key=lambda i: (-(exact[i] - int(exact[i])), i))[:left]:
+    exact = [len(agents) * len(g) / total for g in task_groups]
+    sizes = [max(1, int(x)) for x in exact]
+    by_remainder = sorted(range(n), key=lambda i: (-(exact[i] - int(exact[i])), i))
+    for i in by_remainder[:max(0, len(agents) - sum(sizes))]:  # remainder < n, largest fraction first
         sizes[i] += 1
+    while sum(sizes) > len(agents):  # the minimum of one overshot: take back from the most over-served
+        i = max((i for i in range(n) if sizes[i] > 1), key=lambda i: (sizes[i] - exact[i], -i))
+        sizes[i] -= 1
     blocks, at = [], 0
     for s in sizes:
         blocks.append(agents[at:at + s])

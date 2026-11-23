@@ -31,6 +31,8 @@ class VerifiedReplay(unittest.TestCase):
         with self.assertRaises(ValueError):
             V.next_strength(-1, (1, 1), (1, 1))
         with self.assertRaises(ValueError):
+            V.next_strength(3, (5,), (5, 9))  # was silently truncated by zip, hiding the rise in R
+        with self.assertRaises(ValueError):
             V.retain(["a"], {"a": -1}, 1)
 
 

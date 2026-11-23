@@ -11,11 +11,15 @@ class BlockAndSummarise(unittest.TestCase):
         self.assertEqual(B.groups("abcde", coupling, 0.05), [["a", "b", "c", "d"], ["e"]])
 
     def test_assign_sizes_blocks_by_task_count(self):
-        # 6 agents, groups of 3, 1, 1 tasks: one each, then 3 spare split 3*3/5=1.8, 0.6, 0.6
-        # -> floors 1,0,0 (+1 each = 2,1,1), 2 left by largest remainder: 0.8 (g0), then 0.6 (g1).
+        # 6 agents over 3, 1, 1 tasks: exact shares 3.6, 1.2, 1.2 -> floors 3, 1, 1, one left goes to the
+        # largest fraction (0.6, group 0) -> 4, 1, 1.
         blocks = B.assign(range(6), [["a", "b", "c"], ["d"], ["e"]])
-        self.assertEqual([len(b) for b in blocks], [3, 2, 1])
+        self.assertEqual([len(b) for b in blocks], [4, 1, 1])
         self.assertEqual(sum(blocks, []), list(range(6)))
+        # 10 agents over 9 and 1 tasks: exactly proportional, 9 and 1.
+        self.assertEqual([len(b) for b in B.assign(range(10), [list("abcdefghi"), ["j"]])], [9, 1])
+        # 3 agents over 8, 1, 1 tasks: shares 2.4, 0.3, 0.3; the minimum of one forces 1, 1, 1.
+        self.assertEqual([len(b) for b in B.assign(range(3), [list("abcdefgh"), ["i"], ["j"]])], [1, 1, 1])
 
     def test_upward_one_line_per_block(self):
         out = B.upward([["x ok", "y ok"], ["z failed"]], lambda ls: "; ".join(ls))
@@ -27,6 +31,8 @@ class BlockAndSummarise(unittest.TestCase):
             B.groups("ab", {("a", "q"): 1.0}, 0.5)
         with self.assertRaises(ValueError):
             B.assign(range(1), [["a"], ["b"]])
+        with self.assertRaises(ValueError):
+            B.assign(range(3), [[], []])  # was ZeroDivisionError
         with self.assertRaises(ValueError):
             B.upward([["a"]], lambda ls: "two\nlines")
         self.assertEqual(B.assign(range(3), []), [])

@@ -20,20 +20,26 @@ class L1ScriptedAdopters(unittest.TestCase):
 
 class L2ReedFrost(unittest.TestCase):
     def test_one_susceptible(self):
-        # One seed, one susceptible: infected with probability q.
-        self.assertEqual(N.reed_frost(1, 5, 1, F(1, 3)), {1: F(2, 3), 2: F(1, 3)})
+        # Population 7, 5 immune, one seed -> one susceptible, infected with probability q.
+        self.assertEqual(N.reed_frost(7, 5, 1, F(1, 3)), {1: F(2, 3), 2: F(1, 3)})
 
     def test_two_susceptibles_over_generations(self):
         # Seed infects each of 2 independently with q. Final size 3 can also arise in generation 2:
         # P(final 1) = (1-q)^2; P(final 2) = 2 q (1-q) * (1-q)  [the one infected fails to infect the other];
         # P(final 3) = q^2 + 2 q (1-q) * q.
         q = F(1, 2)
-        out = N.reed_frost(2, 0, 1, q)
+        out = N.reed_frost(3, 0, 1, q)
         self.assertEqual(out, {1: (1 - q) ** 2, 2: 2 * q * (1 - q) ** 2, 3: q ** 2 + 2 * q ** 2 * (1 - q)})
         self.assertEqual(sum(out.values()), 1)
 
     def test_immunity_reduces_reach(self):
-        self.assertEqual(N.reed_frost(0, 3, 1, F(1, 2)), {1: 1})
+        # Same population of 3 and one seed, q = 1/2. No immune: sizes 1, 2, 3 with 1/4, 1/4, 1/2 (previous
+        # test), mean 9/4. One immune leaves one susceptible: sizes 1, 2 with 1/2 each, mean 3/2.
+        q = F(1, 2)
+        mean = lambda d: sum(k * w for k, w in d.items())
+        self.assertEqual(mean(N.reed_frost(3, 0, 1, q)), F(9, 4))
+        self.assertEqual(mean(N.reed_frost(3, 1, 1, q)), F(3, 2))   # 1*1/2 + 2*1/2
+        self.assertEqual(N.reed_frost(3, 2, 1, q), {1: 1})
 
 
 class L4IteratedMap(unittest.TestCase):
@@ -49,6 +55,7 @@ class L4IteratedMap(unittest.TestCase):
         self.assertEqual(N.recovery_nights(1, F(1, 2), F(1, 8)), 3)
         self.assertIsNone(N.recovery_nights(F(1, 2), 1, 0))
         self.assertEqual(N.recovery_nights(F(1, 2), 0, 0), 1)
+        self.assertIsNone(N.recovery_nights(F(1, 2), F(1, 2), 0))  # never exactly 0: must not hang
 
 
 class L6FixedKD(unittest.TestCase):
@@ -75,6 +82,7 @@ class Malformed(unittest.TestCase):
         for call in (lambda: N.scripted_adopters(0, {}),
                      lambda: N.scripted_adopters(2, {0: 0.5}),
                      lambda: N.reed_frost(1, 0, 0, F(1, 2)),
+                     lambda: N.reed_frost(2, 2, 1, F(1, 2)),
                      lambda: N.iterated_map(1, F(3, 4), F(1, 2), 1),
                      lambda: N.fixed_kd(0, 1, 1, F(1, 2)),
                      lambda: N.random_blocks(5, 2, []),
