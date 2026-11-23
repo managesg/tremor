@@ -103,7 +103,15 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - [x] **Row 157 built:** episode v3 with scheduled κ 4/3, 4/3, 4/3, 2 (`ea24c1f`, review ACCEPT); pin frozen before the reveal (`1d333f7`, pin `6fa1d9e5…`); realized readouts ρ_r and c_r (`8de57ef`, review findings fixed). Addendum accepted at source scope.
 - [x] **Candidate `e11df9d` replaces `d918428`:** diff review ACCEPT (only new lab files and docs). Pinned-container suites: package 869 OK, lab 860 OK, exit 0 (`runs/container-suite-e11df9d.hZjTis`). Nomination update sent to PC (`msg_c6c4c6ebfb69`); packet `docs/reports/tremor/X42_BENCH_REREVIEW_PACKET_e11df9d.md`.
 - [x] **Owner-decision packets** (`docs/reports/tremor/`): D8, protected admissions, M10, quiet-host window, each independently reviewed and fixed (`e11df9d`, `52d4899`).
-- [ ] **Waiting:** PC forwards `e11df9d` to the bench reviewer; Alejandro decides the packets.
+- [x] **Bench re-review of `e11df9d`:** INCOMPLETE with no REJECT (`runs/x42-bench-rereview-e11df9d/VERDICT.md`, sha256 `031ac207…`). Rows 155, 158, 159, 162, 165 and 169 ACCEPT. Row 157 INCOMPLETE (staggered reads undefined). Row 167 BLOCKED on N2 custody and owner admission.
+- [x] **Follow-ups:**
+  - staggered-reads definition frozen (`5c64406`);
+  - episode v4 (`4408ef4`, review ACCEPT) with pins frozen (`83e4870`);
+  - row-167 mutant authorship recorded (`4330a98`);
+  - literal pin test and Lean digest (`5365298`).
+
+  Pinned-container suites at `83e4870`: package 869 OK, lab 878 OK, exit 0 (`runs/container-suite-83e4870.h77kHM`). Re-check request sent (`msg_d25e70f4531a`).
+- [ ] **Waiting:** the bench re-check of rows 157 and 167 on `83e4870`; N2 custody and owner admission for row 167; Alejandro decides the packets.
 - [ ] **Next:** PC nominates the cut, the bench reviewer re-reviews it (the row-169 `interrogate` pass), and this lane fixes any finding. Rows 157 and 167 stay held with their owners.
 - [ ] **Row 157:** the preregistration-author role is named in Table A rows 238 and 242, but no person or session is designated. The contention definition stays held until PC designates one.
 - [ ] Rows 155 and 169: module-body review and per-module verification receipts.
