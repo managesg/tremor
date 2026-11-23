@@ -82,13 +82,26 @@ Acceptance: 1/10 (M1). Repository HEAD is recorded in each checkpoint. All commi
 - [x] **Bench verdicts:**
   - e11df9d: rows 155, 158, 159, 162, 165 and 169 ACCEPT.
   - 83e4870: row 157 ACCEPT (episode design only).
+- [x] **Row 157: ACCEPTED** on bench re-check at `83e4870` (`runs/x42-bench-recheck-83e4870.4P3pJg/VERDICT.md`, sha256 `48834c15…`), for the episode design only. Behaviour is not established, because the agents are scripted.
 - [ ] **Row 167:** INCOMPLETE. Custody binding (custodian), L5 admission (Alejandro), then the reveal review. Requirements: `docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`.
 - [ ] **Three quiet-machine runs:** packet `OWNER_DECISION_X42_quiet_host_window.md` (`9a3897d`). The dry preflight passes. Needs PC's window after the integration freeze, with the packet predicates confirmed.
 - [ ] **Row 169 single-reviewer question:** PC.
 
 ### Other milestones (owner-decision packets in `docs/reports/tremor/`)
-- [ ] **M2 and M7, D8:** conditional ceilings (Pilot 4 USD 0.25, EP-1 USD 5.00). No Pilot 4 launcher exists yet, and the pinned price sheet is refused from 2026-11-24. M7's protocol and allocation are open.
-- [ ] **M3 R3, M4–M6, M8, M9:** none is admissible today. M8 is closest, with three preconditions. The M4 L2/L3/L4 rulings need recommended options.
+- [ ] **M2 and M7, D8:** conditional ceilings (Pilot 4 USD 0.25, EP-1 USD 5.00). No Pilot 4 launcher exists yet. **The pinned price sheet lapses at 2026-11-24 00:00 UTC** (`spend.py:45,186-188`; checked 21:56 UTC). A fresh window needs a named refetch, the new digest, a continuity review against the `ep1` parent ledger, a checked window and a re-run of D8-e (D8 packet, P4 lapse status). M7's protocol and allocation are open.
+- [ ] **M4 L2/L3/L4 rulings:** recommended options are drafted with one-line yeses (`docs/reports/tremor/OWNER_DECISION_M4_L2_L3_L4_and_M8_prereqs.md`):
+  - L2: planted notes only under D1; the arising form and prediction E are out of this freeze. If E is ever approved, it uses the 5% bound.
+  - L3: primary C under the D1 toy-monitor conditions; B is the fallback if C is declined before any outcome.
+  - L4-D: the arising-shortcut setting is out of this freeze.
+
+  A yes also ratifies D1 for those lines, because D1 was the orchestrator's disclosed decision (`ep-approvals.md:163-166`). Owner: Alejandro.
+- [ ] **M8 SmolLM3 smoke:** five preconditions in the sources (three operator prerequisites, plus ledger placement and the one-use admission, which the yes covers):
+  - memory: the last readback was 54.46 GiB against the 70 GiB gate, or a separately reviewed envelope;
+  - storage custody: the canonical paths are not yet named;
+  - one adopted launcher: the patched `--opening-balance` source would need re-pinning.
+
+  Owners: resource owner, storage operator, runner reviewer; Alejandro for the 0.1 GPU-hour spend.
+- [ ] **M3 R3, M5, M6, M9:** not admissible today (protected-admissions packet).
 - [x] **M10 local release adoption** (`a833e17`).
 - [ ] **M10 remainder:** Console totals, T7 settlement, timer disposition (named executor).
 
