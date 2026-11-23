@@ -73,3 +73,44 @@ fd0fac7a8ef749adba676021c854fbbfbc2d726d4be89d3f9cea73671d1f286e  lab/smollm3_op
   - an independent review of `0b1e394` (requested);
   - the runner reviewer's acceptance of this manifest for the admission;
   - memory and storage, as in Decisions 1 and 2.
+
+### Decision 3 follow-up 2: review of 0b1e394 and the full closure manifest
+
+An independent review REJECTED the `0b1e394` evidence, not its bytes:
+
+- **Holds:** the bytes, the added-checks-only diff, the unchanged recipe digest, and R3 behaviour all checked out.
+- **Fixed:** the 12 new opening-balance tests read a fixture outside the repo, so the "50 OK" in the commit message did not hold on a clean archive. Commit `3b9f3ae` adds the fixture at `lab/tests/fixtures/smollm3_opening/`. The smollm3 and r3 test modules now pass on a clean archive with no outside fixture.
+- **Fixed:** the shared checkout's working-tree copies of the 18 adopted files were synced to HEAD. It no longer runs the stock launcher.
+- **Superseded:** the 4-file manifest above was too narrow; the stock pin covered about 27 files. The full closure at `3b9f3ae` is below (28 files: every `lab/smollm3_*` and `lab/spark_*` module, `lab/r3_resource_audit.py`, their tests and the fixture).
+- **Correction:** the stock pin path is `runs/replication-smollm3-staging.out5A0/.../RtBV9f/source/stock.sha256`, not `RtBV9f/stock.sha256` as the prep notes said.
+
+```
+41cdbac1526020ac6015188b4436cc856f77acfb28795850af79fcea2aab9e1f  lab/r3_resource_audit.py
+fd0fac7a8ef749adba676021c854fbbfbc2d726d4be89d3f9cea73671d1f286e  lab/smollm3_opening_balance.py
+7676b01dc6956bae06e2924225eb1fd1d15ba2e0e1e0ba597fa1350ecc830ecb  lab/smollm3_smoke_admission.py
+5f6961d8c003a5f30f27d6a99706a195e859f9b383ece835c4bae9d8ae531cfd  lab/smollm3_smoke_container.py
+614bf82974a1b3335fca55743992ac8b518eb7c43998cc670303c6c44189e1f2  lab/smollm3_smoke_launch.py
+1504a5938882edf41d3670c09b302a6d7402832aee41aed00a35623d966261bf  lab/smollm3_smoke_metrics.py
+78fe23335856eec34b5936fd191829721060022108f86cfdc1364b21b3fb74a3  lab/smollm3_smoke_preflight.py
+85a355bb325e2fb2d0da23d1bab33a08fddbf2567e5435f80225f133662dfd70  lab/smollm3_smoke_settlement.py
+e9742f988032aed81f33a231fd81011e6bff48ad939f0bce6457f1d05770cdd1  lab/smollm3_smoke_worker.py
+74026cbea396bced1799ef0e87e6d03cdce2a658d47497d035b5d124aa9ccb92  lab/spark_calibration.py
+e36746acb1bc779ba1ea04aca3ccb7fa1152e2b015c61ace66e8c294a0f79516  lab/spark_calibration_guard.py
+84f0a4efc25e72552aaae1aaee0e1c30e2c5402d1a0047925deb882d61dc4faf  lab/spark_causal_decision.py
+98c1ded35232841ac4699c9762bbd7ccbe9fdfdfe60c5a9bc0df4b77f69a76fe  lab/spark_decision.py
+369cbc6ee59dc9ae50a0b0dde8189d7be418fca4c91a658f6245e0707fa48af9  lab/tests/fixtures/smollm3_opening/r2-calibration.log
+e8cb73bd751cb0775abc648a7b1ed9702e90b258335a7e0b51afd74ce39be2ff  lab/tests/fixtures/smollm3_opening/rollback-admission.json
+3dc4f062f9fd8dcefa310acb8aebb279f9e591e9c711a68648852cb7051bd51e  lab/tests/fixtures/smollm3_opening/rollback-placement.json
+e4fb3b13f577e22fcced04194c1aa390aef3f11ba35582e43ea3c7d193af5ddc  lab/tests/fixtures/smollm3_opening/rollback-reserve.json
+0e13c36ccb862b0702fb580dc30db70b0696ef1a4b4fe4141fe9714d08039be8  lab/tests/fixtures/smollm3_opening/synthetic-admission.json
+cf6e3b20e7e77880ce92f9a9df0bc695a362f57e6580192dbd990a629712677c  lab/tests/fixtures/smollm3_opening/synthetic-placement.json
+4da274d38dbec90c11ab967040d4c584b3bbdc81d99078dff61de44f1c32c5ef  lab/tests/fixtures/smollm3_opening/synthetic-reserve.json
+4bb8e2d4d26133f8afd699015a80c47c9bdb8ffe4c076eb713ae156510794c02  lab/tests/test_smollm3_opening_balance.py
+c1adba5fae380de02e738fa3e22d1874f418c32a7de33213861cbf89c70922fe  lab/tests/test_smollm3_opening_preflight.py
+0c45a3dc1be46daa0799f2947f3e61d171f387fe90322c96929926871f108632  lab/tests/test_smollm3_smoke_admission.py
+de5b623021ccf350268b3d4600ec8599455ce8947672a4049acdf95bef5db34b  lab/tests/test_smollm3_smoke_container.py
+980c09cdb9b4106eef02c40264fd5246a2f4c9fc7482de8e934fb7a0b636ff56  lab/tests/test_smollm3_smoke_launch.py
+3cae6eb35240cef13de519e9aba24e6f2eabbbbe7fbb788f32abe446a755c54d  lab/tests/test_smollm3_smoke_metrics.py
+2e1e93a3f2fe9956ff252aa2d61ce54a69d4e347b308d73316caaf424c5ff2f1  lab/tests/test_smollm3_smoke_settlement.py
+fcc21ea3c1bc40fad1d0f7ba2e97718dfee68582360ddb74ea6a87ea1cc9019a  lab/tests/test_smollm3_smoke_worker.py
+```
