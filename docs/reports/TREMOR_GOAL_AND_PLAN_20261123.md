@@ -73,57 +73,24 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - **M8 SmolLM3 weights and backing storage:** waiting on the storage operator's admission, not on the transfer.
 - **AWS:** none needed. The only AWS reference in `docs/reports/workplan-ep/` is the M2 hold in `Pilot4-pricing-verification-gates.md`. This lane never connects to AWS.
 
-## Next action
+## Current workplan (2026-11-23, 20 UTC)
 
-**ACTIVE, Table A row X42 (`PC_ALL_BLOCKERS_WORKPLAN_V2_20261122-2d2173c9.md`, rows 232–242).** Source-only R1 build-out after the Gate R1 bench REJECT:
+Acceptance: 1/10 (M1). Repository HEAD is recorded in each checkpoint. All commits are local; nothing is pushed.
 
-- [x] D1 Kish guard, `899ffeb`.
-- [x] Row 165 `evapclaim` (L5), `bf304de`: 4 focused tests pass; full suites on that commit are running (`runs/commit-suite-evapclaim.wXXQ8w`).
-- [x] Row 165 `lease` (L6), `4464b7e`: 4 focused tests pass. The bound and the pooling groups are caller-supplied; no method or threshold is invented.
-- [x] Row 165 `sgv` (L1), `44e19cc`: 4 focused tests pass. It uses the proposal's 10-rerun minimum.
-- [x] Row 165 `quarantine` (L2), `604fa25`: 4 focused tests pass. R comes from `readouts.reproduction_number`.
-- [x] Row 165 `monsel` (L3) `fb9fb62`, `vreplay` (L4) `7d28822`, `blocks` (L7) `b264d8f`. Full suites on `b264d8f`: lab 384 OK (2 skips), package 804 OK (1 skip), both exit 0 (`runs/commit-suite-row165.fymZzN`).
-- [x] Row 159 `susceptibility.py` `da38c43`. The worker draft was reviewed by this chat. Its ports match the lab originals in 0/500 differential cases each (`runs/r1-row159-port-check.wu8GlM`, EVIDENCE `94734818…`). This chat fixed the worker's wrong hand value (slope 2/5) and removed the test's dependency on an uncommitted lab file.
-- [x] Row 162 `nulls.py` `00619ed`: exact enumerated nulls for L1, L2 (all generations), L4, L6 and L7, each checked against a closed form (11 tests). The L3 and L5 controls remain in untracked lab files.
-- [x] Full suites on `00619ed`: lab and package OK, exit 0 (`runs/commit-suite-r1build.5wKvBH`).
-- [x] **Independent verifier on `00619ed`** (fresh-context Opus, briefed with interrogate, host check `seabridge-spark`). ACCEPT: `evapclaim`, `quarantine`, `monsel`, `lease`, `susceptibility`. REJECT: `vreplay` (truncated readings), `blocks` (ZeroDivisionError; not proportional), `nulls` (`recovery_nights` hangs at tol 0; `immune` has no effect). Also flagged: `sgv` used raw variance instead of overdispersion; a parent counted as independent support in `quarantine`; lab files cited but not committed.
-- [x] **All findings fixed** in `de56a29`, with a test for each.
-- [x] **Ten lab files committed** in `7f1de86`: the row-159 port originals, the L3 and L5 null controls, the L6 lease fixture, and their tests. All were created by the `01a1fa3a` lineage (`runs/r1-lab-controls-custody.Bxz1nK/CUSTODY.md`). Lab suite: 406 tests OK.
-- [x] **Row 155 receipt:** fresh-context body read of all ten modules at `00619ed` (`runs/r1-row155-body-review.ipRvT9/REVIEW.md`). The row's `poison` path is wrong: the module is `trapbench/poison.py`. Eight defects were demonstrated in the core modules: orders, ledger `deny_keys`, monitor, enforce, coupling git-option injection, perturb `passed` coercion, and consolidate arm E. They are recorded and not yet fixed.
-- [x] **Row-155 core-module defects fixed**: `30bb01c` (coupling git-option injection, ledger `deny_keys`), `33b2ca2` (perturb), `52cbce1` (monitor, enforce, consolidate, orders). Each test fails before its fix and passes after. Full suites on `52cbce1`: lab 406, package 835, exit 0.
-- [x] **Re-verifier on `52cbce1`**: 15 of 17 fixes CONFIRMED and no assertion weakened. It found two problems, fixed in `a5b85c0`: `sgv` could not rank pass/fail work (it now uses per-unit binomial overdispersion over item counts), and `quarantine` accepted a sibling as support (lineages must now be disjoint).
-- [x] **Row 169 per-module verification** (`runs/r1-row169-module-verification.BBKCr0/RECEIPTS.md`): fresh-context Opus, one verifier per module, at `a5b85c0`. `susceptibility` ACCEPT. Seven REJECTs on boundary or mechanism gaps, all fixed in `08659a3` with tests. The `nulls` verdict is being rerun on `08659a3` after a session restart.
-- [x] **Second verification round at `08659a3`:** six of the seven fixed modules ACCEPTED; `blocks` REJECTED (strings, duplicates). `nulls` REJECTED on timing near keep = 1 and input checks, with every enumeration correct. All fixed in `6e33ad2` with failing-first tests, and an exact L3 correlated-monitors null added. Full suites on `6e33ad2`: lab 406, package 846, exit 0. Receipts: `runs/r1-row169-module-verification.BBKCr0/RECEIPTS.md`.
-- [x] **Third independent pass at `6e33ad2`:** `sgv` and `evapclaim` ACCEPT; `blocks` and `nulls` REJECT (a `recovery_nights` regression, float tie-breaks, unchecked agent inputs). All fixed in `7b4ea36`, each module with a test that fails on `6e33ad2`. Full suites: lab 406, package 847, exit 0.
-- [x] **Diff review of `7b4ea36`:** REJECT on `nulls.recovery_nights` (hang on 30000-digit fractions; division by zero at keep = 1 - 1/10^400). Fixed in `9203700` with an exact binary-lifting search. Full suites: lab 406, package 849, exit 0 (`runs/commit-suite-rn.46Lyu0`).
-- [x] **Independent review of `9203700`:** REJECT on refusal speed only (answers exact, 40,036 brute-force matches; huge x and tol took 23 s to refuse). Fixed in `cf9572e` (x and tol count against the guard; worst case 0.93 s). Full suites: lab 406, package 850, exit 0 (`runs/commit-suite-rn2.xfJTDa`).
-- [x] **Row 157 contention definition frozen:** `docs/reports/workplan-ep/R1-row157-contention-definition.md`, sha256 `b9db8f83…`, commit `8a16e88`. Sent to the Assistant for leakage review.
-- [x] **Delegated decisions (owner 08:00Z):** rebuild on e972484a; adopt the L5 grader fix (`1f45463`); N2 by an independent sealed author with the commitment `6def4efc…` held by the Assistant; row-157 addendum pinning scheduled counts (`5cabfe7`).
-- [x] **Candidate `d918428`** = the e972484a archive plus the R1 build. Receipt: `runs/x42-rebuild-lineage-receipt.fPcr5u`. Independent Opus review: ACCEPT. Suites: package 869 OK; lab 832 ran with 10 environmental errors (numpy, torch, pilot3 data). **Nominated to PC** for the bench re-review. Superseded: `6e33ad2`, `7b4ea36`, `9203700`, `cf9572e`.
-- [x] **Row 157 built:** episode v3 with scheduled κ 4/3, 4/3, 4/3, 2 (`ea24c1f`, review ACCEPT); pin frozen before the reveal (`1d333f7`, pin `6fa1d9e5…`); realized readouts ρ_r and c_r (`8de57ef`, review findings fixed). Addendum accepted at source scope.
-- [x] **Candidate `e11df9d` replaces `d918428`:** diff review ACCEPT (only new lab files and docs). Pinned-container suites: package 869 OK, lab 860 OK, exit 0 (`runs/container-suite-e11df9d.hZjTis`). Nomination update sent to PC (`msg_c6c4c6ebfb69`); packet `docs/reports/tremor/X42_BENCH_REREVIEW_PACKET_e11df9d.md`.
-- [x] **Owner-decision packets** (`docs/reports/tremor/`): D8, protected admissions, M10, quiet-host window, each independently reviewed and fixed (`e11df9d`, `52d4899`).
-- [x] **Bench re-review of `e11df9d`:** INCOMPLETE with no REJECT (`runs/x42-bench-rereview-e11df9d/VERDICT.md`, sha256 `031ac207…`). Rows 155, 158, 159, 162, 165 and 169 ACCEPT. Row 157 INCOMPLETE (staggered reads undefined). Row 167 BLOCKED on N2 custody and owner admission.
-- [x] **Follow-ups:**
-  - staggered-reads definition frozen (`5c64406`);
-  - episode v4 (`4408ef4`, review ACCEPT) with pins frozen (`83e4870`);
-  - row-167 mutant authorship recorded (`4330a98`);
-  - literal pin test and Lean digest (`5365298`).
+### M3 R1 / X42 Gate R1
+- [x] **Candidate of record: `83e4870`** (tree `572155d0…`), the e972484a archive plus the R1 build, episode v4 and frozen pins. Pinned-container suites: package 869 OK, lab 878 OK. Candidate, runner and roster agree (`docs/reports/tremor/X42_CANDIDATE_RUNNER_ROSTER_RECONCILIATION.md`).
+- [x] **Bench verdicts:**
+  - e11df9d: rows 155, 158, 159, 162, 165 and 169 ACCEPT.
+  - 83e4870: row 157 ACCEPT (episode design only).
+- [ ] **Row 167:** INCOMPLETE. Custody binding (custodian), L5 admission (Alejandro), then the reveal review. Requirements: `docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`.
+- [ ] **Three quiet-machine runs:** packet `OWNER_DECISION_X42_quiet_host_window.md` (`9a3897d`). The dry preflight passes. Needs PC's window after the integration freeze, with the packet predicates confirmed.
+- [ ] **Row 169 single-reviewer question:** PC.
 
-  Pinned-container suites at `83e4870`: package 869 OK, lab 878 OK, exit 0 (`runs/container-suite-83e4870.h77kHM`). Re-check request sent (`msg_d25e70f4531a`).
-- [ ] **Waiting:** the bench re-check of rows 157 and 167 on `83e4870`; N2 custody and owner admission for row 167; Alejandro decides the packets.
-- [ ] **Next:** PC nominates the cut, the bench reviewer re-reviews it (the row-169 `interrogate` pass), and this lane fixes any finding. Rows 157 and 167 stay held with their owners.
-- [ ] **Row 157:** the preregistration-author role is named in Table A rows 238 and 242, but no person or session is designated. The contention definition stays held until PC designates one.
-- [ ] Rows 155 and 169: module-body review and per-module verification receipts.
-- [ ] Then: PC fresh nomination of the new cut, and bench re-review.
+### Other milestones (owner-decision packets in `docs/reports/tremor/`)
+- [ ] **M2 and M7, D8:** conditional ceilings (Pilot 4 USD 0.25, EP-1 USD 5.00). No Pilot 4 launcher exists yet, and the pinned price sheet is refused from 2026-11-24. M7's protocol and allocation are open.
+- [ ] **M3 R3, M4–M6, M8, M9:** none is admissible today. M8 is closest, with three preconditions. The M4 L2/L3/L4 rulings need recommended options.
+- [x] **M10 local release adoption** (`a833e17`).
+- [ ] **M10 remainder:** Console totals, T7 settlement, timer disposition (named executor).
 
-Routed, not done by this lane:
-- Row 157 "contention above 1": preregistration author.
-- Row 167 sealed N2: custodian.
-- Grader-fix adoption: source owners.
-- Host windows: PC and the Assistant.
-- D8 and spend: Alejandro.
-
-The seven row-165 workers ran on a Windows read-only host (`C:\Users\adelm\.omniroute\cxa`) and could not reach the Spark repository. Their claims stay unaccepted.
-
-Limits are unchanged: no push or PR, no deletion, no paid calls, no AWS access, no secrets printed, one session per lane.
+### Limits
+No push, PR, spend, install, deletion, quiet-host run, paid call or N2 access without the applicable exact admission.
