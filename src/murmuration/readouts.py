@@ -70,6 +70,37 @@ def reproduction_number(notes, planted):
     return (len(seen) - len(roots)) / len(seen), len(seen)
 
 
+def first_generation_offspring(notes, planted):
+    """Return (mean, counts by planted note) for direct, observed offspring in L2.
+
+    Every planted id must be present in notes. Planted notes contribute zero when
+    no child names them and are never counted as offspring. A child that names a
+    planted id alongside another distinct parent has ambiguous attribution.
+    """
+    counts = dict.fromkeys(planted, 0)
+    if not counts:
+        raise ValueError("at least one planted note is required")
+
+    parents_by_id = {}
+    for note in notes:
+        note_id = note["id"]
+        if note_id in parents_by_id:
+            raise ValueError(f"duplicate note id: {note_id}")
+        parents_by_id[note_id] = set(note["parents"])
+
+    missing = counts.keys() - parents_by_id.keys()
+    if missing:
+        raise ValueError(f"missing planted notes: {sorted(missing)}")
+
+    for note_id, parents in parents_by_id.items():
+        if note_id in counts or counts.keys().isdisjoint(parents):
+            continue
+        if len(parents) > 1:
+            raise ValueError(f"ambiguous parentage for note {note_id}")
+        counts[next(iter(parents))] += 1
+    return st.fmean(counts.values()), counts
+
+
 def pairwise_miss(misses):
     """misses[m][e] in {0,1}: monitor m missed failure episode e. Returns dict with the joint-miss matrix,
     mean pairwise phi correlation (pairs with a constant monitor are skipped), its spread, and Kish n_eff."""

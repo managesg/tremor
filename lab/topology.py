@@ -76,21 +76,19 @@ def _valid_work(fixture, verified, mode, work, *, evidence_access=None, work_pro
     return work_protocol.verify(deepcopy(work), deepcopy(evidence))
 
 
-def _plan(fixture, worker_views, worker_order):
+def _plan(task_order, readiness):
     """Assign from workers' readiness by task ID without sharing their answers."""
     assignments = {}
-    for name, task in fixture.tasks.items():
-        for worker in worker_order:
-            visible = worker_views[worker]
-            if (worker not in assignments and name in fixture.observations[worker]
-                    and name not in visible and all(dependency in visible for dependency in task.requires)):
+    for name in task_order:
+        for worker, ready in readiness:
+            if worker not in assignments and name in ready:
                 assignments[worker] = name
                 break
     return assignments
 
 
 def run(fixture, mode, budget=BUDGET, *, evidence_access=None, advisor=None, work_protocol=None,
-        rotate_worker_order=True):
+        rotate_worker_order=True, workers=None):
     """Run a policy against a common synchronous work and verification protocol."""
     if mode not in MODES:
         raise ValueError("unknown coordination mode")
@@ -98,6 +96,13 @@ def run(fixture, mode, budget=BUDGET, *, evidence_access=None, advisor=None, wor
         raise ValueError("budget must be an integer that covers the final merge")
     if evidence_access is not None and evidence_access not in EVIDENCE_ACCESS:
         raise ValueError("evidence access must be own or shared")
+    roster = WORKERS if workers is None else tuple(workers)
+    if workers is not None and (
+        not roster or any(type(worker) is not str or not worker or worker in ("verifier", "scripted_advisor")
+                          for worker in roster)
+        or len(set(roster)) != len(roster) or set(fixture.observations) != set(roster)
+    ):
+        raise ValueError("worker roster must match the fixture observations exactly")
     shared = mode != "independent" if evidence_access is None else evidence_access == "shared"
     trace, verified = [], []
     consulted, deferred = set(), set()
@@ -123,19 +128,29 @@ def run(fixture, mode, budget=BUDGET, *, evidence_access=None, advisor=None, wor
     for round_index in range(ROUNDS):
         claimed = {}
         lead = None
-        order = WORKERS
+        order = roster
         if mode == "fixed_lead":
-            lead = WORKERS[0]
+            lead = roster[0]
         if mode == "rotating_lead":
-            lead = WORKERS[round_index]
+            leader_index = round_index % len(roster)
+            lead = roster[leader_index]
             if rotate_worker_order:
-                order = WORKERS[round_index:] + WORKERS[:round_index]
-            if round_index and record("handoff", WORKERS[round_index - 1], recipient=lead) is None:
+                order = roster[leader_index:] + roster[:leader_index]
+            if round_index and record("handoff", roster[(round_index - 1) % len(roster)], recipient=lead) is None:
                 break
         worker_views = {agent: _visible(verified, agent, round_index, shared) for agent in order}
         assignments = {}
         if lead is not None:
-            assignments = _plan(fixture, worker_views, order)
+            # Only the coordinator reads observations and receipts to determine readiness.
+            readiness = tuple(
+                (agent, frozenset(
+                    name for name, task in fixture.tasks.items()
+                    if name in fixture.observations[agent] and name not in visible
+                    and all(dependency in visible for dependency in task.requires)
+                ))
+                for agent, visible in worker_views.items()
+            )
+            assignments = _plan(tuple(fixture.tasks), readiness)
             if record("plan", lead, assignments=assignments) is None:
                 break
         for agent in order:
