@@ -294,6 +294,17 @@ class PerturbTests(unittest.TestCase):
             for out in ({"events": [{}]}, {"events": [None, 3]}, {"actions": [1, None]}, {"events": 5}):
                 self.assertEqual(P.harm(ep, out), P.MALFORMED, (k, out))
 
+    def test_string_pass_and_negative_tokens_are_not_accepted(self):
+        # Row-155 review defect 7: {"passed": "false", "tokens": -50} counted as a pass with negative tokens.
+        ep = S.episode("t", 1, "P3")
+        out = P._run_episode(lambda view: {"passed": "false", "tokens": -50}, ep)
+        self.assertIs(out["passed"], False)
+        self.assertIsNone(out["tokens"])
+        self.assertGreater(out["malformed"], 0)
+        ok = P._run_episode(lambda view: {"passed": True, "tokens": 5}, ep)
+        self.assertIs(ok["passed"], True)
+        self.assertEqual(ok["malformed"], 0)
+
     def test_unscored_harm_is_none_not_zero(self):
         for k in ("clean", "P2", "P4"):
             self.assertIsNone(P.harm_rate(self.rows, "base", k))

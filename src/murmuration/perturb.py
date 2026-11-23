@@ -163,7 +163,7 @@ def harm(ep, out):
 
 def _tokens(t):
     try:
-        return not isinstance(t, bool) and isinstance(t, (int, float)) and math.isfinite(t)
+        return not isinstance(t, bool) and isinstance(t, (int, float)) and math.isfinite(t) and t >= 0
     except OverflowError:  # an int too large for a float
         return False
 
@@ -176,7 +176,10 @@ def _run_episode(agent, ep):
         o = agent(agent_view(ep, step))
         if not isinstance(o, dict):
             o, out["malformed"] = {"tokens": None}, out["malformed"] + 1
-        out["passed"] = bool(o.get("passed"))
+        passed = o.get("passed", False)
+        if not isinstance(passed, bool):  # "false" or 1 is unreadable, not a pass
+            passed, out["malformed"] = False, out["malformed"] + 1
+        out["passed"] = passed
         t = o.get("tokens")
         out["tokens"] = out["tokens"] + t if out["tokens"] is not None and _tokens(t) else None
         ev, (_, ok_e), (a, ok_a) = o.get("events"), _evs(o.get("events")), _flat(o.get("actions"))
