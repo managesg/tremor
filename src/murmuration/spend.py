@@ -15,7 +15,8 @@ never bypass batch caps (fail closed; unbatched spend made before a batch opens 
 toward it (so a fresh ledger path never resets the total); in PILOT_LEDGER_DIR (the only directory the real host
 may use, enforced by ClaudeClient) EVERY file counts, whatever its extension or case. `ceiling` only lowers the
 limit for ONE ledger file.
-All reads-then-writes run under an exclusive flock on <dir>/.spend.lock, failing CLOSED on timeout. A corrupt line,
+All reads-then-writes run under an exclusive flock on <dir>/.spend.lock, failing CLOSED on timeout. A batch driver
+may hold that same lock for its full run. A corrupt line,
 a non-finite number, or an OVERSPENT marker stops every ledger in the directory.
 Batches (B1): a ledger may carry a batch id; every reserve/charge line is tagged with it. BATCH_SPECS (a constant, nested:
 `canary` inside `ep1`) caps USD, calls and tokens (input+output, cache reads included) per batch across EVERY file in the
@@ -32,6 +33,7 @@ import hashlib
 import json
 import math
 import os
+import threading
 import time
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
@@ -252,9 +254,35 @@ class Ledger:
         self.lock_timeout = LOCK_TIMEOUT
         self.dir = os.path.dirname(os.path.abspath(path))
         os.makedirs(self.dir, mode=0o700, exist_ok=True)
+        self._exclusive_owner = None
+
+    @contextmanager
+    def exclusive_batch(self):
+        """Exclude other ledger writers across preflight, requests and settlement."""
+        owner = (os.getpid(), threading.get_ident())
+        if self._exclusive_owner == owner:
+            raise SpendError("a ledger batch is already active on this thread")
+        with self._lock():
+            self._exclusive_owner = owner
+            try:
+                yield
+            finally:
+                self._exclusive_owner = None
+
+    @contextmanager
+    def exclusive_request(self):
+        """Keep an in-flight request and its charge under one ledger lock."""
+        if self._exclusive_owner == (os.getpid(), threading.get_ident()):
+            yield
+        else:
+            with self.exclusive_batch():
+                yield
 
     @contextmanager
     def _lock(self):
+        if self._exclusive_owner == (os.getpid(), threading.get_ident()):
+            yield
+            return
         fd = os.open(os.path.join(self.dir, ".spend.lock"), os.O_RDWR | os.O_CREAT, 0o600)
         try:
             end = time.monotonic() + self.lock_timeout
@@ -591,10 +619,13 @@ def batch_report(ledger_dir, batch):
                         t[k] += a[k]
         for k in rem:
             rem[k] = min(rem[k], BATCH_SPECS[n][k] - t[k])
-    why = [r for b, r in stops if b in lin or batch in _lineage(b, BATCH_SPECS)]
-    if not why and any(m["overspent"] for m in sums):
-        why = ["overspent"]
+    scoped = [r for b, r in stops if b in lin or (
+        r not in SETTLED_REASONS and batch in _lineage(b, BATCH_SPECS))]
+    # A successful child cannot settle its parent or hide a blocking stop.
+    reason = next((r for r in scoped if r not in SETTLED_REASONS), None)
+    if reason is None:
+        reason = "overspent" if any(m["overspent"] for m in sums) else next(iter(scoped), None)
     return {"batch": batch, "calls": tot["calls"], "usd": tot["usd"], "tokens": tot["tokens"],
             "tokens_by_class": {k: tot[k] for k in ("input", "output", "cache_read", "cache_creation", "unmetered_worst")},
-            "stop_reason": why[0] if why else None, "remaining": rem, "caps": dict(BATCH_SPECS[batch]),
+            "stop_reason": reason, "remaining": rem, "caps": dict(BATCH_SPECS[batch]),
             "price_sheet_sha256": next((m["opens"][batch] for m in sums if batch in m["opens"]), None)}

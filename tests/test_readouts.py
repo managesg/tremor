@@ -56,6 +56,47 @@ class Readouts(unittest.TestCase):
         self.assertAlmostEqual(Rhat, 0.7, delta=0.03)
         self.assertGreater(n, 3000)
 
+    def test_first_generation_offspring_can_exceed_one(self):
+        notes = [
+            {"id": "seed", "parents": []},
+            {"id": "child-1", "parents": ["seed"]},
+            {"id": "child-2", "parents": ["seed"]},
+            {"id": "grandchild", "parents": ["child-1"]},
+        ]
+        self.assertEqual(R.first_generation_offspring(notes, ["seed"]), (2.0, {"seed": 2}))
+
+    def test_first_generation_offspring_includes_zero_child_seeds(self):
+        notes = [
+            {"id": "seed", "parents": []},
+            {"id": "quiet", "parents": []},
+            {"id": "child", "parents": ["seed", "seed"]},
+            {"id": "unrelated", "parents": []},
+        ]
+        self.assertEqual(
+            R.first_generation_offspring(notes, ["seed", "quiet"]),
+            (0.5, {"seed": 1, "quiet": 0}),
+        )
+        self.assertEqual(R.first_generation_offspring(notes, ["quiet"]), (0.0, {"quiet": 0}))
+
+    def test_first_generation_offspring_refuses_ambiguous_parentage(self):
+        notes = [
+            {"id": "seed-a", "parents": []},
+            {"id": "seed-b", "parents": []},
+            {"id": "child", "parents": ["seed-a", "seed-b"]},
+        ]
+        for seeds in (["seed-a", "seed-b"], ["seed-a"]):
+            with self.subTest(seeds=seeds), self.assertRaisesRegex(ValueError, "ambiguous parentage.*child"):
+                R.first_generation_offspring(notes, seeds)
+
+    def test_first_generation_offspring_refuses_incomplete_root_evidence(self):
+        notes = [{"id": "child", "parents": ["seed"]}]
+        with self.assertRaisesRegex(ValueError, "at least one planted note"):
+            R.first_generation_offspring(notes, [])
+        with self.assertRaisesRegex(ValueError, "missing planted notes.*seed"):
+            R.first_generation_offspring(notes, ["seed"])
+        with self.assertRaisesRegex(ValueError, "duplicate note id.*child"):
+            R.first_generation_offspring(notes + notes, ["child"])
+
     def test_pairwise_miss_independent_and_identical(self):
         rng = random.Random(5)
         ind = [[int(rng.random() < 0.4) for _ in range(4000)] for _ in range(4)]

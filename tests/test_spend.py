@@ -488,6 +488,20 @@ class BatchTests(unittest.TestCase):
         with self.assertRaises(spend.SpendError):
             spend.batch_report(self.d, "nope")
 
+    def test_report_distinguishes_child_completion_from_parent_stop(self):
+        self.led("canary", "a-canary.jsonl").settle("complete")
+        self.assertIsNone(spend.batch_report(self.d, "ep1")["stop_reason"])
+        self.led("ep1", "z-ep1.jsonl").stop_batch("scorer_disagreement")
+        self.assertEqual(spend.batch_report(self.d, "ep1")["stop_reason"], "stopped:scorer_disagreement")
+
+    def test_report_does_not_hide_child_failure_behind_parent_settlement(self):
+        child = self.led("canary", "z-canary.jsonl")
+        child.settle("complete")
+        self.led("ep1", "a-ep1.jsonl").settle("inconclusive")
+        self.assertEqual(spend.batch_report(self.d, "ep1")["stop_reason"], "inconclusive")
+        child.stop_batch("owner")
+        self.assertEqual(spend.batch_report(self.d, "ep1")["stop_reason"], "stopped:owner")
+
     def test_fuzz_worst_case_schedule_of_500_calls(self):
         # every call as large as allowed and reporting its full reservation: USD binds nowhere, calls and tokens do
         led = self.led()

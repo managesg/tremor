@@ -40,7 +40,7 @@ import random
 import re
 import tempfile
 
-from . import analysis, backend_claude as bc, cardcheck, formal_alloc, practice as practicemod, spend, team_claude as tc
+from . import analysis, backend_claude as bc, cardcheck, formal_alloc, manifest, practice as practicemod, spend, team_claude as tc
 from .trapbench import alloc, alloc2
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -110,6 +110,37 @@ def _pilot_card(name):
             "sha256": hashlib.sha256(raw).hexdigest()}
 
 
+def _check_freeze():
+    """Verify the canonical EP-1 code tree and identify the paid run's frozen inputs."""
+    prereg = os.path.join(ROOT, "prereg", "EP1.md")
+    lean_root = os.path.join(ROOT, "formal", "alloc_score")
+    try:
+        with open(prereg, "rb") as f:
+            prereg_bytes = f.read()
+        text = prereg_bytes.decode("utf-8")
+        fields = re.findall(r"^code_tree_hash:(.*)$", text, re.M)
+        if len(fields) != 1 or not re.fullmatch(r"[0-9a-f]{64}", fields[0].strip()):
+            raise PreflightError("refused: EP-1 code_tree_hash is missing, blank or invalid; freeze it first")
+        frozen = fields[0].strip()
+        statuses = re.findall(r"^Status:(.*)$", text, re.M)
+        if len(statuses) != 1 or statuses[0].strip() not in ("FROZEN", "FROZEN."):
+            raise PreflightError("refused: EP-1 preregistration must declare Status: FROZEN")
+
+        # The preregistration seals Lean sources and manifests, not the build.
+        paths = [os.path.join(ROOT, d) for d in ("src", "practices", "tests")]
+        paths.extend(os.path.join(lean_root, name) for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain"))
+        for directory, subdirs, files in os.walk(lean_root):
+            subdirs[:] = [name for name in subdirs if name != ".lake"]
+            paths.extend(os.path.join(directory, name) for name in files if name.endswith(".lean"))
+        actual = manifest.tree_hash(paths, root=ROOT)
+        if actual != frozen:
+            raise PreflightError(f"refused: EP-1 code_tree_hash mismatch: frozen {frozen}, now {actual}")
+        return {"code_tree_hash": actual, "prereg_sha256": hashlib.sha256(prereg_bytes).hexdigest(),
+                "template_sha256": tc.template_hashes()}
+    except (OSError, UnicodeError) as e:
+        raise PreflightError(f"refused: cannot verify EP-1 freeze: {e}") from None
+
+
 def _preflight(review):
     """Card A passes cardcheck with a recorded non-author review, and its neutral twin matches its bytes; else refuse."""
     path = os.path.join(practicemod.ROOT, "A.md")
@@ -141,7 +172,8 @@ def _append(path, obj):
         os.fsync(f.fileno())
 
 
-_WHY = (("cap", "cap"), ("no_rerun_calls_left", "cap"), ("overspent", "cap"), ("unbilled_unknown", "cap"),
+_WHY = (("input_integrity", "crash"), ("enforcement_violation", "invalid_log"), ("action_boundary", "invalid_log"),
+        ("cap", "cap"), ("no_rerun_calls_left", "cap"), ("overspent", "cap"), ("unbilled_unknown", "cap"),
         ("spend_stop", "cap"), ("transport", "transport"), ("cells_lost", "transport"), ("http_400", "http400"),
         ("invalid_log", "invalid_log"), ("void", "void_model"), ("malformed", "void_model"),
         ("scorer_disagreement", "scorer_disagreement"), ("scorer_invalid", "scorer_disagreement"))
@@ -232,13 +264,15 @@ def _trace(rec):
 
 
 class _Run:
-    def __init__(self, kind, client, ledger, seed, outdir, dry_run, n_sets, third):
+    def __init__(self, kind, client, ledger, seed, outdir, dry_run, n_sets, third, freeze=None):
         self.kind, self.client, self.ledger, self.seed, self.dry = kind, client, ledger, seed, dry_run
         self.out, self.third = outdir, third or _lean
         self.plan = plan(kind, seed, n_sets)
         self.cells = [(b, c) for b in self.plan for c in b["order"]]
         self.sched = {"kind": kind, "schedule_seed": seed, "dry_run": dry_run, "plan": self.plan,
                       "model": MODEL, "stamp": FAKE if dry_run else None}
+        if freeze is not None:
+            self.sched["freeze"] = freeze
         self.epath, self.vpath = os.path.join(outdir, "episodes.jsonl"), os.path.join(outdir, "events.jsonl")
 
     def start(self):
@@ -246,10 +280,20 @@ class _Run:
         sp = os.path.join(self.out, "schedule.json")
         if os.path.exists(sp):
             with open(sp, encoding="utf-8") as f:
-                if json.load(f) != json.loads(json.dumps(self.sched)):
-                    raise ValueError("refused: this output directory holds a different schedule")
+                prior = json.load(f)
+            if "freeze" in self.sched:
+                if not isinstance(prior, dict) or not prior.get("freeze"):
+                    raise PreflightError("refused: existing EP-1 schedule has no recorded freeze")
+                if prior["freeze"] != self.sched["freeze"]:
+                    raise PreflightError("refused: existing EP-1 schedule belongs to a different freeze")
+            if prior != json.loads(json.dumps(self.sched)):
+                raise ValueError("refused: this output directory holds a different schedule")
         else:
-            with open(sp, "w", encoding="utf-8") as f:
+            if "freeze" in self.sched and any(os.path.lexists(path) for path in (
+                self.epath, self.vpath, os.path.join(self.out, "final.json"),
+            )):
+                raise PreflightError("refused: existing EP-1 output has no schedule recording its freeze")
+            with open(sp, "x", encoding="utf-8") as f:
                 json.dump(self.sched, f, sort_keys=True, indent=1)
         self.recs = _read_jsonl(self.epath)
         self.aborts = sum(r["ended"] == "infrastructure_abort" for r in self.recs)
@@ -284,8 +328,20 @@ class _Run:
             if not rem[k] >= v:
                 raise _StopBatch(f"cap_{k}")
 
+    def _require_integrity(self):
+        expected = self.sched.get("freeze")
+        if expected is None:
+            return
+        try:
+            current = _check_freeze()
+        except (PreflightError, ValueError) as error:
+            raise bc.InputIntegrityError from error
+        if current != expected:
+            raise bc.InputIntegrityError
+
     def go(self):
         try:
+            self._require_integrity()
             self._probe_third()
             for i, (blk, cond) in enumerate(self.cells):
                 if not self._done(blk["set"], cond):
@@ -295,7 +351,11 @@ class _Run:
             if lost:
                 raise _StopBatch("cells_lost")
             detail = None
+            self._require_integrity()
             reason = "complete" if self.kind != "ep1" or self._resolved() else "inconclusive"
+        except bc.InputIntegrityError:
+            self._record_integrity_stop()
+            reason, detail = "stopped:crash", "input_integrity"
         except _StopBatch as e:
             reason, detail = f"stopped:{_why(str(e))}", str(e)
         _finish(self.ledger, reason)
@@ -310,7 +370,11 @@ class _Run:
     def _resolved(self):
         return _summary(self.recs, self.dry)["contrasts"][analysis.CONTRASTS[0][0]]["resolved"] != "unresolved"
 
+    def _record_integrity_stop(self):
+        _append(self.vpath, {"event": "input_integrity"})
+
     def _cell(self, blk, cond, idx):
+        self._require_integrity()
         s, split = blk["set"], blk["split"]
         ts = alloc.gen(s, split)
         arm = cond if cond in BASE_CONDS else "play"
@@ -320,9 +384,10 @@ class _Run:
             self._room()
             order = blk.get("task_order", tc.CAPS["task_order"])
             tag = ID_PREFIX.get(self.kind, "") + ORDER_TAG.get(order, "") + COND_TAG.get(cond, "") + ("" if i == 0 else "r1")
+            guard = {"before_request": self._require_integrity} if "freeze" in self.sched else {}
             try:
                 rec = tc.run_episode_model(ts, arm, card, self.client, seed=s, batch=self.kind,
-                                           caps={"id_tag": tag, "task_order": order})
+                                           caps={"id_tag": tag, "task_order": order}, **guard)
             except ValueError as e:
                 if "already used" not in str(e):
                     raise
@@ -331,8 +396,20 @@ class _Run:
                 i += 1
                 continue
             rec.update(kind=self.kind, cond=cond, set=s, schedule_seed=self.seed, block_order=blk["order"], attempt=i,
-                       stamp=FAKE if self.dry else None, ledger=_cost(self.ledger, rec["episode_id"]),
-                       scorers=_score_gate(rec["log"], ts, self.third))
+                       stamp=FAKE if self.dry else None, ledger=_cost(self.ledger, rec["episode_id"]))
+            try:
+                self._require_integrity()
+            except bc.InputIntegrityError:
+                rec["void"] = "input_integrity"
+            if rec.get("void") == "input_integrity":
+                self._record_integrity_stop()
+            if rec.get("void") in ("input_integrity", "enforcement_violation", "action_boundary"):
+                detail = rec["void"]
+                rec.update(Y=None, valid=False, status=f"void:{detail}", ended="void", rerunnable=False)
+                _append(self.epath, rec)
+                self.recs.append(rec)
+                raise _StopBatch(detail)
+            rec["scorers"] = _score_gate(rec["log"], ts, self.third)
             # a loop void (model, usage) keeps its own reason and stop; an abort is re-run, never voided by a scorer
             sv = None if rec.get("void") or rec["ended"] == "infrastructure_abort" else _scorer_void(rec["scorers"])
             if sv:
@@ -472,13 +549,17 @@ def run_batch(kind, client, ledger, schedule_seed, outdir, dry_run=False, *, n_s
         raise ValueError(f"the ledger's batch {getattr(ledger, 'batch', None)!r} is not {kind!r}")
     if bool(dry_run) == tc._is_real(client):
         raise ValueError("refused: dry_run needs a fake client and a real client needs dry_run=False")
-    _check_open(ledger, kind)
-    if kind == "canary":
-        return _canary(client, ledger, outdir, dry_run)
-    _preflight(REVIEW_FILE if review is None else review)
-    r = _Run(kind, client, ledger, schedule_seed, outdir, dry_run, n_sets, third_scorer)
-    r.start()
-    return r.go()
+    if getattr(client, "ledger", ledger if dry_run else None) is not ledger:
+        raise ValueError("refused: client and driver must share the same ledger instance")
+    freeze = _check_freeze() if kind == "ep1" and not dry_run else None
+    with ledger.exclusive_batch():
+        _check_open(ledger, kind)
+        if kind == "canary":
+            return _canary(client, ledger, outdir, dry_run)
+        _preflight(REVIEW_FILE if review is None else review)
+        r = _Run(kind, client, ledger, schedule_seed, outdir, dry_run, n_sets, third_scorer, freeze=freeze)
+        r.start()
+        return r.go()
 
 
 def _load(outdir):
@@ -547,6 +628,13 @@ def analyse(outdir):
     sched, recs = _load(outdir)
     if sched["kind"] == "canary":
         raise analysis.AnalysisRefused("refused: canary data never enters an analysis")
+    if sched.get("freeze") and any(event.get("event") == "input_integrity"
+                                  for event in _read_jsonl(os.path.join(outdir, "events.jsonl"))):
+        raise analysis.AnalysisRefused("refused: a frozen input changed during EP-1")
+    if any(r.get("arm") == "code" and r.get("violations_executed") for r in recs):
+        raise analysis.AnalysisRefused("refused: an enforcement violation executed in the code arm")
+    if any(r.get("void") == "action_boundary" for r in recs):
+        raise analysis.AnalysisRefused("refused: an invalid action crossed the parser boundary")
     fake = bool(sched.get("dry_run"))
     _refuse_invalid(recs)
     if sched["kind"] in PILOTS:
@@ -683,6 +771,8 @@ def cli(a):
     if a.base_url and not a.ledger_dir:  # G0-2R3 N10: a fake run must never settle a batch in the real pinned ledger
         raise ValueError("refused: --base-url is a test hook that needs --ledger-dir")
     kind = {"canary": "canary", "pilot": "pilot", "pilot2": "pilot2", "pilot3": "pilot3", "run": "ep1"}[c]
+    if kind == "ep1" and not a.base_url:
+        _check_freeze()  # Before the Ledger constructor can create its directory.
     try:
         sheet = spend.PriceSheet.load(a.price_sheet or PRICE_SHEET)
         led = spend.Ledger(os.path.join(a.ledger_dir or spend.PILOT_LEDGER_DIR, f"{kind}.jsonl"), sheet, batch=kind)

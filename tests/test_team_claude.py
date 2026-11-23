@@ -75,7 +75,9 @@ class Scripted:
         self.fn, self.returned, self.void, self.stop, self.seen = fn, returned, void, stop, []
 
     def call(self, episode, call_id, model, messages, max_tokens, temperature=0.0, system=None,
-             canary_input_tokens=None, batch=None):
+             canary_input_tokens=None, batch=None, before_request=None):
+        if before_request is not None:
+            before_request()
         c = ctx(messages[0]["content"])
         self.seen.append({"id": call_id, "model": model, "max_tokens": max_tokens, "temperature": temperature,
                           "system": system, "user": messages[0]["content"], "batch": batch, "ctx": c})

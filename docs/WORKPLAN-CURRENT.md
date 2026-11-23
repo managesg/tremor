@@ -7,6 +7,9 @@ Roles: Fable 5.2 plans and pre-registers; Opus 5.5 orchestrates and verifies (a 
 the implementer, fresh context); Sonnet 5.5 builds; Haiku fetches; outside reviewers (GPT via Codex,
 Cursor/Grok) attack. Status words: NOT STARTED / INSTRUMENTED / PILOTED / EVIDENCED / OUT OF SCOPE.
 
+For the next Codex session, start with the [Claude handoff](reports/HANDOFF-claude-opus-20261120.md)
+and its [verification and corrections](../coordinator-outbox/tremor-execution-20261120.md#handoff-verification).
+
 ## State as of 2026-11-20 18:10 UTC (reconciled against evidence files; history kept)
 Rows: 65 done [x], 27 open [ ], 3 in progress [~] (total 95). Rows marked done because an addendum or
 later row replaced them say SUPERSEDED or CLOSED in the row. Two items (Lean static-scan clause, `ui/` content)
@@ -15,13 +18,13 @@ were checked for existence only. No number in this file was changed.
 MVP-critical path:
 | Row | State |
 |---|---|
-| Parser gate (change 19 fix) | IMPLEMENTED by the orchestrator (63 model-loop tests, 2 mutants); NO fresh independent gate yet: OPEN |
-| Pilot 3 build + gate | BUILD in progress (`pilot3` batch, `ep1 pilot3`, per-order table present, uncommitted); gate OPEN |
-| Pilot 3 run | OPEN (blocked on the gate; owner approval is covered by addenda 7 and 9) |
-| EP-1 freeze | OPEN (`code_tree_hash` blank) |
+| Parser gate (change 19 fix) | ACCEPTED WITH NOTES. See [P3 gate](reports/workplan-ep/P3-gate.md). |
+| Pilot 3 build + gate | DONE. The independent gate allowed Pilot 3 to run. |
+| Pilot 3 run | DONE. The order rule selected `shared`. Clearance criterion 2 failed. |
+| EP-1 freeze | BLOCKED on preregistration author review of criterion 2. See the [trace packet](reports/workplan-ep/P3-clearance-criterion-2.md). |
 | EP-1 run | OPEN (spend cap code still USD 10 hard cap; EP-1 itself is inside USD 5.25 stop) |
 | EP-1 analysis + claims check | OPEN |
-| Public repo README + video release | README DONE (repo public, addendum 8/9); video OPEN (storyboard only) |
+| Public repo README + video | Explainer linked from the public README at `ba08c0a`. Pilot 3 documentation updates are local. |
 
 ## Goal
 Produce **one pre-registered number that is allowed to be null**: for one coordination practice
@@ -79,8 +82,10 @@ advantage claim; a use of QGrid's grid-site domain (only its Lean and simulator 
 - [x] Independent second scorer `alloc2.py` + differential test against `alloc.py`. evidence: src/murmuration/trapbench/alloc2.py; docs/reports/scorer-differential.md.
 - [x] Static card check `cardcheck.py` + two pilot-only leakage cards (states-the-check, keyword-stuffed). evidence: src/murmuration/cardcheck.py, tests/test_cardcheck.py; docs/reports/card-A-review.md (addendum: cardcheck OK).
 - [x] Auto-research scaffold under `lab/` (unrun; outside the freeze hash). evidence: lab/autoresearch/loop.py, lab/tests/test_loop.py (scaffold only; unrun, as scoped).
-- [ ] Prompt-truncation logging and provider response-id logging (`backend_claude._record`). STILL OPEN (checked 2026-11-20: no logging in src/murmuration/backend_claude.py).
-- [ ] External anchor for log heads (cell log and board log). STILL OPEN (no evidence of an anchor).
+- [~] Prompt and response telemetry records request bytes, rejects oversize input locally, and logs a
+      validated optional provider response ID. Provider-side input truncation is explicitly unknown.
+      Offline verification: 94 adapter/team tests and five independent loopback metadata cases passed.
+- [~] External log-head anchor: cell and board receipt comparison verified offline (lab/log_head_receipt.py; two regression tests and independent fixture replay). Actual independent receipt custody remains open.
 - [x] Card A review (`docs/reports/card-A-review.md`, independent Opus model reviewer; the owner may
       override): APPROVE with the stated paraphrase limit; card v1 kept (sha256 9875048b...). Decision
       (orchestrator): v1 stays; its two lines beyond the code arm ("one at a time", release etiquette)
@@ -109,7 +114,7 @@ advantage claim; a use of QGrid's grid-site domain (only its Lean and simulator 
       `sorry`, `admit`, new `axiom`, `native_decide`, `unsafe`, `implemented_by`, extra imports. evidence: formal/alloc_score/ (AllocScore, Axioms.lean), tests/test_formal_alloc.py, docs/reports/scorer-differential.md. The static-scan clause was not re-verified when reconciling.
 - [x] Third-scorer gate: Python `alloc`, independent `alloc2` and Lean `AllocScore` agree on 5,000 seeded
       logs; disagreement in a real run voids it. Lean missing or unpinned = INVALID, never pass. evidence: docs/reports/scorer-differential.md (alloc, alloc2, Lean agree on 10,000 seeded logs; the Phase 2 row).
-- [ ] (optional, same pattern) Lean proof of the HDI margin decision table and of the ledger cap arithmetic. STILL OPEN (optional; no evidence).
+- [x] Optional Lean proof of abstract HDI decision logic and exact reservation arithmetic. Evidence: lab/ep1_gate_arithmetic.lean; six theorems kernel-checked and independently reviewed. Runtime and floating-point parity remain separate checks.
 - [x] PsiQDK checked and NOT installed: its native simulator `workbench-sim-native` 0.3.0 is proprietary
       and has no aarch64 wheel (the other PsiQDK packages are Apache-2.0 pure Python but cannot simulate
       without it). QGrid itself falls back to its numpy statevector simulator.
@@ -142,7 +147,14 @@ advantage claim; a use of QGrid's grid-site domain (only its Lean and simulator 
 - [x] Three scorers agree on 10,000 seeded logs (0 disagreements each pair, incl. `valid`); strict input
       rule (episode action log only); Lean `no_action_not_valid` proved.
 - [x] Local commit after both gates accept: b4a820e (owner, 2026-11-20; 89 files; no key, no runs/ or data/).
-- [ ] B4: whole EP-1 schedule against the fake server at worst-case usage, every stop fires, table stamped FAKE. STILL OPEN as written (every stop fires, FAKE table). Partly covered: 'Fake dry run GREEN' (Phase 3) and the dry run in docs/reports/workplan-ep/G1b-R2.md; no report shows every stop firing at worst-case usage for the full EP-1 schedule.
+- [ ] B4: whole EP-1 schedule against the fake server at worst-case usage, every stop fires, table stamped FAKE.
+      Verified on Spark: 60 EP-1 episodes, FAKE-stamped report, floor 0.25 and oracle 1.0 in all arms.
+      Eight full-schedule fault probes stopped as expected: HTTP 400, transport aborts, first-block malformation,
+      model mismatch, excessive reported usage, and lowered call, token and synthetic USD caps.
+      The full-plan loopback probes now reproduce the aggregate and per-arm malformed thresholds
+      and three scorer stops. A separate full-reservation probe reproduced the retry and no-room boundaries.
+      Outstanding: the author-specified decoy-output guard and a frozen-SHA matrix rerun.
+      Loopback outputs and scripts: `/tmp/murmuration-b4.cUIEWE`. See the [B4 evidence matrix](reports/workplan-ep/B4-offline-evidence.md) for the remaining boundaries and frozen-SHA rerun.
 
 ### Phase 3. First money (owner "confirm" required at each step)
 - [x] Price sheet refetched 2026-11-20: every row re-verified against the pricing page, unchanged; only
@@ -209,8 +221,11 @@ advantage claim; a use of QGrid's grid-site domain (only its Lean and simulator 
       accepted), fallback to the LAST top-level JSON array with only whitespace after it; text after the array stays
       `extra_text` (change 19's rule; its test-3 example contradicted the rule). `two_arrays` case now accepted by
       design. 63 model-loop tests OK; 2 mutants caught. Shortcut: `extra_text_bytes` not logged yet.
-- [~] Opus implementer: `pilot3` batch (USD 0.25 / 260 / 598,000), `ep1 pilot3`, and the per-order decision table
-      in `analyse`; then a fresh gate; then pilot 3 runs (owner addendum 8). PARTLY DONE: `pilot3` batch in src/murmuration/spend.py, `ep1 pilot3` in src/murmuration/__main__.py and ep1.py, per-order decision table in src/murmuration/ep1.py (uncommitted). OPEN: no fresh gate report exists for it; pilot 3 not run.
+- [x] Pilot 3 batch and decision table gated and run. The batch completed 30 episodes,
+      240 calls, zero voids. The local analyser selected `shared` under section 13.16b.
+      Evidence: docs/reports/workplan-ep/P3-gate.md, runs/ep1-live/pilot3, prereg/EP1.md section 18.
+- [ ] Resolve Pilot 3 clearance criterion 2 with the preregistration author before freeze.
+      The maximum was 263 output tokens against a ceiling of 150, with zero truncated replies.
 - [x] Owner addendum 8 2026-11-20 "Yes go ahead with your recommendations please": dual-use rulings granted
       (lines 2, 3, 4); team-size ruling granted (>8, 16/32); training re-approved (line 4 adapter); line 8
       kept; Console limit to USD 170; push commits from Spark; proceed pilot 3 and EP-1 under new budget.
@@ -218,8 +233,9 @@ advantage claim; a use of QGrid's grid-site domain (only its Lean and simulator 
 - [ ] Console check of the canary (46,605 in / 4 out, Haiku 5.5, Nov 20): deferred by the owner (Console
       lag), required before EP-1. STILL OPEN; timing SUPERSEDED: required before publishing results, not before EP-1 (D6, docs/reports/ep-approvals.md addendum 9).
 - [x] Human baseline (about ten manual tasks) or its absence stated as a limit. SUPERSEDED by D5 (docs/reports/ep-approvals.md addendum 9): no human baseline; its absence must be stated as a limit in the write-up.
-- [ ] Price sheet: the current window ends 2026-11-23; if pilot 2 + EP-1 cannot finish by then, refetch and
-      restart the 3-day window (no loss except time). STILL OPEN; pilot 2 is done (runs/ep1-live/pilot2/final.json), pilot 3 and EP-1 remain; evidence: docs/reports/price-sheet.json.
+- [ ] Price sheet: the current window ends 2026-11-23. Refetch and restart the three-day window if EP-1
+      runs after that date. Pilots 2 and 3 have run. EP-1 awaits clearance criterion 2 review.
+      Evidence: docs/reports/price-sheet.json.
 
 ### Phase 4. EP-1 (the number)
 - [ ] Freeze: commit, write `code_tree_hash`, `prereg-check` passes, second commit. STILL OPEN (prereg/EP1.md: `code_tree_hash:` blank, status DRAFT).
@@ -231,7 +247,7 @@ advantage claim; a use of QGrid's grid-site domain (only its Lean and simulator 
 ### Phase 5. After EP-1 (each needs its own approval)
 - [ ] No-API replication of the one-line memory warning on planted notes (local 4B model; download gate).
 - [ ] Cross-agent error correlation and three-copies-plus-dissenter on those traces.
-- [ ] 3.9 case study: the 'accept if present' failure family as a write-up.
+- [x] 3.9 case study: the 'accept if present' failure family as a write-up. Evidence: docs/reports/workplan-ep/R3-scorer-evidence-case-study.md.
 - [ ] Extend exactly one dimension depending on EP-1 (more blocks, or a second model family).
 - [ ] Deferred: auto-research over cards (`ar1`, held-out family from `trapbench/qstate`), dreaming ladder.
       Not used: QGrid's grid-site domain and its Python mirror. Cut: quantum search as a proposer or any
@@ -257,12 +273,12 @@ Mentor names are from the posting; "fit" means our question sits in that team's 
 | Honesty / false completion (3.12) | DIRECT (secondary read-off) | False-completion rate from logs, exploratory | Samuel Marks |
 
 Items added to reach the REACHABLE rows (each needs its own approval and gate; zero or near-zero cost):
-- [ ] R1 3.9 case study write-up + canaries (CPU).
-- [ ] R2 Spec-gaming read-off from the leakage cards in pilot 2 (already in the design; label exploratory). STILL OPEN: pilot 2 stopped after 11 episodes (runs/ep1-live/pilot2/final.json); pilot 3 or EP-1 must supply it.
+- [x] R1 3.9 case study and canaries verified offline. Evidence: docs/reports/workplan-ep/R3-scorer-evidence-case-study.md and the lane handoff.
+- [x] R2 Exploratory spec-gaming read-off from Pilot 3. Evidence: docs/reports/workplan-ep/R2-pilot3-leakage.md.
 - [ ] R3 Memory-poisoning replication on the local Qwen3.5-4B (GPU, about 1-2 GPU-h; Phase 5 item).
 - [ ] R4 Read-only activation probe on the same model vs TF-IDF (GPU; after R3).
-- [ ] R5 "Verifiable environment" note: the board + Lean-checked scorer as an RL-environment artefact, no training claim.
-- [ ] R6 Fable updates `docs/ALIGNMENT-INTEGRATION.md` sections 2-3 to this table (keeps the private gap list honest).
+- [x] R5 Verifiable environment note and offline checks. Evidence: docs/reports/workplan-ep/R5-verifiable-environment.md (23 tests passed; independent scope review).
+- [x] R6 Alignment evidence update for sections 2–3, with independent review. Evidence: docs/ALIGNMENT-INTEGRATION.md.
 - [x] Research console UI (artifact, SeaBridge + QGrid design): status, spend, pilot evidence, fit map. evidence: ui/sortie-console.html (file exists; content not re-verified).
 
 ### Phase 7. Ambition review for the Residency (owner request 2026-11-20: "push the frontier")
@@ -309,17 +325,20 @@ Batch stops (sum USD 159.5, reserve about USD 10.5; GPU 56.5 h + up to 13.5 h fo
 | L6 trust calibration | 2 | 4 / 6 |
 | L7 renormalization | 8 | 8 / 12 |
 | L8 activation readouts | 6 | 2 / 3 |
-| L4 adapter arm (only if training cut reversed) | up to 13.5 | 0 |
+| L4 adapter arm (local design approved under D3, execution gate pending) | up to 13.5 | 0 |
 
 - [ ] D0 (by 2026-11-22): final shareable proposal: merge v3 accuracy fixes + prior-art; publish page; owner shares. STILL OPEN (partial: docs/PROPOSAL-SHARE.md, proposal-v3-final-check.md READY-WITH-EDITS).
 - [ ] Spend code: hard cap USD 170, per-batch stops above, per-file rule redesigned; fresh spend gate. Owner raises
       the Console limit to USD 170 or less. STILL OPEN (checked: src/murmuration/spend.py still has HARD_CAP_USD = 10.0; D4, docs/reports/ep-approvals.md addendum 9, allows the change only through a gated code change).
-- [~] R0 pilot 2 (approved) -> EP-1 (in budget) ; R1 bench extensions (CPU) ; R2 throughput + sensitivity pilot +
-      one prereg per line ; R3/R4 lines in run order L1, L2, L3, L4, L5, L6, L7, L8 ; R5 write-up. IN PROGRESS: pilot 2 done (runs/ep1-live/pilot2/final.json); pilot 3, EP-1 and later lines open.
+- [~] R0 Pilot 3 completed 30 episodes and 240 calls, selected `shared`, and failed clearance criterion 2.
+      EP-1 awaits author review and prospective clearance. Then R1 bench extensions (CPU), R2 throughput,
+      sensitivity pilot and one preregistration per line, R3/R4 in L1–L8 order, and R5 write-up.
+      The L4 adapter checkpoints must be ready before L8 prediction D. Other L8 work follows its own
+      dependencies. See [the portfolio work plan](WORKPLAN-RESIDENCY-V3.md#phase-r4-line-runs-under-the-owner-budget-stops-from-docsworkplan-currentmd-phase-8).
 - [x] Owner rulings still open: training cut (adapter arm); contagion, selection, direction-removal dual-use;
       local team sizes 16/32; sharing (G8). SUPERSEDED by docs/reports/ep-approvals.md addendum 9 (D1 dual-use, D2 team sizes 16/32, D3 training cut reversed for the adapter arm). Sharing (G8) stays owner-only (Phase 6).
 
 ### Phase 6. Sharing (gate G8, owner only)
 - [ ] Rename to Sortie (no job running; before any freeze hash that matters). STILL OPEN (checked: repo and package still named murmuration).
-- [ ] Public repo video release (README is live; video storyboard only; no video file in the repo). STILL OPEN; added in the 2026-11-20 reconciliation.
+- [x] Public explainer and README embed verified on Tremor `origin/main` at `ba08c0a` (2026-11-20). Further publication follows G8.
 - [ ] Shareable proposal checked against recordings and primary sources; nothing sent without the owner. STILL OPEN (owner only).

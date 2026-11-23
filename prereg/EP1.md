@@ -8,13 +8,10 @@ given as a card, enforced in code, or absent. It reports three raw contrasts wit
 no verdict; a null and "inconclusive" are allowed results. No EP-1 episode has been run; the
 canary call and instrument pilot 1 have (section 13, item 16).
 
-Status: DRAFT. Not frozen. No EP-1 episode has been run. Instrument pilot 1 ran on 2026-11-20 and
-stopped (section 13, item 16); pilot 2 is specified there, runs both task orders and was approved by the owner on 2026-11-20
-(pre-freeze change 18); it has not run. No EP-1 episode may run until the
-freeze is recorded in `docs/reports/prereg-freezes.md` (WORKPLAN-EP section 5) and the gate in
-section 13 has passed. Two paid steps come before the freeze, each under its own owner approval
-and sub-cap and neither producing EP-1 data: the one-call canary and the instrument pilot
-(section 13). Open design choices and owner decisions: `docs/reports/ep1-design-notes.md`.
+Status: DRAFT. Pilot 3 selected `shared` and failed clearance criterion 2 (section 18).
+No EP-1 episode has been run. EP-1 requires clearance under section 13 and a recorded freeze
+in `docs/reports/prereg-freezes.md` (WORKPLAN-EP section 5).
+Open design choices and owner decisions: `docs/reports/ep1-design-notes.md`.
 
 Date: 2026-11-20 (draft)      Author: Fable 5.2 (draft); number check by Opus 5.5 pending
 Code git SHA (frozen):
@@ -279,12 +276,9 @@ predicate, the arm would measure instruction-following on a visible answer key, 
   arm the replies of a round are executed in that order. For each task claimed in the round, the
   claimant that the board's seeded draw picks executes first. Under `code` the claim lock
   therefore refuses exactly the agents the board would resolve against.
-- **Task list order: `shared` or `per_agent`, fixed by pilot 2 (pre-freeze changes 14 and 18,
-  design choice).** EP-1 runs one order, the same for all 60 episodes, chosen before the freeze
-  by the rule in section 13, item 16b. Until that rule is applied the order is `shared`: all
-  four agents see the task set's one list, as in the canary and pilot 1. The other candidate,
-  `per_agent`, is described in the rest of this item; its reasons are the case for it, not a
-  decision. Under `per_agent` the prompt lists the 6
+- **Task list order: `shared`**, selected by the section 13.16b rule using Pilot 3
+  (section 18, pre-freeze change 20). All four agents see the task set's one list in all
+  60 planned EP-1 episodes. Under `per_agent` the prompt lists the 6
   tasks in an order drawn for that agent from `random.Random(f"ep1:view:{split}:{seed}:{agent}")`
   over the task set's own split and seed. It is the same in both rounds and the same in all
   three arms of a task set. No text is added; the same lines are permuted, so the request size
@@ -1277,4 +1271,32 @@ section 4.
 
 **Pilot 3 specification:** Same both-orders design. Caps: new batch `pilot3` sibling of `ep1`, **USD 0.25, 260 calls, 598,000 tokens** from unallocated USD 1.25 (addendum 7, `ep-approvals.md`), per-call caps unchanged (2,000 bytes in, `max_tokens` 300). Run 5 arms × 6 train sets × 8 calls = 240 calls + 20 retry buffer. Same 7 clearance criteria as pilot 2. Owner approval required before run.
 
-## 17. Deviations (filled in afterwards, never deleted)
+## 18. Pre-freeze change 20 (2026-11-20): Pilot 3 order decision and clearance
+
+`PYTHONPATH=src python3 -m murmuration ep1 analyse runs/ep1-live/pilot3` selects
+`shared`, the only usable order. This is a pilot-based design decision. Each order
+has three scored pairs. The saved batch completed 30 episodes and 240 calls with zero
+voids or transport aborts and a local ledger total of USD 0.0182501.
+
+| Order | Set | Code Y | Keyword-stuffed Y | None Y | Play Y | States-check Y |
+|---|---:|---:|---:|---:|---:|---:|
+| shared | 0 | .50 | .50 | .75 | .50 | .50 |
+| shared | 3 | .50 | .50 | .75 | .50 | .50 |
+| shared | 4 | .75 | .50 | .50 | .50 | .75 |
+| per_agent | 1 | .75 | .75 | .75 | .75 | 1.00 |
+| per_agent | 2 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| per_agent | 5 | 1.00 | 1.00 | 1.00 | 1.00 | .75 |
+
+| Order | Mean none Y | Duplicates none / code | (a) Room | (b) Duplicates | (c) Code differs | Usable |
+|---|---:|---:|---|---|---|---|
+| shared | .667 | 4 / 0 | Pass | Pass | Pass | Yes |
+| per_agent | .917 | 0 / 0 | Fail | Fail | Fail | No |
+
+**Clearance criterion 2 fails.** All 240 replies ended with `end_turn`, but the maximum
+recorded `usage.output_tokens` was 263 against the predeclared ceiling of 150.
+Across the 144 calls in the three EP-1 arms, 13 exceeded 150 (none 7, play 4, code 2).
+The preregistration sends the traces back to the author when criterion 2 fails.
+EP-1 remains in draft, with freeze fields blank. The order selection uses the existing
+`shared` runtime default.
+
+## 19. Deviations (filled in afterwards, never deleted)

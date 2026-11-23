@@ -7,16 +7,19 @@ import json
 import os
 import re
 import shutil
+import signal
+import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import fakeclaude  # noqa: E402
 from murmuration import __main__ as cli  # noqa: E402
-from murmuration import analysis, ep1, formal_alloc, spend  # noqa: E402
+from murmuration import analysis, ep1, formal_alloc, manifest, router, spend  # noqa: E402
 from murmuration import backend_claude as bc  # noqa: E402
 from murmuration.trapbench import alloc, alloc2  # noqa: E402
 
@@ -116,6 +119,197 @@ class Base(unittest.TestCase):
 
     def stops(self):
         return [r for b, r in spend.Ledger._sum(spend.Ledger._read(self.led.path))["stops"]]
+
+
+class EnforcementStopTests(Base):
+    def check_executed_violation(self, action_kind, requests_in_code):
+        original = router.act
+
+        def fault(action, handle, enforced):
+            allow_fault = enforced and action.get("type") == action_kind
+            return original(action, handle, False if allow_fault else enforced)
+
+        prior_arms = ep1.plan("ep1", 0, 1)[0]["order"].index("code")
+        with mock.patch.object(router, "act", fault):
+            final = self.batch("ep1", n_sets=1)
+        self.assertEqual(len(self.seen), prior_arms * 8 + requests_in_code)
+        self.assertEqual(final["episodes"], prior_arms + 1)
+        self.assertEqual((final["reason"], final["detail"]), ("stopped:invalid_log", "enforcement_violation"))
+        self.assertEqual(final["ledger"]["stop_reason"], "stopped:invalid_log")
+        last = self.records()[-1]
+        self.assertEqual((last["arm"], last["ended"], last["violations_executed"]), ("code", "void", 1))
+        self.assertFalse(last["rerunnable"])
+        self.assertIsNone(last["Y"])
+        with self.assertRaisesRegex(analysis.AnalysisRefused, "enforcement violation"):
+            ep1.analyse(os.path.join(self.d, "out"))
+
+    def test_executed_duplicate_claim_stops_in_the_first_round(self):
+        self.check_executed_violation("claim", 4)
+
+    def test_executed_unclaimed_work_stops_in_the_second_round(self):
+        self.check_executed_violation("work", 8)
+
+
+class ActionBoundaryTests(Base):
+    def check_parser_fault(self, actions, seed, arm):
+        self.canary()
+        third = mock.Mock(side_effect=lean_ok)
+        original = router.act
+        routed = []
+
+        def route(action, handle, enforced):
+            routed.append(action["type"])
+            return original(action, handle, enforced)
+
+        with mock.patch.object(ep1.tc, "parse", side_effect=actions), mock.patch.object(router, "act", route), \
+                mock.patch.object(ep1.tc.team, "_score", side_effect=AssertionError("invalid episode reached scorer")):
+            final = self.batch("ep1", n_sets=1, seed=seed, canary=False, third_scorer=third)
+        third.assert_called_once()  # only the startup probe
+        self.assertEqual(routed, ["read"])
+        self.assertEqual(len(self.seen), 1)
+        self.assertEqual((final["reason"], final["detail"]), ("stopped:invalid_log", "action_boundary"))
+        self.assertEqual(final["ledger"]["stop_reason"], "stopped:invalid_log")
+        rec, = self.records()
+        self.assertEqual((rec["arm"], rec["ended"], rec["valid"], rec["Y"], rec["rerunnable"]),
+                         (arm, "void", False, None, False))
+        self.assertEqual((rec["ledger"]["reserve_lines"], rec["ledger"]["charge_lines"]), (1, 1))
+        with self.assertRaisesRegex(analysis.AnalysisRefused, "invalid action crossed the parser boundary"):
+            ep1.analyse(os.path.join(self.d, "out"))
+
+    def test_router_only_action_is_refused_before_dispatch(self):
+        self.check_parser_fault(lambda *_: ([{"type": "post", "kind": "note", "text": "benign fixture"}], None),
+                                seed=0, arm="none")
+
+    def test_duplicate_claim_reply_is_refused_before_any_claim_dispatch(self):
+        def duplicate(_text, _round, ids, _max_bytes):
+            return ([{"type": "claim", "item": item} for item in sorted(ids)[:2]], None)
+
+        self.check_parser_fault(duplicate, seed=2, arm="play")
+
+
+class LedgerExclusionTests(Base):
+    def test_second_process_is_refused_while_first_request_is_in_flight(self):
+        script = """
+import sys
+from pathlib import Path
+from murmuration import ep1, spend
+
+directory, review, out = map(Path, sys.argv[1:])
+sheet = spend.PriceSheet.load(str(directory.parent / 'ps.json'))
+shared = spend.Ledger(directory / 'ep1.jsonl', sheet, batch='ep1')
+sibling = spend.Ledger(directory / 'pilot.jsonl', sheet, batch='pilot')
+shared.lock_timeout = sibling.lock_timeout = 0.05
+
+class Fake:
+    def call(self, *args, **kwargs):
+        raise AssertionError('contender reached a request')
+
+def denied(action):
+    try:
+        action()
+    except spend.SpendError as error:
+        assert 'spend lock timeout' in str(error), str(error)
+    else:
+        raise AssertionError('contender entered the ledger')
+
+denied(lambda: ep1.run_batch('ep1', Fake(), shared, 0, str(out), True, n_sets=1,
+                             review=str(review), third_scorer=lambda *args: {'status': 'OK'}))
+denied(lambda: sibling.reserve('contender:0', ep1.MODEL, 10, 10))
+assert not out.exists()
+assert not Path(sibling.path).exists()
+"""
+        loser = os.path.join(self.d, "contender")
+        attempts = []
+
+        def responder(path, headers, body, call_number):
+            if call_number == 1:
+                ledger_path = Path(self.ldir) / "ep1.jsonl"
+                before = ledger_path.read_bytes()
+                result = subprocess.run(
+                    [sys.executable, "-c", script, self.ldir, self.review, loser],
+                    env=dict(os.environ, PYTHONPATH=os.path.join(ep1.ROOT, "src")),
+                    capture_output=True, text=True, timeout=5, check=False,
+                )
+                attempts.append((result, before == ledger_path.read_bytes()))
+            return ep1.worst_case_responder(path, headers, body, call_number)
+
+        final = self.batch("ep1", responder, n_sets=1)
+        self.assertEqual(len(attempts), 1)
+        result, unchanged = attempts[0]
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(unchanged)
+        self.assertEqual(len(self.seen), 24)
+        self.assertEqual(final["stamp"], ep1.FAKE)
+        next_ledger = spend.Ledger(Path(self.ldir) / "next.jsonl", self.sheet)
+        next_ledger.lock_timeout = 0.05
+        with next_ledger.exclusive_batch():
+            self.assertIn(("ep1", final["reason"]), next_ledger.totals()["stops"])
+
+    def test_killed_owner_releases_lock_and_preserves_outstanding_reservation(self):
+        self.canary()
+        script = """
+import os
+import signal
+import sys
+from pathlib import Path
+from murmuration import ep1, spend
+
+directory = Path(sys.argv[1])
+sheet = spend.PriceSheet.load(str(directory.parent / 'ps.json'))
+ledger = spend.Ledger(directory / 'ep1.jsonl', sheet, batch='ep1')
+with ledger.exclusive_batch():
+    ledger.reserve('killed-owner:0', ep1.MODEL, 10, 10)
+    os.kill(os.getpid(), signal.SIGKILL)
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", script, self.ldir],
+            env=dict(os.environ, PYTHONPATH=os.path.join(ep1.ROOT, "src")),
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+        self.assertEqual(result.returncode, -signal.SIGKILL, result.stderr)
+        path = Path(self.ldir) / "ep1.jsonl"
+        previous = path.read_bytes()
+        final = self.batch("ep1", n_sets=1, canary=False)
+        self.assertTrue(path.read_bytes().startswith(previous))
+        lines = self.led.entries()
+        self.assertEqual([e["kind"] for e in lines if e.get("id") == "killed-owner:0"], ["reserve"])
+        self.assertEqual(final["ledger"]["calls"], 26)
+
+    def test_driver_refuses_a_client_using_a_different_ledger(self):
+        client, _, seen = self.client(ep1.worst_case_responder, "ep1")
+        ledger = spend.Ledger(Path(self.ldir) / "other.jsonl", self.sheet, batch="ep1")
+        out = Path(self.d) / "mismatched"
+        with self.assertRaisesRegex(ValueError, "same ledger instance"):
+            ep1.run_batch("ep1", client, ledger, 0, out, True, review=self.review)
+        self.assertFalse(out.exists())
+        self.assertFalse(seen)
+        self.assertFalse(Path(ledger.path).exists())
+
+    def test_batch_cannot_start_during_a_standalone_client_request(self):
+        self.canary()
+        other = spend.Ledger(Path(self.ldir) / "ep1.jsonl", self.sheet, batch="ep1")
+        other.lock_timeout = 0.05
+        contender = mock.Mock(ledger=other)
+        contender.call.side_effect = AssertionError("contender reached a request")
+        out = Path(self.d) / "contender"
+        refusals = []
+
+        def responder(path, headers, body, call_number):
+            try:
+                ep1.run_batch("ep1", contender, other, 0, out, True, n_sets=1, review=self.review)
+            except spend.SpendError as error:
+                refusals.append(str(error))
+            return ep1.worst_case_responder(path, headers, body, call_number)
+
+        client, ledger, seen = self.client(responder, "pilot")
+        client.call(bc.Episode("standalone", 2_000, 10), "standalone:0", M,
+                    [{"role": "user", "content": "OK"}], 300)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(refusals, ["spend lock timeout: failing closed"])
+        self.assertFalse(out.exists())
+        contender.call.assert_not_called()
+        self.assertEqual([e["kind"] for e in ledger.entries() if e.get("id") == "standalone:0"],
+                         ["reserve", "charge"])
 
 
 class FullScheduleTests(Base):
@@ -564,6 +758,165 @@ class CliTests(Base):
         self.assertFalse(os.path.exists(spend.PILOT_LEDGER_DIR))  # nothing created before the gates passed
         rc, text = self.run_cli(["ep1", "run", "--out-dir", out, "--i-have-owner-confirm"], {ep1.KEY_ENV: ""})
         self.assertEqual(rc, 2)
+
+    def _freeze_fixture(self):
+        root = Path(self.d) / "checkout"
+        frozen_files = ("src/model.py", "practices/A.md", "tests/test_model.py",
+                        "formal/alloc_score/AllocScore/Basic.lean", "formal/alloc_score/lakefile.toml",
+                        "formal/alloc_score/lake-manifest.json", "formal/alloc_score/lean-toolchain")
+        for name in (*frozen_files, "train/local.py", "formal/alloc_score/.lake/Generated.lean"):
+            f = root / name
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(name, encoding="utf-8")
+        prereg = root / "prereg" / "EP1.md"
+        prereg.parent.mkdir()
+        digest = manifest.tree_hash([root / name for name in frozen_files], root=root)
+        return root, prereg, digest
+
+    def test_real_ep1_cli_refuses_unfrozen_or_changed_tree_before_any_side_effect(self):
+        root, prereg, digest = self._freeze_fixture()
+        out = os.path.join(self.d, "cliout")
+        args = ["ep1", "run", "--out-dir", out, "--i-have-owner-confirm"]
+        with mock.patch.object(ep1, "ROOT", root), mock.patch.object(spend, "Ledger") as ledger, \
+                mock.patch.object(bc, "ClaudeClient") as client:
+            cases = (("FROZEN", "", "missing, blank or invalid"), ("FROZEN", "0" * 64, "mismatch"),
+                     ("DRAFT. Not cleared.", digest, "must declare Status: FROZEN"))
+            for status, field, error in cases:
+                with self.subTest(status=status, error=error):
+                    prereg.write_text(f"Status: {status}\ncode_tree_hash: {field}\n", encoding="utf-8")
+                    rc, text = self.run_cli(args, {ep1.KEY_ENV: KEY})
+                    self.assertEqual(rc, 2, text)
+                    self.assertIn(error, text)
+            prereg.write_text(f"Status: FROZEN\ncode_tree_hash: {digest}\n", encoding="utf-8")
+            (root / "tests/test_model.py").write_text("changed", encoding="utf-8")
+            rc, text = self.run_cli(args, {ep1.KEY_ENV: KEY})
+            self.assertEqual(rc, 2, text)
+            self.assertIn("mismatch", text)
+            ledger.assert_not_called()
+            client.assert_not_called()
+        self.assertFalse(os.path.exists(out))
+        self.assertFalse(os.path.exists(spend.PILOT_LEDGER_DIR))
+
+    def test_direct_real_ep1_run_checks_freeze_and_preserves_card_review(self):
+        root, prereg, digest = self._freeze_fixture()
+        out = os.path.join(self.d, "direct")
+        ledger = mock.Mock(batch="ep1", exclusive_batch=lambda: contextlib.nullcontext())
+        client = mock.Mock(ledger=ledger)
+        with mock.patch.object(ep1, "ROOT", root), mock.patch.object(ep1.tc, "_is_real", return_value=True), \
+                mock.patch.object(ep1, "_Run") as runner:
+            prereg.write_text("code_tree_hash:\n", encoding="utf-8")
+            with self.assertRaisesRegex(ep1.PreflightError, "freeze it first"):
+                ep1.run_batch("ep1", client, ledger, 0, out, review=self.review)
+            self.assertEqual(ledger.mock_calls, [])
+            runner.assert_not_called()
+            self.assertFalse(os.path.exists(out))
+
+            prereg.write_text(f"Status: FROZEN\ncode_tree_hash: {digest}\n", encoding="utf-8")
+            (root / "train/local.py").write_text("changed", encoding="utf-8")
+            (root / "formal/alloc_score/.lake/Generated.lean").write_text("changed", encoding="utf-8")
+            ledger.totals.return_value = {"stops": [("canary", "complete")]}
+            with self.assertRaisesRegex(ep1.PreflightError, "no recorded review"):
+                ep1.run_batch("ep1", client, ledger, 0, out, review=os.path.join(self.d, "missing.md"))
+            runner.assert_not_called()
+            ep1.run_batch("ep1", client, ledger, 0, out, review=self.review)
+            runner.return_value.start.assert_called_once_with()
+            runner.return_value.go.assert_called_once_with()
+
+    def test_real_ep1_resume_requires_the_same_frozen_inputs(self):
+        root, prereg, digest = self._freeze_fixture()
+        frozen = f"Status: FROZEN\ncode_tree_hash: {digest}\n"
+        prereg.write_text(frozen, encoding="utf-8")
+        prompts = root / "prompts"
+        prompts.mkdir()
+        for name in ("system.md", "turn.md"):
+            (prompts / name).write_text(name, encoding="utf-8")
+        out = Path(self.d) / "resume"
+        schedule = out / "schedule.json"
+        ledger = mock.Mock(batch="ep1", exclusive_batch=lambda: contextlib.nullcontext())
+        ledger.totals.return_value = {"stops": [("canary", "complete")]}
+        client = mock.Mock(ledger=ledger)
+        with (mock.patch.object(ep1, "ROOT", root),
+              mock.patch.object(ep1.tc, "PROMPT_DIR", prompts),
+              mock.patch.object(ep1.tc, "_is_real", return_value=True),
+              mock.patch.object(ep1._Run, "go") as go):
+            def run():
+                return ep1.run_batch("ep1", client, ledger, 0, out, review=self.review)
+
+            run()
+            initial = schedule.read_bytes()
+            self.assertEqual(json.loads(initial)["freeze"], {
+                "code_tree_hash": digest,
+                "prereg_sha256": hashlib.sha256(frozen.encode()).hexdigest(),
+                "template_sha256": ep1.tc.template_hashes(),
+            })
+            run()
+            self.assertEqual(go.call_count, 2)
+
+            changed = root / "src/model.py"
+            original_code = changed.read_bytes()
+            changed.write_text("new code", encoding="utf-8")
+            lean = root / "formal/alloc_score"
+            new_digest = manifest.tree_hash([
+                root / "src", root / "practices", root / "tests", lean / "AllocScore/Basic.lean",
+                lean / "lakefile.toml", lean / "lake-manifest.json", lean / "lean-toolchain",
+            ], root=root)
+            prereg.write_text(frozen.replace(digest, new_digest), encoding="utf-8")
+            with self.assertRaisesRegex(ep1.PreflightError, "different freeze"):
+                run()
+            changed.write_bytes(original_code)
+
+            prereg.write_text(frozen + "Changed preregistration text.\n", encoding="utf-8")
+            with self.assertRaisesRegex(ep1.PreflightError, "different freeze"):
+                run()
+            prereg.write_text(frozen, encoding="utf-8")
+            (prompts / "turn.md").write_text("Different prompt.", encoding="utf-8")
+            with self.assertRaisesRegex(ep1.PreflightError, "different freeze"):
+                run()
+            self.assertEqual(schedule.read_bytes(), initial)
+
+            legacy = json.loads(initial)
+            del legacy["freeze"]
+            schedule.write_text(json.dumps(legacy), encoding="utf-8")
+            with self.assertRaisesRegex(ep1.PreflightError, "schedule has no recorded freeze"):
+                run()
+            schedule.unlink()
+            (out / "episodes.jsonl").write_text("{}\n", encoding="utf-8")
+            with self.assertRaisesRegex(ep1.PreflightError, "output has no schedule"):
+                run()
+            self.assertFalse(schedule.exists())
+            self.assertEqual(go.call_count, 2)
+
+    def _assert_midrun_integrity_stop(self, retryable):
+        root, prereg, digest = self._freeze_fixture()
+        prereg.write_text(f"Status: FROZEN\ncode_tree_hash: {digest}\n", encoding="utf-8")
+        self.canary()
+        out = os.path.join(self.d, "integrity")
+
+        def respond(path, headers, body, n):
+            (root / "src/model.py").write_text("changed during the loopback run", encoding="utf-8")
+            return fail_first(1)(path, headers, body, n) if retryable else ep1.worst_case_responder(path, headers, body, n)
+
+        client, ledger, seen = self.client(respond, "ep1")
+        with mock.patch.object(ep1, "ROOT", root):
+            runner = ep1._Run("ep1", client, ledger, 0, out, True, 1, lean_ok, freeze=ep1._check_freeze())
+            runner.start()
+            result = runner.go()
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(result["ledger"]["calls"], 2)  # one loopback canary and one EP-1 request
+        self.assertEqual((result["reason"], result["detail"]), ("stopped:crash", "input_integrity"))
+        self.assertEqual(ep1._read_jsonl(runner.vpath), [{"event": "input_integrity"}])
+        current, = self.records("integrity")
+        self.assertEqual(current["void"], "input_integrity")
+        self.assertIsNone(current["Y"])
+        self.assertFalse(current["rerunnable"])
+        with self.assertRaisesRegex(analysis.AnalysisRefused, "frozen input changed"):
+            ep1.analyse(out)
+
+    def test_changed_frozen_inputs_stop_before_the_next_request(self):
+        self._assert_midrun_integrity_stop(retryable=False)
+
+    def test_changed_frozen_inputs_stop_before_the_retry(self):
+        self._assert_midrun_integrity_stop(retryable=True)
 
     def test_paid_commands_with_both_gates_run_and_the_key_never_reaches_an_output(self):
         echo = {"error": {"type": "api_error", "message": f"bad key {KEY}"}}  # a server that echoes the key

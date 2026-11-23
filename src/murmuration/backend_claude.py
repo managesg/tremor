@@ -10,6 +10,7 @@ never followed; everything written to the ledger or returned is scrubbed of the 
 import hashlib
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -31,6 +32,10 @@ class EpisodeCapExceeded(Exception):
 
 class EpisodeVoided(Exception):
     pass
+
+
+class InputIntegrityError(Exception):
+    """The batch's input check refused this request."""
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -115,7 +120,8 @@ class ClaudeClient:
             except ValueError:
                 return e.code, {}
 
-    def call(self, episode, call_id, model, messages, max_tokens, temperature=0.0, system=None, canary_input_tokens=None, batch=None):
+    def call(self, episode, call_id, model, messages, max_tokens, temperature=0.0, system=None, canary_input_tokens=None,
+             batch=None, before_request=None):
         """One /v1/messages request. Returns the per-call record (also written to the ledger).
 
         Retries at most once, only when the first attempt produced no usable response (network error,
@@ -136,11 +142,17 @@ class ClaudeClient:
         if system:
             payload["system"] = system
         body = json.dumps(payload, sort_keys=True).encode()
+        with self.ledger.exclusive_request():
+            return self._request(episode, call_id, model, body, max_tokens, canary_input_tokens, before_request)
+
+    def _request(self, episode, call_id, model, body, max_tokens, canary_input_tokens, before_request):
         ub = len(body)  # bytes >= tokens, so a strict input upper bound
         req_sha = hashlib.sha256(body).hexdigest()
         err = None
         for attempt in (0, 1):
             cid = call_id if attempt == 0 else f"{call_id}#r1"
+            if before_request is not None:
+                before_request()
             left = episode.wall_seconds - (time.monotonic() - episode.t0)
             if left <= 0:
                 raise EpisodeCapExceeded("episode wall-second cap reached")
@@ -155,7 +167,7 @@ class ClaudeClient:
             wall = time.monotonic() - t0
             usage = resp.get("usage") if isinstance(resp, dict) else None
             if status == 200 and isinstance(resp, dict) and resp.get("model"):  # usage checked (fail closed) in charge
-                return self._record(episode, cid, model, resp, usage, wall, req_sha)
+                return self._record(episode, cid, model, resp, usage, wall, req_sha, ub)
             if status is not None:
                 err = f"HTTP {status} {self._scrub(json.dumps(resp.get('error', {})) if isinstance(resp, dict) else '')[:200]}"
             self.ledger.void_unknown(cid, error=err, wall_seconds=wall, requested_model=model)
@@ -165,7 +177,7 @@ class ClaudeClient:
             break
         raise RuntimeError(f"claude call {call_id} failed: {err}")
 
-    def _record(self, episode, cid, model, resp, usage, wall, req_sha):
+    def _record(self, episode, cid, model, resp, usage, wall, req_sha, request_bytes):
         s = self._scrub
         returned = s(resp["model"]) if isinstance(resp["model"], str) else "[non-string model]"
         stop = s(resp.get("stop_reason")) if resp.get("stop_reason") is not None else None
@@ -173,14 +185,19 @@ class ClaudeClient:
         types = [s(str(b.get("type")))[:32] if isinstance(b, dict) else "?" for b in blocks][:16]  # scrub before cut (G0-2R4)
         text = "".join(b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text" and isinstance(b.get("text"), str))
         void = None if self.ledger.sheet.accepts(model, returned) else f"returned model {returned!r} != requested {model!r}"
+        response_id = resp.get("id")
+        metadata = {"request_bytes": request_bytes, "provider_input_truncated": None}
+        if (isinstance(response_id, str) and 0 < len(response_id) <= 128
+                and s(response_id) == response_id and re.fullmatch(r"msg_[A-Za-z0-9]+", response_id)):
+            metadata["provider_response_id"] = response_id
         usd = self.ledger.charge(
             cid, model, usage, requested_model=model, returned_model=returned, void=void,
             stop_reason=stop, wall_seconds=wall, request_sha256=req_sha,
-            response_sha256=hashlib.sha256(text.encode()).hexdigest(), episode=episode.id)
+            response_sha256=hashlib.sha256(text.encode()).hexdigest(), episode=episode.id, **metadata)
         u = spend.clean_usage(usage)  # charge() already accepted it
         episode.tokens += sum(u.get(k) or 0 for k in spend.USAGE_FIELDS)
         rec = {"id": cid, "requested_model": model, "returned_model": returned, "usage": u, "usd": usd,
-               "void": void, "text": s(text), "stop_reason": stop, "wall_seconds": wall, "block_types": types}
+               "void": void, "text": s(text), "stop_reason": stop, "wall_seconds": wall, "block_types": types, **metadata}
         episode.records.append(rec)
         if void:
             episode.void = void

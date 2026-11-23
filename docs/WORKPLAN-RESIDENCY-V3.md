@@ -1,5 +1,7 @@
 # TREMOR portfolio work plan for the Residency, v3 (internal)
 
+The [leadership, emergence and public visuals update](WORKPLAN-SWARM-AND-VISUALS.md) adds an L5/L7 experiment and a README and explainer plan. Its [local action and frontier assistance section](WORKPLAN-SWARM-AND-VISUALS.md#local-action-frontier-assistance-and-learning-in-weights) links the topology comparison to bounded frontier advice and the L4/L8 weight-space research. This document retains the full baseline portfolio and batch allocations.
+
 Written 2026-11-20 by Fable 5.2 (plan). Internal: not shareable. Companion to
 `docs/PROPOSAL-RESIDENCY-V3.md`. Supersedes `docs/WORKPLAN-RESIDENCY.md` for planning; that file and
 `docs/PROPOSAL-RESIDENCY.md` stay as the v2 record. Live EP-1 checklist stays in
@@ -108,15 +110,16 @@ directions; small-model workspace; cache-aware routing. Out by default: scripted
 - Owner budget (2026-11-20, verbatim: "I authorize the full expenses of $170 and 70 hours of GPU
   usage"): USD 170 Claude API in total (USD 0.0162 spent) and 70 Spark GPU-hours. Batch stops sum to
   USD 159.5, reserve about USD 10.5. GPU: 56.5 h for the lines, up to 13.5 h for the L4 adapter arm
-  only if the training cut is reversed (pending). Table: Phase R4 below and `docs/WORKPLAN-CURRENT.md`
+  under the local-only approval in addendum 9 D3. Table: Phase R4 below and `docs/WORKPLAN-CURRENT.md`
   Phase 8. The spend code still carries the old stops; no paid batch runs until it carries these.
 - No agent raises, re-scopes or works around the budget or any batch stop. A new budget exists only
   when the owner states it; record his words verbatim in `docs/reports/ep-approvals.md`. Residency
   compute, if granted, is additional and a separate ledger.
 - Every paid or GPU batch: its own pre-registration, its own batch in `spend.py`, its own owner confirm.
-- No training (LoRA, RL, distillation) unless the owner reverses the cut in ALIGNMENT-INTEGRATION
-  section 8. L4 adapter arm and L8 prediction D wait on that.
-- Claude team size stays at 8 or below. Local 16 and 32 need a ruling (L7, L1).
+- Training remains restricted to the L4 adapter arm approved in addendum 9 D3, using a local open
+  model and up to 13.5 GPU-hours. The adapter batch still needs its execution gate.
+- Claude team size stays at 8 or below. Addendum 9 D2 allows local 16- and 32-agent runs for L1 and
+  L7 without API spend. Each batch still needs its execution gate.
 - Claims cut by the outside reviews are never re-introduced (list: S2 section 4).
 - Each line: one primary contrast; scripted floor must fail and oracle must pass or the batch is void;
   scripted null first; n is task sets or chains; measurement cost charged to the technique.
@@ -127,11 +130,17 @@ What happened, in one line: on 2026-11-20 a paid canary and pilot 1 ran on the o
 while gate G1b-R still read REJECT, because the gate was a prose checklist that nothing enforced.
 
 - [ ] Gate as code: `ep1.py` paid commands refuse unless a G1b-R ACCEPT file with a matching code-tree
-      hash exists (CPU only).
+      hash exists (CPU only). Startup and resume now enforce the tree hash and input identity. The independent freeze receipt and mid-run integrity stop remain open.
 - [ ] G1b re-gate ACCEPT (fresh Opus, real client against the fake server, pilot-1 fixes included).
-- [ ] Console reconciliation of the canary (USD 0.0046625). Owner action. Unknown cost is not zero.
+- [ ] Console reconciliation of the canary (USD 0.0046625) before publishing results (addendum 9 D6). Owner action. Unknown cost is not zero.
 - [ ] Herding option: leave OFF for EP-1 (herding is what L5 and L7 measure); record in the prereg.
-- [ ] Pilot 2 (`pilot2`, USD 0.25 cap). **Owner confirm.**
+- [x] Pilot 2 (`pilot2`, USD 0.25 cap) ran and stopped under the malformed-reply rule after 11
+  episodes. See `runs/ep1-live/pilot2/final.json`.
+- [x] Pilot 3 completed 30 episodes and 240 calls. The order rule selected `shared`. See
+  `runs/ep1-live/pilot3/final.json` and preregistration section 18.
+- [ ] Resolve failed Pilot 3 clearance criterion 2 with the preregistration author before freezing EP-1.
+  The largest reply used 263 output tokens against a ceiling of 150. See
+  [the trace packet](reports/workplan-ep/P3-clearance-criterion-2.md).
 - [ ] Third-scorer gate box closed.
 - [ ] EP-1 freeze and run (USD 5 cap, about USD 0.3 expected). **Owner confirm.**
 - [x] Prior-art search per technique: `docs/research/residency/S3-prior-art-v3.md` (about 90 arXiv
@@ -149,7 +158,7 @@ portfolio runs scripted and local tiers only.
 - [ ] Night loop: day episodes, consolidation pass, new store with the old one kept; provenance links.
 - [ ] Readouts in one thin module (`susceptibility.py`): rerun variance, dose slope, response to
       fluctuation ratio, adoption, cascade depth, R per note, recovery time, pairwise error
-      correlation, Kish n_eff with the spread check.
+      correlation, Kish n_eff with the spread check. `readouts.py` has initial measures and the tested L2 first-generation offspring calculation. The L2 harness still needs to supply eligible transmission events.
 - [ ] Scripted nulls, one per line: fluctuation-response with scripted adopters; well-mixed epidemic
       with immunity; correlated monitors; iterated-map consolidation; random-order task choice;
       fixed K/D leases; random blocks. Hand-derived expected values, recomputed by enumeration.
@@ -166,16 +175,18 @@ portfolio runs scripted and local tiers only.
 
 - [ ] Isolate or bound the host-memory leak; watchdog floor stays at 10 GiB. If not bounded: local
       tiers capped at short jobs and stated as a limit.
-- [ ] 4B throughput smoke (under 0.5 GPU-h) in our container; check activation hook points for L8.
-      **Owner approval: re-assign T7's remaining GPU hours.**
+- [x] 4B throughput smoke in our container and activation hook points for L8. The separately
+      approved run completed and charged 0.023123 GPU-hours. Historical T7 use remains provisionally
+      charged at 4.0 GPU-hours against the program. [Run and settlement](reports/workplan-ep/Spark-readiness.md#calibration-result-and-settlement)
 - [ ] Sensitivity pilot on the small Claude tier (about USD 1). **Owner confirm.**
 - [ ] One pre-registration per line (Fable): sd from the pilot; n so the standard error of the
       primary contrast is at most min(K, E - K)/2.8, or else the reachable outcomes stated in
       advance; supported/killed/inconclusive by interval; Holm for secondaries; effective episode
       counts (design effect from the pilot ICC).
-- [ ] Owner rulings, one line each, recorded verbatim: contagion (planted and arising); selection on a
-      toy monitor; direction removal on our own adapter; distress line (default excluded); training
-      cut; local team sizes 16 and 32.
+- [ ] Confirm remaining rulings and batch execution approvals before their dependent runs.
+      Addendum 9 D1 covers benign planted notes, defensive monitor selection and direction ablation
+      on the local open 4B model. D2 covers local teams of 16 and 32, and D3 covers the local adapter
+      arm. See [the approval record](reports/ep-approvals.md#addendum-9-2026-11-20-1805-utc-overnight-directive).
 
 **Gate R2:** pre-registrations frozen with tree hash; every ruling recorded. A missing ruling blocks
 only its dependent arm.
@@ -184,7 +195,7 @@ only its dependent arm.
 
 - [ ] L2 pilot slice on local 4B: warning replication and R in an unprotected store (about 3 GPU-h).
 - [ ] L5 carriers local tier, norms N1 and N2, team sizes 4 and 8 (about 4 GPU-h).
-- [ ] Case study of the "accept if present" verifier defects with frozen canaries (CPU).
+- [ ] Case study of the "accept if present" verifier defects with frozen canaries (CPU). [Local draft and scripted checks](reports/workplan-ep/R3-scorer-evidence-case-study.md) are ready for the frozen-SHA check.
 
 **Gate R3:** Opus claims check per result. Stop rule: the batch stops at 7.5 GPU-hours; L5 shrinks
 first. If the local 4B model fails plain coordination against the scripted oracle, stop and report
@@ -197,21 +208,23 @@ the floor.
 | R0, R2 | Spent + pilot 2 + EP-1 | 0 | 0.3 / 5.25 | owner confirm each |
 | R2 | Sensitivity pilot | 0 | 1 / 1.25 | none |
 | R2, R3 | 4B throughput, L2 slice, L5 local carriers | 7.5 | 0 / 0 | none |
-| R4-1 | L1 law and technique | 8 | 14 / 24 | local team size above 8 |
-| R4-2 | L2 in full | 6 | 9 / 15 | contagion |
-| R4-3 | L3 | 4 | 16 / 24 | selection |
-| R4-4 | L4 text arms | 12 | 33 / 40 | contagion (prediction D) |
+| R4-1 | L1 law and technique | 8 | 14 / 24 | local 16/32 covered by D2 |
+| R4-2 | L2 in full | 6 | 9 / 15 | D1 covers benign planted notes. Unplanted contagion still needs a ruling. |
+| R4-3 | L3 | 4 | 16 / 24 | D1 covers defensive monitor selection. |
+| R4-4 | L4 text arms | 12 | 33 / 40 | D1 covers benign planted notes. Review any prediction D setting outside that approval. |
 | R4-5 | L5 small tier / frontier slice / evaporating claims | 3 | 20 / 29 | none |
 | R4-6 | L6 | 2 | 4 / 6 | none |
-| R4-7 | L7 | 8 | 8 / 12 | local team size |
-| R4-8 | L8 | 6 | 2 / 3 | direction removal, if used |
-| R4-9 | L4 adapter arm | up to 13.5 | 0 | training cut reversed (pending) |
+| R4-7 | L7 | 8 | 8 / 12 | local 16/32 covered by D2 |
+| R4-8 | L8 | 6 | 2 / 3 | D1 covers local direction ablation. L8-D requires the L4 adapter checkpoints. |
+| R4-9 | L4 adapter arm | up to 13.5 | 0 | local-only design approved by D3, batch gate pending |
 
 Sums: 56.5 GPU-h for the lines (70 with the adapter arm); USD 107.3 plan, USD 159.5 stops, about USD
 10.5 reserve under the USD 170 total. The stops are far below the n the decisive-kill rule asks for
 (about 6 to 11 times the detect-only n): each pre-registration states the reachable outcomes.
 
-- [ ] Run order: L1, L2, L3, L4, L5, L6, L7, L8, then the adapter arm if approved. Not a cut list.
+- [ ] Run order: L1, L2, L3, L4 text arms, L5, L6, L7, L8. Schedule the L4 adapter batch
+      through its own gate so its checkpoints are ready before L8 prediction D. Other L8 work
+      follows its existing dependencies.
 - [ ] Two-failure pivot: a line whose pilot shows a floor or ceiling twice is closed with that result.
 - [ ] If the residency grants compute: hosted tiers and the large-n cells move there under a separate
       ledger; local runs stay as the reproducible floor.
@@ -227,10 +240,10 @@ Sums: 56.5 GPU-h for the lines (70 with the adapter arm); USD 107.3 plan, USD 15
 
 ## Owner approvals, in one list
 
-1. Confirm pilot 2. 2. Confirm EP-1. 3. Herding option. 4. Canary console reconciliation.
+1. Pilot 2 ran. 2. Confirm EP-1. 3. Herding option. 4. Canary Console reconciliation before publication (D6).
 5. Reconcile the USD 9.5 allocations with the USD 9 code stop. 6. Re-assign the remaining T7 GPU hours.
-7. Sensitivity pilot batch. 8. Rulings: contagion, selection, direction removal, distress line.
-9. Training cut (keep or reverse). 10. Local team sizes 16 and 32. 11. Budget: granted 2026-11-20
+7. Sensitivity pilot batch. 8. Rulings beyond D1, including unplanted contagion and the excluded distress line.
+9. Local L4 adapter design approved (D3). 10. Local team sizes 16 and 32 approved (D2). Batch gates still apply. 11. Budget: granted 2026-11-20
 (USD 170, 70 GPU-h); open is raising the Console limit to USD 170 or less, owner only. 12. Sharing the
 proposal (G8). Items 5 and 6 are superseded by the new budget once the spend code carries it.
 

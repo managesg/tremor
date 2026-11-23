@@ -26,7 +26,7 @@ def sibling_verdict(action, view):
     return False, "no_matching_committed_independent_review"
 
 
-def _run(root, case):
+def _run(root, case, observe=None):
     path = root / case
     path.mkdir()
     taskset = alloc.gen(0)
@@ -58,6 +58,8 @@ def _run(root, case):
     action = {"type": "work", "agent": worker, "task": task["id"], "name": f"{worker}-{task['id']}",
               "answer": sum(map(int, task["check"].split()[1:]))}
     before = team.view_of(log_path)
+    if observe is not None:
+        observe(case, log_path, action, before, taskset)
     n1, dispatch_reason = router.act(action, handle, enforced=True)
     sibling_ok, sibling_reason = sibling_verdict(action, before)
     accepted = n1 in team.EXECUTED
@@ -77,10 +79,10 @@ def _run(root, case):
     }
 
 
-def compare():
+def compare(*, observe=None):
     with TemporaryDirectory(prefix="tremor-l5-sibling-") as tmp:
         return {"instrument_validation": True, "fixture": "synthetic_sibling_norm_development_control",
-                "scientific_n2_frozen": False, "rows": [_run(Path(tmp), case) for case in CASES]}
+                "scientific_n2_frozen": False, "rows": [_run(Path(tmp), case, observe) for case in CASES]}
 
 
 if __name__ == "__main__":

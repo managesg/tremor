@@ -25,7 +25,7 @@ import tempfile
 import urllib.parse
 
 from murmuration import backend_claude as bc
-from murmuration import cell, orders, router, spend, team
+from murmuration import board, cell, orders, router, spend, team
 from murmuration import practice as practicemod
 from murmuration.trapbench import alloc
 
@@ -89,6 +89,8 @@ def _action(obj, ids):
     """One action object -> (action|None, reason). Task ids must be exactly one of `ids` (ASCII)."""
     if type(obj) is not dict:
         return None, "not_object"
+    if any(type(key) is not str for key in obj):
+        return None, "bad_key"
     kind = obj.get("type")
     if type(kind) is not str or kind not in SPEC:
         return None, "bad_type"
@@ -157,7 +159,12 @@ def parse(text, rnd, ids, max_bytes=CAPS["max_reply_bytes"]):
         if last is None:
             return None, why
         obj = last
-    objs = obj if type(obj) is list else [obj]
+    return _validate_actions(obj if type(obj) is list else [obj], rnd, ids)
+
+
+def _validate_actions(objs, rnd, ids):
+    if type(objs) is not list:
+        return None, "not_list"
     if not objs:
         return None, "empty_list"
     acts = []
@@ -219,9 +226,10 @@ class _NoAdopter:
 
 
 class _ModelEpisode(team._Episode):
-    def __init__(self, ts, arm, card, agents, seed, tmp, client, caps, batch, tpl, eid):
+    def __init__(self, ts, arm, card, agents, seed, tmp, client, caps, batch, tpl, eid, before_request=None):
         super().__init__(ts, arm, card, agents, seed, caps["budget"], _NoAdopter(), None, None, [], tmp)
         self.client, self.caps, self.batch, self.eid, self.seed = client, caps, batch, eid, seed
+        self.before_request = before_request
         self.ids = frozenset(t["id"] for t in ts["tasks"])
         self.system, self.turn_tpl = tpl["system.md"].decode().rstrip("\n"), tpl["turn.md"].decode().rstrip("\n")
         self.cep = bc.Episode(eid, caps["episode_tokens"], caps["wall_seconds"])
@@ -305,6 +313,9 @@ class _ModelEpisode(team._Episode):
             ok = self.submit(agent, dict(x, agent=agent))
         except team._AgentStop:  # the router answered agent_stopped: not a new refusal
             ok = False
+        if self.enforced and self.violations:
+            self.void = "enforcement_violation"
+            raise team._Stop("void")
         why = self.reasons[-1][1] if not ok and len(self.reasons) > n else ("agent_stopped" if not ok else None)
         ep_stop, out = router.stops(self.handle)
         self.stopped.update(a for a in out if a in self.agents)
@@ -342,16 +353,21 @@ class _ModelEpisode(team._Episode):
                            "thinking": self.caps["thinking"]},
                           sort_keys=True).encode()
         t = {"agent": agent, "round": rnd, "call_id": f"{self.eid}:r{rnd}:{agent}", "status": None,
-             "reason": None, "prompt_sha256": hashlib.sha256((system + "\n" + user).encode()).hexdigest()}
+             "reason": None, "request_bytes": len(body), "prompt_sha256": hashlib.sha256((system + "\n" + user).encode()).hexdigest()}
         self.turns.append(t)
         if len(body) > self.caps["input_tokens"]:  # bytes >= tokens, so this refuses before the client would
             self.abort = str(PromptTooLarge(f"request {len(body)} bytes > cap {self.caps['input_tokens']}"))
             t["status"], t["reason"] = "prompt_too_large", self.abort
             raise team._Stop("prompt_too_large")
         self.calls += 1
+        guard = {} if self.before_request is None else {"before_request": self.before_request}
         try:
             rec = self.client.call(self.cep, t["call_id"], self.caps["model"], messages, self.caps["output_tokens"],
-                                   self.caps["temperature"], system=system, batch=self.batch)
+                                   self.caps["temperature"], system=system, batch=self.batch, **guard)
+        except bc.InputIntegrityError:
+            self.void = "input_integrity"
+            t["status"], t["reason"] = "void", self.void
+            raise team._Stop("void") from None
         except bc.EpisodeVoided:
             t["status"] = "void"
             raise team._Stop("void") from None
@@ -386,6 +402,9 @@ class _ModelEpisode(team._Episode):
         ret = rec.get("returned_model")
         t.update(returned_model=ret if ret is None or isinstance(ret, str) else repr(ret)[:80], usage=u,
                  usd=rec.get("usd"), stop_reason=stop, block_types=list(rec.get("block_types") or [])[:16])
+        for key in ("provider_response_id", "provider_input_truncated"):
+            if key in rec:
+                t[key] = rec[key]
         t["retries"] = int(str(rec.get("id") or "").endswith("#r1"))  # the client's one retry has its own `#r1` id
         used = sum(u.get(k) or 0 for k in USAGE_IN)
         if not ret:
@@ -412,6 +431,12 @@ class _ModelEpisode(team._Episode):
             self.last[agent] = "no-op"
             self.charge("refused", len(str(text).encode()))
             return None
+        # Keep an invalid parser result out of the scheduler and router in every arm.
+        acts, _ = _validate_actions(acts, rnd, self.ids)
+        if acts is None:
+            self.void = "action_boundary"
+            t["status"], t["reason"] = "void", self.void
+            raise team._Stop("void")
         t["actions"] = [x["type"] for x in acts]
         if t["actions"] == ["pass"]:
             t["status"], self.last[agent] = "pass", "no-op"
@@ -436,7 +461,8 @@ def _check_caps(caps):
         raise ValueError("caps.id_tag must be up to 16 ASCII letters, digits, '-' or '_'")
 
 
-def run_episode_model(taskset, arm, practice, client, seed=0, batch=None, n_agents=4, rounds=2, caps=None):
+def run_episode_model(taskset, arm, practice, client, seed=0, batch=None, n_agents=4, rounds=2, caps=None, *,
+                      before_request=None):
     """One model episode of practice A on `taskset`; returns the record (see module doc). Every outcome returns a
     record: `ended` is complete, void, infrastructure_abort (`rerunnable`: same seeds, NEW caps id_tag),
     prompt_too_large (`abort_reason`), episode_cap, call_cap, budget_exhausted, episode_stopped or spend_stop:*."""
@@ -463,9 +489,13 @@ def run_episode_model(taskset, arm, practice, client, seed=0, batch=None, n_agen
     if any(i.startswith(eid + ":") for i in used):  # every ledger file of the directory, not only this one
         raise ValueError(f"episode id {eid!r} already used in this ledger directory: a re-run needs a new caps id_tag")
     with tempfile.TemporaryDirectory() as tmp:
-        ep = _ModelEpisode(taskset, arm, card, agents, seed, tmp, client, caps, batch, tpl, eid)
+        ep = _ModelEpisode(taskset, arm, card, agents, seed, tmp, client, caps, batch, tpl, eid, before_request)
         ended = ep.run()
-        outcome, y, scores, lines = team._score(ep)
+        if ep.void == "action_boundary":
+            outcome, y, scores = "distinct_passing/slots", None, {"valid": False}
+            lines = board.read_log(ep.blog)
+        else:
+            outcome, y, scores, lines = team._score(ep)
     mal = sum(ep.malformed.values())
     expect = {t["id"]: t["expect"] for t in taskset["tasks"]}
     returned = sorted({t["returned_model"] for t in ep.turns if t.get("returned_model")})
