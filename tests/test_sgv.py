@@ -35,6 +35,11 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
         self.assertEqual(sgv.dispersion(r, {"half": 1, "one_in_ten": 1}), {"half": None, "one_in_ten": None})
         self.assertIsNone(sgv.allocate(r, {"half": 1, "one_in_ten": 1}, 100, 1))
 
+    def test_huge_finite_budget_stays_finite(self):
+        # re-verifier at 08659a3: remaining * v overflowed to inf before dividing by the total.
+        out = sgv.allocate({"A": [0, 4] * 5, "B": [2, 2] * 5}, {"A": 4, "B": 4}, 1e308, 0)
+        self.assertEqual(out, {"A": 1e308, "B": 0.0})
+
     def test_no_signal_returns_none(self):
         self.assertIsNone(sgv.allocate({"A": [4] * 10, "B": [0] * 10}, ITEMS, 50, 1))
 
@@ -48,7 +53,8 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
                      # row-169 verifier: NaN and infinite budgets produced NaN and infinite shares
                      lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("nan"), 1),
                      lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, 100, float("nan")),
-                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("inf"), 1)):
+                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("inf"), 1),
+                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, 10 ** 400, 1)):
             with self.assertRaises(ValueError):
                 call()
 

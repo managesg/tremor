@@ -62,7 +62,11 @@ def dispersion(reruns, items, task_type=None, min_reruns=MIN_RERUNS):
 def allocate(reruns, items, budget, rerun_cost, task_type=None, min_reruns=MIN_RERUNS):
     """Verification budget per unit, proportional to overdispersion, after charging the reruns."""
     for name, x in (("budget", budget), ("rerun_cost", rerun_cost)):
-        if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) or x < 0:
+        try:
+            finite = not isinstance(x, bool) and isinstance(x, (int, float)) and math.isfinite(x)
+        except OverflowError:  # an int too large for a float
+            finite = False
+        if not finite or x < 0:
             raise ValueError(f"{name} must be a finite non-negative number")
     remaining = budget - rerun_cost * sum(len(cs) for cs in reruns.values())
     if remaining < 0:
@@ -71,4 +75,4 @@ def allocate(reruns, items, budget, rerun_cost, task_type=None, min_reruns=MIN_R
     total = sum(v for v in est.values() if v)
     if total == 0:
         return None
-    return {u: (remaining * v / total if v else 0.0) for u, v in est.items()}
+    return {u: (remaining * (v / total) if v else 0.0) for u, v in est.items()}  # share first: no overflow

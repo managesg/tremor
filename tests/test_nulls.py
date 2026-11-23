@@ -1,4 +1,5 @@
-"""Each null's enumeration against a hand-derived closed form (policy row 162)."""
+"""Each null's enumeration against a hand-derived closed form (R1 "Scripted nulls, one per line")."""
+import time
 import unittest
 from fractions import Fraction as F
 
@@ -40,6 +41,19 @@ class L2ReedFrost(unittest.TestCase):
         self.assertEqual(mean(N.reed_frost(3, 0, 1, q)), F(9, 4))
         self.assertEqual(mean(N.reed_frost(3, 1, 1, q)), F(3, 2))   # 1*1/2 + 2*1/2
         self.assertEqual(N.reed_frost(3, 2, 1, q), {1: 1})
+        self.assertEqual(N.reed_frost(4, 0, 1, F(0)), {1: 1})  # no zero-probability outcomes listed
+
+
+class L3CorrelatedMonitors(unittest.TestCase):
+    def test_common_cause_closed_form(self):
+        # m = 3, p = 1/2, c = 1/4: all miss c + (1-c) p^3 = 11/32; a pair c + (1-c) p^2 = 7/16;
+        # one view q = c + (1-c) p = 5/8; phi = (7/16 - 25/64) / (5/8 * 3/8) = 1/5.
+        out = N.correlated_monitors(3, F(1, 2), F(1, 4))
+        self.assertEqual((out["all_miss"], out["pair_miss"], out["phi"]), (F(11, 32), F(7, 16), F(1, 5)))
+
+    def test_independent_and_degenerate(self):
+        self.assertEqual(N.correlated_monitors(4, F(1, 3), 0)["phi"], 0)   # no common cause
+        self.assertIsNone(N.correlated_monitors(2, F(1, 3), 1)["phi"])     # every view always misses
 
 
 class L4IteratedMap(unittest.TestCase):
@@ -56,6 +70,16 @@ class L4IteratedMap(unittest.TestCase):
         self.assertIsNone(N.recovery_nights(F(1, 2), 1, 0))
         self.assertEqual(N.recovery_nights(F(1, 2), 0, 0), 1)
         self.assertIsNone(N.recovery_nights(F(1, 2), F(1, 2), 0))  # never exactly 0: must not hang
+
+    def test_recovery_nights_fast_and_exact_near_keep_one(self):
+        # row-169 verifier: keep = 9999/10000 took 47 s one night at a time. Check the defining
+        # inequalities exactly on both sides of the answer.
+        x0, keep, tol = F(1), F(999, 1000), F(1, 10 ** 6)
+        start = time.monotonic()
+        t = N.recovery_nights(x0, keep, tol)
+        self.assertLess(time.monotonic() - start, 10)
+        self.assertLessEqual(x0 * keep ** t, tol)
+        self.assertGreater(x0 * keep ** (t - 1), tol)
 
 
 class L6FixedKD(unittest.TestCase):
@@ -86,7 +110,13 @@ class Malformed(unittest.TestCase):
                      lambda: N.iterated_map(1, F(3, 4), F(1, 2), 1),
                      lambda: N.fixed_kd(0, 1, 1, F(1, 2)),
                      lambda: N.random_blocks(5, 2, []),
-                     lambda: N.random_blocks(4, 2, [(0, 0)])):
+                     lambda: N.random_blocks(4, 2, [(0, 0)]),
+                     lambda: N.random_blocks(4, 2, [(False, True)]),
+                     lambda: N.random_blocks(4, 2, [(0.5, 1)]),
+                     lambda: N.random_blocks(4, 2, [("a", 1)]),
+                     lambda: N.scripted_adopters(2, [F(1, 2)]),
+                     lambda: N.correlated_monitors(1, F(1, 2), 0),
+                     lambda: N.correlated_monitors(3, 0.5, 0)):
             with self.assertRaises(ValueError):
                 call()
 

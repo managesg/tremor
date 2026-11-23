@@ -15,6 +15,8 @@ Reading: the per-agent tie-break picks, among equally weak open tasks sorted by 
 def _tasks(x, name):
     if isinstance(x, (str, bytes, dict)) or not isinstance(x, (list, tuple, set, frozenset)):
         raise ValueError(f"{name} must be a list, tuple or set of task ids, not a string")
+    if any(not isinstance(t, str) for t in x):
+        raise ValueError(f"{name} must hold string task ids")
     return set(x)
 
 
@@ -27,8 +29,8 @@ def evaporate(marks, renewed, retain):
     """One round: tasks in `renewed` go to 1.0, every other mark is multiplied by `retain`."""
     if isinstance(retain, bool) or not isinstance(retain, (int, float)) or not 0 < retain < 1:
         raise ValueError("retain must be a number strictly between 0 and 1")
-    if not isinstance(marks, dict):
-        raise ValueError("marks must be a dict of task id -> strength")
+    if not isinstance(marks, dict) or any(not isinstance(t, str) for t in marks):
+        raise ValueError("marks must be a dict of string task id -> strength")
     renewed = _tasks(renewed, "renewed")
     out = {}
     for task, s in marks.items():

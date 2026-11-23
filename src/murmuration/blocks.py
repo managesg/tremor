@@ -14,11 +14,27 @@ Reading: the summariser is caller-supplied; a block's summary must be a single l
 import math
 
 
+def _ids(x, name):
+    if isinstance(x, (str, bytes, dict)) or not isinstance(x, (list, tuple, set, frozenset)):
+        raise ValueError(f"{name} must be a list, tuple or set of task ids, not a string")
+    if any(not isinstance(t, str) for t in x):
+        raise ValueError(f"{name} must hold string task ids")
+    if len(set(x)) != len(x):
+        raise ValueError(f"{name} must not repeat a task id")
+    return set(x)
+
+
 def groups(tasks, coupling, threshold):
     """Tasks partitioned into coupled groups, each sorted, groups ordered by their first task."""
     if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or not math.isfinite(threshold):
         raise ValueError("threshold must be a finite number")
-    tasks = sorted(set(tasks))
+    tasks = _ids(tasks, "tasks")
+    if not isinstance(coupling, dict):
+        raise ValueError("coupling must be a dict of (task_a, task_b) -> weight")
+    for pair in coupling:
+        if not isinstance(pair, tuple) or len(pair) != 2:
+            raise ValueError(f"coupling key {pair!r} must be a (task_a, task_b) tuple")
+    tasks = sorted(tasks)
     parent = {t: t for t in tasks}
 
     def find(t):
@@ -42,9 +58,13 @@ def groups(tasks, coupling, threshold):
 
 def assign(agents, task_groups):
     """Agent blocks, one per group, sized in proportion to the group's task count."""
+    if isinstance(task_groups, (str, bytes, dict)) or not isinstance(task_groups, (list, tuple)):
+        raise ValueError("task_groups must be a list of task-id lists")
     agents, n = list(agents), len(task_groups)
     if n == 0:
         return []
+    for g in task_groups:
+        _ids(g, "each group")
     if any(len(g) == 0 for g in task_groups):
         raise ValueError("every group needs at least one task")
     if len(agents) < n:
@@ -71,7 +91,7 @@ def upward(block_lines, summarise):
     out = []
     for i, lines in enumerate(block_lines):
         line = summarise(lines)
-        if not isinstance(line, str) or len(line.splitlines()) > 1 or line.endswith(("\n", "\r")):
+        if not isinstance(line, str) or (line and line.splitlines() != [line]):  # any line boundary
             raise ValueError(f"block {i} summary must be a single line of text")
         out.append({"agent": f"block-{i}", "summary": line})
     return out

@@ -1,11 +1,12 @@
-"""Scripted nulls with exact expected values (WORKPLAN-RESIDENCY-V3 policy row 162).
+"""Scripted nulls with exact expected values (WORKPLAN-RESIDENCY-V3, R1 "Scripted nulls, one per line").
 
 Each null is computed by exact enumeration in Fractions; the tests compare it with a hand-derived
-closed form. This module covers the lines the bench review found missing or too weak: L1, L2, L4, L6
-and L7. The L3 (correlated monitors) and L5 (random-order task choice) controls are the lab modules
-lab/r1_readout_controls.py and lab/r1_l5_random_order_null.py, with their own tests.
+closed form. This module covers L1, L2, L3, L4, L6 and L7. The L5 (random-order task choice) control is
+lab/r1_l5_random_order_null.py; lab/r1_readout_controls.py keeps fixed-trace L3 readout checks.
 
 Reading (L1): scripted adopters adopt independently with a caller-given probability per dose.
+Reading (L3): correlated monitors share a common cause: each episode, with probability c every view
+misses together; otherwise each view misses independently with probability p.
 Reading (L2): well-mixed epidemic with immunity is the Reed-Frost chain binomial over all generations
 in a population of fixed size; immune members are part of the population but never become infected, so
 susceptibles = population - immune - seeds; each infective-susceptible contact transmits independently
@@ -20,6 +21,7 @@ Reading (L7): random blocks are uniformly random partitions of n labelled agents
 """
 from fractions import Fraction
 from itertools import combinations, product
+import math
 from math import comb
 
 
@@ -38,6 +40,8 @@ def _posint(x, name, minimum=1):
 def scripted_adopters(n, p_by_dose):
     """L1: exact mean and variance of the adoption count at each dose, by enumerating all 2^n outcomes."""
     _posint(n, "n")
+    if not isinstance(p_by_dose, dict):
+        raise ValueError("p_by_dose must be a dict of dose -> adoption probability")
     out = {}
     for dose, p in p_by_dose.items():
         p = _frac(p, "adoption probability")
@@ -71,7 +75,7 @@ def reed_frost(population, immune, seeds, q):
                 key = (s - k, k, total + k)
                 nxt[key] = nxt.get(key, 0) + w * comb(s, k) * hit ** k * (1 - hit) ** (s - k)
         live = nxt
-    return final
+    return {size: w for size, w in final.items() if w}  # drop outcomes of probability zero
 
 
 def iterated_map(x0, keep, add, nights):
@@ -95,10 +99,29 @@ def recovery_nights(x0, keep, tol):
         return 1 if keep == 0 else None
     if tol == 0:  # keep^t * x stays positive for every finite t
         return None
-    t = 0
-    while x > tol:
-        x, t = x * keep, t + 1
+    # x * keep^t <= tol from t = log(tol / x) / log(keep); estimate in floats, then settle exactly,
+    # because stepping one night at a time is too slow when keep is close to 1.
+    t = max(1, math.ceil(math.log(tol / x) / math.log(keep)))
+    while x * keep ** t > tol:
+        t += 1
+    while t > 1 and x * keep ** (t - 1) <= tol:
+        t -= 1
     return t
+
+
+def correlated_monitors(m, p, c):
+    """L3: exact P(all m views miss) and pairwise miss correlation phi, by enumerating 2^m miss patterns."""
+    _posint(m, "m", 2)
+    p, c = _frac(p, "p"), _frac(c, "c")
+    all_miss = pair_miss = Fraction(0)
+    for bits in product((0, 1), repeat=m):
+        k = sum(bits)
+        w = (c if k == m else 0) + (1 - c) * p ** k * (1 - p) ** (m - k)
+        all_miss += w if k == m else 0
+        pair_miss += w if bits[0] and bits[1] else 0
+    q = c + (1 - c) * p  # one view's miss probability
+    phi = (pair_miss - q * q) / (q * (1 - q)) if 0 < q < 1 else None
+    return {"all_miss": all_miss, "pair_miss": pair_miss, "phi": phi}
 
 
 def fixed_kd(k, d, rounds, u):
@@ -144,7 +167,12 @@ def random_blocks(n, s, pairs):
     _posint(n, "n"), _posint(s, "s")
     if n % s:
         raise ValueError("block size must divide the number of agents")
-    for a, b in pairs:
+    if isinstance(pairs, (str, bytes)) or not isinstance(pairs, (list, tuple)):
+        raise ValueError("pairs must be a list of (agent, agent) tuples")
+    for pair in pairs:
+        if not isinstance(pair, tuple) or len(pair) != 2 or any(type(x) is not int for x in pair):
+            raise ValueError("each pair must be a tuple of two integer agent ids")
+        a, b = pair
         if not (0 <= a < n and 0 <= b < n) or a == b:
             raise ValueError("pairs must name two distinct agents in range")
     total = hits = 0
