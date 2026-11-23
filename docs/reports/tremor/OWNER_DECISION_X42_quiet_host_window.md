@@ -16,7 +16,7 @@
 - Commit `d91842854838e6c7945585a319853d1289d14d4b` (`d918428`), tree `6b15853eafadb433b6f53fa62ac41caa5b9b5fff`, 563 regular files, parent `1f45463`. Relation to e972484a: see the bench packet, section 1.
 - The runner builds the source by `git archive d918428` into the window's own run folder, then checks every extracted file against its committed blob id (`git hash-object --no-filters`) and the file count against `git ls-tree`. A second manifest after the window must equal the first. Nothing is run from the shared working tree, which has uncommitted lane edits.
 - **Added to the bundle, not from git:** two empty mountpoint directories (`runs/ep1-live/pilot3`, `data/tools/lean/lean-4.35.0-linux_aarch64`; the `formal/alloc_score` directory is in git) and two read-only mounts of inputs that are outside the tree:
-  - Lean toolchain `data/tools/lean/lean-4.35.0-linux_aarch64` (outside git; the runner records the sha256 of `bin/lean` and a hash of the sorted file-size list; PC pins both at admission).
+  - Lean toolchain `data/tools/lean/lean-4.35.0-linux_aarch64` (outside git; the runner records the sha256 of `bin/lean` and a hash of the sorted file-size list; PC pins both at admission; the runner also tests a content digest of all 17925 regular files, `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum` run inside the toolchain directory, equal to `2ff2426a230b59f49ed2c30962850e795b12e78adfc8a7de556d2c3426ecff3e` before any container starts; observed 2026-11-23, stable across two runs; the 13 symlinks are not covered).
   - `runs/ep1-live/pilot3/`, git-ignored and outside the e972484a manifest. Pins (observed 2026-11-23): `episodes.jsonl` `04401ed5cf7d07e82e65bfa95d792234ac201cb591b12419434bbff6c2e4e0f6`; `final.json` `c104fedf6f277c61fb5c28140b2881afac67fdd6edf465b2685ca988a84ed8e4`; `pilot_trace.txt` `f7116becf94086692a1b182de849472343866eea1b16084d4aac5635fa52eb19`; `schedule.json` `2a0188449dff2b411c67b603473349325ad8148afbaa74ef2d109d84a55ce003`. The runner refuses to start on any mismatch.
 - **Nomination:** the candidate for the windows is the commit PC forwards for the bench re-review. The source must be exactly that nominated commit, and the runner pins (`commit`, `tree`) must be set to it; per the lane's nomination it is currently `1d333f7` or later (not verified here, and no hash or tree in this packet is bound to it until PC names it).
 - A changed source (any new commit, any tree difference) voids this packet and needs a fresh nomination and a fresh yes.
@@ -123,6 +123,7 @@ PINS
 test -x "$lean/bin/lean"
 sha256sum "$lean/bin/lean" > "$bundle/lean-bin.sha256"
 (cd "$lean" && find . -type f -printf '%s %p\n' | LC_ALL=C sort | sha256sum) > "$bundle/lean-tree.sha256"
+test "$(cd "$lean" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d" " -f1)" = 2ff2426a230b59f49ed2c30962850e795b12e78adfc8a7de556d2c3426ecff3e  # Lean toolchain content pin (observed 2026-11-23)
 test "$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)" -ge 52428800
 test "$("${D[@]}" image inspect --format '{{.Id}}' "$image")" = "$image"
 
