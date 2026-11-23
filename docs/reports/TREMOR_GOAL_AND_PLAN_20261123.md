@@ -90,7 +90,11 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - [x] **All findings fixed** in `de56a29`, with a test for each.
 - [x] **Ten lab files committed** in `7f1de86`: the row-159 port originals, the L3 and L5 null controls, the L6 lease fixture, and their tests. All were created by the `01a1fa3a` lineage (`runs/r1-lab-controls-custody.Bxz1nK/CUSTODY.md`). Lab suite: 406 tests OK.
 - [x] **Row 155 receipt:** fresh-context body read of all ten modules at `00619ed` (`runs/r1-row155-body-review.ipRvT9/REVIEW.md`). The row's `poison` path is wrong: the module is `trapbench/poison.py`. Eight defects were demonstrated in the core modules: orders, ledger `deny_keys`, monitor, enforce, coupling git-option injection, perturb `passed` coercion, and consolidate arm E. They are recorded and not yet fixed.
-- [ ] **Next:** full suites on the final commit; a re-verify of the fixed modules; the row-169 per-module receipts; triage of the row-155 core-module defects.
+- [x] **Row-155 core-module defects fixed**: `30bb01c` (coupling git-option injection, ledger `deny_keys`), `33b2ca2` (perturb), `52cbce1` (monitor, enforce, consolidate, orders). Each test fails before its fix and passes after. Full suites on `52cbce1`: lab 406, package 835, exit 0.
+- [x] **Re-verifier on `52cbce1`**: 15 of 17 fixes CONFIRMED and no assertion weakened. It found two problems, fixed in `a5b85c0`: `sgv` could not rank pass/fail work (it now uses per-unit binomial overdispersion over item counts), and `quarantine` accepted a sibling as support (lineages must now be disjoint).
+- [x] **Row 169 per-module verification** (`runs/r1-row169-module-verification.BBKCr0/RECEIPTS.md`): fresh-context Opus, one verifier per module, at `a5b85c0`. `susceptibility` ACCEPT. Seven REJECTs on boundary or mechanism gaps, all fixed in `08659a3` with tests. The `nulls` verdict is being rerun on `08659a3` after a session restart.
+- [ ] **Now:** full suites on `08659a3` and the `nulls` verifier.
+- [ ] **Next:** a fresh verification of the fixed modules at `08659a3`, then ask PC for a fresh X42 nomination of the cut and a bench re-review (the row-169 `interrogate` pass).
 - [ ] **Row 157:** the preregistration-author role is named in Table A rows 238 and 242, but no person or session is designated. The contention definition stays held until PC designates one.
 - [ ] Rows 155 and 169: module-body review and per-module verification receipts.
 - [ ] Then: PC fresh nomination of the new cut, and bench re-review.
