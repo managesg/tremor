@@ -54,7 +54,10 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
                      lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("nan"), 1),
                      lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, 100, float("nan")),
                      lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, float("inf"), 1),
-                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, 10 ** 400, 1)):
+                     lambda: sgv.allocate({"A": [0, 4] * 5}, ITEMS, 10 ** 400, 1),
+                     # third pass: an int cost times reruns overflowed the float budget; list reruns
+                     lambda: sgv.allocate({"A": [0, 4] * 10}, {"A": 4}, 1e308, 10 ** 308),
+                     lambda: sgv.allocate([[0, 4] * 5], ITEMS, 100, 1)):
             with self.assertRaises(ValueError):
                 call()
 

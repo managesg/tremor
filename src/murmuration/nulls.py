@@ -24,6 +24,8 @@ from itertools import combinations, product
 import math
 from math import comb
 
+EXACT_BITS = 2 ** 24  # compute guard for recovery_nights, not a scientific parameter
+
 
 def _frac(x, name, lo=0, hi=1):
     if type(x) not in (int, Fraction) or not lo <= x <= hi:
@@ -99,14 +101,25 @@ def recovery_nights(x0, keep, tol):
         return 1 if keep == 0 else None
     if tol == 0:  # keep^t * x stays positive for every finite t
         return None
-    # x * keep^t <= tol from t = log(tol / x) / log(keep); estimate in floats, then settle exactly,
-    # because stepping one night at a time is too slow when keep is close to 1.
-    t = max(1, math.ceil(math.log(tol / x) / math.log(keep)))
+    # x * keep^t <= tol from t = log(tol / x) / log(keep): estimate with logs that stay accurate for any
+    # exact fraction, then settle exactly, because stepping one night at a time is too slow near keep = 1.
+    t = max(1, math.ceil((_log(tol) - _log(x)) / _log(keep)))
+    # shortcut: exact settlement needs keep**t, so refuse answers whose numbers would exceed EXACT_BITS
+    # rather than guess; raise the limit if an experiment needs keep closer to 1.
+    if (t + 1) * max(keep.numerator.bit_length(), keep.denominator.bit_length()) > EXACT_BITS:
+        raise ValueError(f"recovery takes about {t} nights: too many to settle exactly")
     while x * keep ** t > tol:
         t += 1
     while t > 1 and x * keep ** (t - 1) <= tol:
         t -= 1
     return t
+
+
+def _log(q):
+    """Natural log of a positive Fraction without float overflow or cancellation."""
+    if q > Fraction(1, 2):
+        return math.log1p(float(q - 1))  # accurate for q near 1
+    return math.log(q.numerator) - math.log(q.denominator)  # math.log takes arbitrarily large ints
 
 
 def correlated_monitors(m, p, c):

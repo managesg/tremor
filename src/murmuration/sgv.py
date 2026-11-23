@@ -68,7 +68,12 @@ def allocate(reruns, items, budget, rerun_cost, task_type=None, min_reruns=MIN_R
             finite = False
         if not finite or x < 0:
             raise ValueError(f"{name} must be a finite non-negative number")
-    remaining = budget - rerun_cost * sum(len(cs) for cs in reruns.values())
+    if not isinstance(reruns, dict) or not isinstance(items, dict):
+        raise ValueError("reruns and items must be dicts keyed by unit")
+    try:
+        remaining = budget - rerun_cost * sum(len(cs) for cs in reruns.values())
+    except OverflowError:  # a cost too large to represent cannot fit in a finite budget
+        raise ValueError("reruns cost more than the budget") from None
     if remaining < 0:
         raise ValueError("reruns cost more than the budget")
     est = dispersion(reruns, items, task_type, min_reruns)

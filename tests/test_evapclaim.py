@@ -40,7 +40,8 @@ class EvaporatingClaims(unittest.TestCase):
                      lambda: E.evaporate([("a", 1.0)], (), 0.5),
                      lambda: E.choose({}, {1, "a"}, 0),
                      lambda: E.evaporate({}, {1}, 0.5),          # re-verifier: evaporate accepted int ids
-                     lambda: E.evaporate({1: 1.0}, (), 0.5)):
+                     lambda: E.evaporate({1: 1.0}, (), 0.5),
+                     lambda: E.choose({1: 0.5}, ["a"], 0)):       # third pass: int mark keys in choose
             with self.assertRaises(ValueError):
                 call()
 

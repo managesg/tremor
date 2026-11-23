@@ -25,6 +25,10 @@ class BlockAndSummarise(unittest.TestCase):
         # (The clamped version gave 2, 2, 2, 2, 2.)
         sizes = [len(b) for b in B.assign(range(10), [[f"g{j}t{i}" for i in range(k)] for j, k in enumerate((15, 5, 15, 11, 5))])]
         self.assertEqual(sizes, [3, 1, 3, 2, 1])
+        # third pass: 10 agents over 1, 1, 4 tasks: shares 5/3, 5/3, 20/3, floors 1, 1, 6, two seats left,
+        # every remainder exactly 2/3 -> group order gives them to groups 0 and 1: 2, 2, 6.
+        # Float remainders made 20/3 - 6 look larger and gave 2, 1, 7.
+        self.assertEqual([len(b) for b in B.assign(range(10), [["a"], ["b"], ["c", "d", "e", "f"]])], [2, 2, 6])
 
     def test_upward_one_line_per_block(self):
         out = B.upward([["x ok", "y ok"], ["z failed"]], lambda ls: "; ".join(ls))
@@ -50,7 +54,13 @@ class BlockAndSummarise(unittest.TestCase):
                      lambda: B.assign(range(4), [["a", "a", "a"], ["b"]]),
                      lambda: B.groups(["a"], [("a", "a")], 0.5),
                      lambda: B.upward([["a"]], lambda ls: "a "),
-                     lambda: B.upward([["a"]], lambda ls: "a\x1c")):
+                     lambda: B.upward([["a"]], lambda ls: "a\x1c"),
+                     # third pass: agent strings, duplicate agents, a task in two groups, huge numbers
+                     lambda: B.assign("agent1", [["t"]]),
+                     lambda: B.assign(["x", "x"], [["a"], ["b"]]),
+                     lambda: B.assign(range(2), [["a"], ["a"]]),
+                     lambda: B.groups(["a", "b"], {("a", "b"): 1.0}, 10 ** 400),
+                     lambda: B.groups(["a", "b"], {("a", "b"): 10 ** 400}, 0.5)):
             with self.assertRaises(ValueError):
                 call()
         with self.assertRaises(ValueError):

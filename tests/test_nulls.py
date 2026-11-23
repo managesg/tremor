@@ -74,12 +74,25 @@ class L4IteratedMap(unittest.TestCase):
     def test_recovery_nights_fast_and_exact_near_keep_one(self):
         # row-169 verifier: keep = 9999/10000 took 47 s one night at a time. Check the defining
         # inequalities exactly on both sides of the answer.
-        x0, keep, tol = F(1), F(999, 1000), F(1, 10 ** 6)
-        start = time.monotonic()
-        t = N.recovery_nights(x0, keep, tol)
-        self.assertLess(time.monotonic() - start, 10)
-        self.assertLessEqual(x0 * keep ** t, tol)
-        self.assertGreater(x0 * keep ** (t - 1), tol)
+        # The old loop took 47 s at keep = 9999/10000, tol = 1/10^5, so this case fails on it.
+        for x0, keep, tol in ((F(1), F(9999, 10000), F(1, 10 ** 5)),
+                              (F(1), F(1, 10 ** 400), F(1, 2)),       # third pass: math domain error
+                              (F(1), F(1, 2), F(1, 10 ** 400))):      # third pass: math domain error
+            start = time.monotonic()
+            t = N.recovery_nights(x0, keep, tol)
+            self.assertLess(time.monotonic() - start, 10)
+            self.assertLessEqual(x0 * keep ** t, tol)
+            self.assertGreater(x0 * keep ** (t - 1), tol)
+        self.assertEqual(N.recovery_nights(F(1), F(1, 10 ** 400), F(1, 2)), 1)
+        self.assertEqual(N.recovery_nights(F(1), F(1, 2), F(1, 10 ** 400)), 1329)
+
+    def test_recovery_nights_refuses_answers_too_large_to_settle(self):
+        # keep within 1e-17 of 1 divided by zero; keep 99999/100000 took 16 s. Both now refuse quickly.
+        for keep, tol in ((1 - F(1, 10 ** 17), F(1, 2)), (F(99999, 100000), F(1, 10 ** 6))):
+            start = time.monotonic()
+            with self.assertRaises(ValueError):
+                N.recovery_nights(F(1), keep, tol)
+            self.assertLess(time.monotonic() - start, 2)
 
 
 class L6FixedKD(unittest.TestCase):

@@ -45,8 +45,8 @@ def choose(marks, open_tasks, agent_rank):
     """The weakest-marked open task for this agent, or None when no task is open."""
     if isinstance(agent_rank, bool) or not isinstance(agent_rank, int) or agent_rank < 0:
         raise ValueError("agent_rank must be a non-negative integer")
-    if not isinstance(marks, dict):
-        raise ValueError("marks must be a dict of task id -> strength")
+    if not isinstance(marks, dict) or any(not isinstance(t, str) for t in marks):
+        raise ValueError("marks must be a dict of string task id -> strength")
     tasks = _tasks(open_tasks, "open_tasks")
     if any(not isinstance(t, str) for t in tasks):
         raise ValueError("task ids must be strings")
