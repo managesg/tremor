@@ -80,7 +80,7 @@ Two independent reviews REJECTED the `0b1e394` evidence, not its bytes. The byte
 
 - **Fixture inside the repo.** The 12 opening-balance tests read a fixture outside the repo. `3b9f3ae` moved it to `lab/tests/fixtures/smollm3_opening/`, but `.gitignore` (`*.jsonl`) silently dropped `resource-ledger.jsonl`, so `ea821f4` force-adds it. On a clean `git archive ea821f4` all of these pass: `test_smollm3*` (50 OK), `test_r3_*` (121 OK), `test_spark_*` (23 OK) and `test_replication_inventory*` (13 OK, 1 skipped). The r3, spark and replication tests need `PYTHONPATH=src`.
 - **Working tree synced.** The shared checkout's working-tree copies of the adopted files equal HEAD, so it no longer runs the stock launcher.
-- **Closure widened.** The first 4-file manifest, and a first 28-file version, both missed files. The manifest below is the union of the stock pin's `lab/` entries and every `lab/smollm3_*`, `lab/spark_*`, `lab/r3_resource_audit.py`, test and fixture file, hashed at `ea821f4` (34 files). The launch imports `lab/replication_inventory.py` through the preflight (`lab/smollm3_smoke_preflight.py:8`). The stock pin's `replay.py` and `replay_cancellation.py` are review scripts inside the bundle, not repo files.
+- **Closure widened.** The first 4-file manifest, and a first 28-file version, both missed files. The manifest below is the union of the stock pin's `lab/` entries and every `lab/smollm3_*`, `lab/spark_*`, `lab/r3_resource_audit.py`, test and fixture file, hashed at `ea821f4` (36 files; the last two spark tests, unchanged since, were added after the third review). The launch imports `lab/replication_inventory.py` through the preflight (`lab/smollm3_smoke_preflight.py:8`). The stock pin's `replay.py` and `replay_cancellation.py` are review scripts inside the bundle, not repo files.
 - **Stock pin path.** The stock pin is `runs/smol-review-launch-join.RtBV9f/source/stock.sha256` (24 lines), as the prep `OWNER.md` said. An earlier version of this entry gave a wrong path.
 
 **Open gap: the launch runs code that changed after review.** Four files differ from the stock pin. The launch, preflight and launch-test changes are the adopted patch. `lab/replication_inventory.py` is not part of the patch:
@@ -90,7 +90,7 @@ Two independent reviews REJECTED the `0b1e394` evidence, not its bytes. The byte
 - `lab/smollm3_smoke_preflight.py`: stock pin `5ebf9e4e…`, now `78fe2333…`
 - `lab/tests/test_smollm3_smoke_launch.py`: stock pin `bb56623a…`, now `980c09cd…`
 
-`lab/replication_inventory.py` changed in `009bb0b`, `67d88fa` and `63f1890`. Every reviewed bundle (`RtBV9f`, `xlu84i`) used `f7dc8f55…`. Before any admission, the runner reviewer must either review the HEAD bytes or bind the admission to a content-addressed source tree that carries the reviewed `f7dc8f55…`. This lane recommends the HEAD bytes, because they only add checks. The choice and the review belong to the runner reviewer. Nothing here grants a run.
+`lab/replication_inventory.py` changed in `009bb0b`, `67d88fa` and `63f1890`. Every reviewed bundle (`RtBV9f`, `xlu84i`) used `f7dc8f55…`. Before any admission, the runner reviewer must either review the HEAD bytes or bind the admission to a content-addressed source tree that carries the reviewed `f7dc8f55…`. This lane has not verified what the HEAD changes do (126 insertions, 12 deletions since `30788cb`). The runner reviewer must read that diff. The choice and the review belong to the runner reviewer. Nothing here grants a run.
 
 ```
 41cdbac1526020ac6015188b4436cc856f77acfb28795850af79fcea2aab9e1f  lab/r3_resource_audit.py
@@ -125,6 +125,8 @@ de5b623021ccf350268b3d4600ec8599455ce8947672a4049acdf95bef5db34b  lab/tests/test
 3cae6eb35240cef13de519e9aba24e6f2eabbbbe7fbb788f32abe446a755c54d  lab/tests/test_smollm3_smoke_metrics.py
 2e1e93a3f2fe9956ff252aa2d61ce54a69d4e347b308d73316caaf424c5ff2f1  lab/tests/test_smollm3_smoke_settlement.py
 fcc21ea3c1bc40fad1d0f7ba2e97718dfee68582360ddb74ea6a87ea1cc9019a  lab/tests/test_smollm3_smoke_worker.py
+41786d2a7117feeecdfc43c77808e5e46b416e02a60ff1cc806fd05509b9cf55  lab/tests/test_spark_admission_diagnostic.py
 dea597b814f4221f38af7c1d4334333c8cd3000e943e575c2cf101ca368cac4d  lab/tests/test_spark_admission_journal.py
 cde7d754aeefd969df44cb34b5a136653197ee4a66d370c3ad2af9cad4f6b982  lab/tests/test_spark_calibration_guard.py
+59a11d9ed6882093c43344ba7e4b4783e270b0de0beebb5424d047fc7339b826  lab/tests/test_spark_decision.py
 ```
