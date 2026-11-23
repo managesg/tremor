@@ -83,7 +83,7 @@ Two independent reviews REJECTED the `0b1e394` evidence, not its bytes. The byte
 - **Closure widened.** The first 4-file manifest, and a first 28-file version, both missed files. The manifest below is the union of the stock pin's `lab/` entries and every `lab/smollm3_*`, `lab/spark_*`, `lab/r3_resource_audit.py`, test and fixture file, hashed at `ea821f4` (34 files). The launch imports `lab/replication_inventory.py` through the preflight (`lab/smollm3_smoke_preflight.py:8`). The stock pin's `replay.py` and `replay_cancellation.py` are review scripts inside the bundle, not repo files.
 - **Stock pin path.** The stock pin is `runs/smol-review-launch-join.RtBV9f/source/stock.sha256` (24 lines), as the prep `OWNER.md` said. An earlier version of this entry gave a wrong path.
 
-**Open gap: the launch runs code that changed after review.** These files differ from the stock pin for reasons other than the adopted patch:
+**Open gap: the launch runs code that changed after review.** Four files differ from the stock pin. The launch, preflight and launch-test changes are the adopted patch. `lab/replication_inventory.py` is not part of the patch:
 
 - `lab/replication_inventory.py`: stock pin `f7dc8f55…`, now `3bfe5af6…`
 - `lab/smollm3_smoke_launch.py`: stock pin `728d3ba5…`, now `614bf829…`
