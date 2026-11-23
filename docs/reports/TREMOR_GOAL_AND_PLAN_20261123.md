@@ -89,7 +89,7 @@ Acceptance: 1/10 (M1). Repository HEAD is recorded in each checkpoint. All commi
 
 ### Other milestones (owner-decision packets in `docs/reports/tremor/`)
 - [ ] **M2 and M7, D8:** conditional ceilings (Pilot 4 USD 0.25, EP-1 USD 5.00). No Pilot 4 launcher exists yet. **The pinned price sheet lapses at 2026-11-24 00:00 UTC** (`spend.py:45,186-188`; checked 21:56 UTC). A fresh window needs a named refetch, the new digest, a continuity review against the `ep1` parent ledger, a checked window and a re-run of D8-e (D8 packet, P4 lapse status). M7's protocol and allocation are open.
-- [ ] **M4 L2/L3/L4 rulings:** recommended options are drafted with one-line yeses (`docs/reports/tremor/OWNER_DECISION_M4_L2_L3_L4_and_M8_prereqs.md`):
+- [x] **M4 L2/L3/L4 scope APPROVED and frozen (documentary):** owner decision `msg_e96a060964d0`; `prereg/R2-L2-L3-L4-scope.md` (sha256 `9008847b…`) and the register `docs/reports/prereg-freezes.md` (`d4b1f91`). No run authority. Basis: recommended options drafted with one-line yeses (`docs/reports/tremor/OWNER_DECISION_M4_L2_L3_L4_and_M8_prereqs.md`):
   - L2: planted notes only under D1; the arising form and prediction E are out of this freeze. If E is ever approved, it uses the 5% bound.
   - L3: primary C under the D1 toy-monitor conditions; B is the fallback if C is declined before any outcome.
   - L4-D: the arising-shortcut setting is out of this freeze.
