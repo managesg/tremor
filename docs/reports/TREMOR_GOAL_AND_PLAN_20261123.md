@@ -73,6 +73,35 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - **M8 SmolLM3 weights and backing storage:** waiting on the storage operator's admission, not on the transfer.
 - **AWS:** none needed. The only AWS reference in `docs/reports/workplan-ep/` is the M2 hold in `Pilot4-pricing-verification-gates.md`. This lane never connects to AWS.
 
+## Blockers and next items (refreshed 2026-11-24 about 14 UTC, owner request via PC msg_caa7882ac737)
+
+Acceptance: 1/10 (M1). Candidate of record `f62cfe1` (tree `cdaee764…`). All commits are local; nothing is pushed.
+
+**Dropped as stale:**
+- Row 169's single-reviewer question: decided (`88b19c1`), and row 169 is ACCEPT at `f62cfe1`.
+- Quiet-window nomination: PC nominated `f62cfe1` with roster 912 `caf3dc41` and 929 `d5082bb1` (msg_c37cd18b6654).
+- M2/M7 packet truncation: restored in `50fb635`.
+- M8 `replication_inventory` gap: Decision 4 ACCEPT (`54cc69e`).
+- M4 scope: frozen in `d4b1f91`.
+
+**Open gates (one line each):**
+
+| Gate or dependency | Owner | Evidence | Smallest action |
+|---|---|---|---|
+| X42 quiet-machine windows W1-W3 | Alejandro + PC (named yes; carried in the morning owner batch) | `OWNER_DECISION_X42_quiet_host_window.md` (`f80a26c`), dry preflight `3a16b006` | yes for the three windows, then PC binds the freeze, operator and host reviewer |
+| X42 row 167 (N2 custody, L5, reveal) | custodian (Assistant), then Alejandro | `X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`, commitment `6def4efc` | custodian binding message, then the one-use L5 admission |
+| M2/M7: D8 price sheet lapsed 2026-11-24 00:00 UTC | Alejandro (named yes: network refetch + spend) | `OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md` (`50fb635`) P4 | yes to refetch, then a continuity review and window instants |
+| M8 SmolLM3 smoke | runner reviewer; Spark operator (memory at execution, storage paths); Alejandro or PC (0.1 GPU-h yes) | `DECISION_LOG.md` Decisions 1-4 (`54cc69e`) | runner reviewer accepts the closure at `a6a7875`; operator names and freezes the paths |
+| M3 R3, M5, M6, M9 run admissions | Alejandro | `OWNER_DECISION_protected_admissions_M3R3_M4_M9.md` | named one-use admissions |
+| M4 L2-L4 full protocols | this lane (offline drafting), then Alejandro (admission) | `prereg/R2-L2-L3-L4-scope.md` (`9008847b`) | freeze each full protocol and tree hash |
+| M10 remainder | PC | `OWNER_DECISION_M10_release_and_T7.md` | Console totals, T7 settlement, timer executor |
+| WSP-R1 spend reconciliation | Assistant | `prereg/WSP-R1-exp1-blind-read.md` (`5938fed`) | record the actual cost; unknown until then |
+
+**Next real items for this lane (offline):**
+- Carried-forward advisory gaps for the next candidate (quarantine: missing parent and unknown id; sgv: bool budget and redundant dict check). Not cut unless a new candidate is needed.
+- M4 protocol drafting for L2-C and L3-C under the frozen scope.
+- Otherwise: `sup3 next`.
+
 ## Current workplan (2026-11-23, 20 UTC)
 
 Acceptance: 1/10 (M1). Repository HEAD is recorded in each checkpoint. All commits are local; nothing is pushed.
