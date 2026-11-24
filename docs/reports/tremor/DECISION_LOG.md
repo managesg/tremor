@@ -177,3 +177,15 @@ Three rounds (83e4870, a673019, 4cdbb35) found real defects, and also kept findi
 - **ACCEPT, with surviving mutants listed as advisory test gaps:** an input-validation guard with no test, where removing the guard changes only which error type is raised. Advisory gaps are carried forward and fixed in the next candidate if one is cut.
 
 The bar is unchanged for spec behaviour, so lease would still have been rejected under it. The decision only stops adding guard-coverage rounds without limit.
+
+### Row 169 result: ACCEPT at f62cfe1 (2026-11-24)
+
+The decision above named `83e4870` as the bytes to verify. That candidate failed the per-module round, so the requirement moved with each new candidate, as its acceptance clause provides.
+
+- **Per-module round:** all nine modules are ACCEPT on the exact bytes of `f62cfe1b98e690c6bb38e87306e2baa5bb00d100`. Six were accepted at `a673019` and monsel at `c527f40`, and each of those seven is blob-identical at `f62cfe1`. sgv and quarantine were accepted at `f62cfe1` itself. The receipts are `runs/r1-row169-module-verification.BBKCr0/RECEIPTS.md`, sha256 `231f489d…`.
+- **Interrogate pass:** the independent bench re-check at `f62cfe1`, `runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md`, sha256 `6ada3cf4…`. It rules row 169 ACCEPT and the verdict rule a reasonable reading. It killed every mutant it tried itself: quarantine 5/5, lease 5/5 and blocks 6/6.
+- **Gate R1 at f62cfe1: INCOMPLETE.**
+  - Rows 155, 157, 158, 159, 162, 165 and 169 are ACCEPT.
+  - Row 167 is INCOMPLETE (custody, L5 admission, reveal).
+  - The three quiet-machine windows have not run.
+- **Quiet-window packet:** re-targeted to `f62cfe1`, with roster package 912 `caf3dc41…` and lab 929 `d5082bb1…`. The source changed, so the earlier yes does not carry over.

@@ -13,7 +13,7 @@
 
 ## 2. Exact source
 
-- Commit `83e48700923fb80bd03c05a58f97b4ca9c6973cf` (`83e4870`, the current nominated candidate), tree `572155d04e9c45e1a1980256dab9934246b8fa89`, 586 files. Replaces the earlier `d918428`. Dry preflight on 2026-11-23 (`runs/x42-quiet-host-dry-preflight.ObtNW8`, EVIDENCE.sha256 `e18735c1…`): every pin passes. Roster, collected in the pinned image without running tests: package 869 test IDs (sha256 `b5125b45f9e1eaca72354b3b0269b7e002a84ebfbd4f7a9404492a258adf0e67`), lab 878 (sha256 `9575847a9ac6f8ab7942daabf6a962d66c534778d7afa78019fc735e84a87c4e`). Container suites at this commit: package 869 OK, lab 878 OK, exit 0 (`runs/container-suite-83e4870.h77kHM`). If the bench re-check moves the candidate again, both values and the roster must be redone before W1.
+- Commit `f62cfe1b98e690c6bb38e87306e2baa5bb00d100` (`f62cfe1`, the current nominated candidate), tree `cdaee7645ab06162e13040963a586342963d57a5`, 623 files. Replaces `83e4870`: the row 169 per-module round at the exact candidate bytes found defects in five R1 modules, closed over several rounds (`runs/r1-row169-module-verification.BBKCr0/RECEIPTS.md`); the bench re-check at f62cfe1 (`runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md`, sha256 `6ada3cf4…`) rules rows 155, 157, 158, 159, 162, 165 and 169 ACCEPT and row 167 INCOMPLETE. Dry preflight on 2026-11-24 (`runs/x42-quiet-host-dry-preflight-f62cfe1.uHq3nV`, EVIDENCE.sha256 `3a16b006…`): every pin passes. Roster, collected in the pinned image without running tests: package 912 test IDs (sha256 `caf3dc4139410e7c5a92d50456d5ebddf56d453365c618359b7c73146386e76d`), lab 929 (sha256 `d5082bb142037412193a88a9f5428ab21f422c85729a7d8ba8b0e9441267b392`). Container suites at this commit: package 912 OK, lab 929 OK, exit 0 (`runs/container-suite-f62cfe1.z58nsD`, EVIDENCE.sha256 `bc905905…`). Superseded and never to be run: `83e4870`, `a673019`, `4cdbb35`, `874861e`, `c527f40`. If the candidate moves again, both values and the roster must be redone before W1.
 - The runner builds the source by `git archive d918428` into the window's own run folder, then checks every extracted file against its committed blob id (`git hash-object --no-filters`) and the file count against `git ls-tree`. A second manifest after the window must equal the first. Nothing is run from the shared working tree, which has uncommitted lane edits.
 - **Added to the bundle, not from git:** two empty mountpoint directories (`runs/ep1-live/pilot3`, `data/tools/lean/lean-4.35.0-linux_aarch64`; the `formal/alloc_score` directory is in git) and two read-only mounts of inputs that are outside the tree:
   - Lean toolchain `data/tools/lean/lean-4.35.0-linux_aarch64` (outside git; the runner records the sha256 of `bin/lean` and a hash of the sorted file-size list; PC pins both at admission; the runner also tests a content digest of all 17925 regular files, `find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum` run inside the toolchain directory, equal to `2ff2426a230b59f49ed2c30962850e795b12e78adfc8a7de556d2c3426ecff3e` before any container starts; observed 2026-11-23, stable across two runs; the 13 symlinks are not covered).
@@ -52,8 +52,8 @@ set -euo pipefail
 window="${1:?usage: run-window.sh W1|W2|W3}"
 case "$window" in W1|W2|W3) ;; *) echo "bad window label" >&2; exit 64;; esac
 repo=/home/adelmar/SeaBridgeAI/murmuration
-commit=83e48700923fb80bd03c05a58f97b4ca9c6973cf
-tree=572155d04e9c45e1a1980256dab9934246b8fa89
+commit=f62cfe1b98e690c6bb38e87306e2baa5bb00d100
+tree=cdaee7645ab06162e13040963a586342963d57a5
 image=sha256:c74c8710f2bc017b5de956853c50d896af4aa49b751bb87cbebf69e5206befb7
 lean=$repo/data/tools/lean/lean-4.35.0-linux_aarch64
 pilot3=$repo/runs/ep1-live/pilot3
@@ -244,7 +244,7 @@ W1, W2 and W3 run back to back inside one freeze, each from a fresh `run-window.
 One file per window, `DISPOSITION_<W>.md`, written by the host reviewer (the Assistant's designated role, not the operator and not the bench reviewer):
 
 ```
-Window: W<n>      Source: 83e48700923fb80bd03c05a58f97b4ca9c6973cf / tree 572155d0...
+Window: W<n>      Source: f62cfe1b98e690c6bb38e87306e2baa5bb00d100 / tree cdaee764...
 Run folder: runs/x42-quiet-W<n>.<suffix>      Operator: <name>      Reviewer: <name>      Date:
 Pins verified (source before/after equal; pilot3; Lean; image id; inspection checks):  yes/no, notes
 Roster (pinned sha256 <...>): package ran/skipped/ERROR/FAIL = ... ; lab = ... ; differences from the pinned roster: ...
@@ -273,7 +273,7 @@ Nothing to roll back. The runner changes no service, setting, repository file or
 - **Disk:** raw snapshots hold every process's `stat` line and a cgroup line per cadence tick; one snapshot is likely hundreds of kilobytes, not measured. `runs/` is 11 GiB on a volume with 2.1 TiB free, so capacity is not the concern, but PC should have the `preflight` snapshot size read before W1.
 - **Collector load:** reading about a thousand `/proc` entries every 5 s is itself CPU on a 20-CPU host. It is on the allowed list and attributable, and the reviewer may judge it material; if so, the cadence changes before the window, not during.
 - **Untested script and untested in-container cgroup read** (section 4). A failure appears as a stop before any suite runs or as missing in-container figures, not as a wrong green.
-- **Green in a window is not proven here.** The container baseline is green (at 83e4870: package 869 and lab 878, both exit 0), but the host lab run has 10 environmental errors; D2 must still be recorded by the reviewer as the container rule above.
+- **Green in a window is not proven here.** The container baseline is green (at f62cfe1: package 912 and lab 929, both exit 0), but the host lab run has 10 environmental errors; D2 must still be recorded by the reviewer as the container rule above.
 - **A window can come out ineligible or insufficient** even if every test passes; that is the rule working.
 
 ## 13. Recommendation

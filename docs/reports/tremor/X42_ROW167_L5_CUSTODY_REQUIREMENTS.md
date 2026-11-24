@@ -2,9 +2,9 @@
 
 Requested by the Assistant (`msg_3c7c734027a2`) so these are on record before any quiet-window request. The quiet-machine window tests the suites only. It does not use N2, does not reveal it, and does not run L5.
 
-## Current state at candidate 83e4870
+## Current state at candidate f62cfe1 (was 83e4870)
 
-- **Bench re-check:** row 167 INCOMPLETE (`runs/x42-bench-recheck-83e4870.4P3pJg/VERDICT.md`, sha256 `48834c15…`). The carriers are met, and mutant authorship is recorded as metadata (`docs/reports/workplan-ep/R1-row167-mutant-authorship.md`).
+- **Bench re-check:** row 167 INCOMPLETE at f62cfe1 (`runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md`, sha256 `6ada3cf4…`), for the same custody, admission and reveal reasons as at 83e4870 (`runs/x42-bench-recheck-83e4870.4P3pJg/VERDICT.md`, `48834c15…`). The carriers are met, and mutant authorship is recorded as metadata (`docs/reports/workplan-ep/R1-row167-mutant-authorship.md`).
 - **N2:** sealed. Commitment sha256 `6def4efcb166fc1c8da3f0974e8257c4bbe560c2449f85da86dbc808335119aa` of the UTF-8 `N2.md`, delivered to the custodian (the Local Coordinator Assistant) in `msg_fe35b22e0b12`. The custodian recorded the commitment metadata (`msg_49328f91917b`). This lane has never seen N2.
 
 ## Requirements, in order, each with its owner
@@ -25,4 +25,4 @@ Requested by the Assistant (`msg_3c7c734027a2`) so these are on record before an
 
 ## What this lane will not do
 
-Seek, read or reconstruct N2; run L5; or request a quiet-host window that touches N2. A quiet-window request, when made, covers the suites at `83e4870` only.
+Seek, read or reconstruct N2; run L5; or request a quiet-host window that touches N2. A quiet-window request, when made, covers the suites at `f62cfe1` only.
