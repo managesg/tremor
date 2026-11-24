@@ -150,3 +150,18 @@ cde7d754aeefd969df44cb34b5a136653197ee4a66d370c3ad2af9cad4f6b982  lab/tests/test
   - **Recipe digest:** unchanged at `27a220e9…`. The recipe is the container create argv, built by `lab/smollm3_smoke_container.py`, which does not import `replication_inventory`.
 - **Remaining:** an independent verdict on this record and the exact tree (requested). Then the runner reviewer accepts the closure for the admission. Memory, storage, reservation and admission stay as in Decisions 1 to 3.
 - **Independent verdict: ACCEPT** (Opus reviewer, against `a6a7875`). An AST comparison shows that, besides `_file_digest`, only `_snapshot`, `verify` and `main` changed. `_normalized`, `_tree`, `_metadata`, `_json` and all constants are identical. With `compare_tensors=False`, `_snapshot` returns the same dict. The reviewer added 17 adversarial cases of its own: weights over the `CHUNK` size, nested directories, the legacy dict manifest, the JSON limit, a nested symlink, duplicate keys, NaN, a bool size and a `..` path. Old and new diverge on none. It reran the tests and the hashes and got the same results. Its nits: this lane's 14 cases did not cover the chunked-read path (its own cases did), and the evidence folder is git-ignored, so custody rests on `EVIDENCE.sha256` `fa4fe9cc…`.
+
+## 2026-11-24: X42 row 169, what counts as the interrogate pass
+
+**Decided under owner delegation 2026-11-24T05:35Z.** The owner, relayed by the Assistant in `msg_ce07ad271053`, said: "you can make decisions on my behalf ... to remove their blockers". The open question had been routed to PC, as the bench packets record (`X42_BENCH_REREVIEW_PACKET_d918428.md`, section on row 169; recheck VERDICT `48834c15` item 2).
+
+- **Decided: the stricter reading.** A single candidate-level adversarial review does **not** count on its own. Row 169 needs both:
+  1. one fresh-context Opus verdict per R1 module on the **exact candidate bytes at `83e4870`**;
+  2. the adversarial interrogate pass, which the bench re-review already supplies.
+- **Why:** this lane is ruling on its own acceptance row, so it takes the option that is harder for itself (the same "stricter check wins" rule as X42). The packet's own honest gap was that the per-module receipts name earlier cuts, with none at the candidate bytes. Closing that gap is offline work. It needs no GPU, spend or provider admission, only review subagents.
+- **Scope:**
+  - The nine R1 modules in `runs/r1-row169-module-verification.BBKCr0/RECEIPTS.md`: sgv, quarantine, monsel, vreplay, evapclaim, lease, blocks, susceptibility and nulls.
+  - Each is `src/murmuration/<m>.py` with `tests/test_<m>.py`.
+  - Each is reviewed read-only on a clean `git archive 83e4870`.
+- **Acceptance:** nine verdicts at `83e4870` bytes, each module's sha256 recorded. Any REJECT reopens that module through the normal fix and review loop, which needs a new candidate and a bench recheck. Row 169 moves to ACCEPT only when all nine ACCEPT at the candidate bytes.
+- **Not decided here:** row 167 (custody and L5), and the quiet-machine window, which is PC's runtime binding.
