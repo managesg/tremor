@@ -84,6 +84,20 @@ class Quarantine(unittest.TestCase):
         self.assertEqual(Q.releasable(NOTES, {"a"}, {"d": ["a"]}), {"a"})
         self.assertEqual(Q.ancestors(NOTES, "d"), {"a", "b"})
 
+    def test_unhashable_or_non_string_ids_raise_value_error(self):
+        for call in (lambda: Q.releasable([{"id": "a", "parents": [["x"]]}], set()),
+                     lambda: Q.verification_order([{"id": "a", "parents": [{}]}], set()),
+                     lambda: Q.releasable(NOTES, {"e"}, {"b": [["e"]]}),
+                     lambda: Q.releasable(NOTES, [["e"]])):
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_equal_r_ties_are_ordered_by_id(self):
+        # Twelve unrelated roots all have R = 0: only the id tie-break orders them, whatever the hash seed.
+        ids = [f"n{i:02d}" for i in (7, 3, 11, 0, 9, 5, 1, 10, 4, 8, 2, 6)]
+        roots = [{"id": i, "parents": []} for i in ids]
+        self.assertEqual(Q.verification_order(roots, set()), sorted(ids))
+
     def test_one_shot_iterator_notes_are_rejected(self):
         # notes are read more than once; an iterator would be empty on the second pass.
         for call in (lambda: Q.releasable(iter(NOTES), {"a"}, {"d": ["a"]}),

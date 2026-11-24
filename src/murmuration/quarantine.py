@@ -29,6 +29,8 @@ def _index(notes):
             raise ValueError("each note needs an 'id' and a 'parents' list")
         if not isinstance(n["id"], str):
             raise ValueError(f"note id {n['id']!r} must be a string")
+        if any(not isinstance(p, str) for p in n["parents"]):
+            raise ValueError(f"parent ids of {n['id']!r} must be strings")
         if n["id"] in byid:
             raise ValueError(f"duplicate note id {n['id']!r}")
         byid[n["id"]] = n
@@ -51,6 +53,8 @@ def releasable(notes, verified, support=None):
     byid = _index(notes)
     if isinstance(verified, (str, bytes)) or not isinstance(verified, (set, frozenset, list, tuple)):
         raise ValueError("verified must be a set of note ids")
+    if any(not isinstance(v, str) for v in verified):
+        raise ValueError("verified must hold string note ids")
     verified = set(verified)
     support = {} if support is None else support
     if not isinstance(support, Mapping):
@@ -64,6 +68,8 @@ def releasable(notes, verified, support=None):
         offered = support.get(nid, ())
         if not isinstance(offered, (list, tuple, set, frozenset)):
             raise ValueError(f"support for {nid!r} must be a list of note ids")
+        if any(not isinstance(s, str) for s in offered):
+            raise ValueError(f"support for {nid!r} must hold string note ids")
         for s in offered:
             if s in byid and s in verified and own.isdisjoint(ancestors(notes, s) | {s}):
                 out.add(nid)

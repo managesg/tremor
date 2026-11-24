@@ -30,6 +30,22 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
         self.assertAlmostEqual(est["D"], 25 / 9)
         self.assertIsNone(sgv.dispersion({"D": [0, 4, 0]}, ITEMS)["D"])
 
+    def test_nine_reruns_still_pools_ten_keep_their_own(self):
+        # The stated threshold is 10 reruns: a unit with 9 pools by task type, a unit with 10 keeps its own.
+        r = {"A": [0, 4] * 5, "N": [0, 4, 0, 4, 0, 4, 0, 4, 4]}
+        est = sgv.dispersion(r, {"A": 4, "N": 4}, task_type={"A": "t", "N": "t"})
+        self.assertAlmostEqual(est["N"], 40 / 9)  # A's estimate, not N's own 9-rerun value
+        own = sgv.dispersion(r, {"A": 4, "N": 4}, task_type={"A": "t", "N": "t"}, min_reruns=9)["N"]
+        self.assertNotAlmostEqual(own, 40 / 9)
+        self.assertEqual(sgv.MIN_RERUNS, 10)
+
+    def test_bool_counts_items_and_floor_raise(self):
+        for call in (lambda: sgv.dispersion({"A": [True, 0] * 5}, {"A": 4}),
+                     lambda: sgv.dispersion({"A": [0, 4] * 5}, {"A": True}),
+                     lambda: sgv.dispersion({"A": [0, 4] * 5}, {"A": 4}, min_reruns=True)):
+            with self.assertRaises(ValueError):
+                call()
+
     def test_single_item_pass_fail_has_no_signal(self):
         # One pass/fail item: variance is fixed by the mean, so overdispersion is undefined, not a constant.
         r = {"half": [1, 0] * 5, "one_in_ten": [1] + [0] * 9}

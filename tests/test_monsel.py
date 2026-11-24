@@ -71,6 +71,19 @@ class MonitorSelection(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_container_guards_raise_value_error(self):
+        for call in (lambda: M.ensemble_catch(MISSES, {"actions": 1}),   # dict views
+                     lambda: M.hidden_view((v for v in ["a", "b"]), 0),  # generator views
+                     lambda: M.hidden_view(5, 0),                        # int views
+                     lambda: M.select(["actions", "board"], 1)):         # misses not a dict
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_zero_coverage_still_picks_by_name(self):
+        # No view catches any episode: greedy still picks k views, lowest name first, never None.
+        self.assertEqual(M.select({"b": [1, 1], "a": [1, 1]}, 1), ["a"])
+        self.assertEqual(M.select({"b": [1, 1], "a": [1, 1]}, 2), ["a", "b"])
+
     def test_hidden_view_seeds_are_replay_stable(self):
         # Expected values computed from the current implementation (random.Random(seed).choice on sorted views).
         sel = ["actions", "board", "counts"]
