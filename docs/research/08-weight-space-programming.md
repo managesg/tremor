@@ -164,4 +164,4 @@ The local log clone, `data/lm_understand-logs` at `4d09ba6` (2026-10-29), predat
 - **Design:** the released prompts are read by Claude Opus 5.5, against within-tensor shuffled controls.
 - **Preregistration:** `prereg/WSP-R1-exp1-blind-read.md`, with script `lab/wsp_exp1_blind.py`, both frozen at `5367f53` before any call.
 - **Cost:** no GPU, no install and no fetch. 8 subagent calls under the rule 8 default ceiling.
-- **Result:** recorded below when graded.
+- **Result:** real weights 4/4, shuffled controls 1/4, so NOT VOID. Confidence was 70–85% on real weights against 10–20% on shuffled ones. An independent reviewer gave ACCEPT. Details are in the preregistration's Result section. The post's weight-reading result reproduces on a different model family (Claude Opus 5.5, default effort), at the same anecdotal n = 4.

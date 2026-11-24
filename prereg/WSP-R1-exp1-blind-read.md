@@ -48,3 +48,33 @@ From the raw weights of a small PPO policy, with no tools and no forward pass, c
 ## Budget (Safety rule 8)
 
 This is a named live-eval batch, WSP-R1, with no numeric owner ceiling, so the default applies: USD 5 total and at most 9 calls. It uses 8. Calls run on the subscription with no provider-enforced cap, and the cost is unknown, not zero.
+
+## Result (recorded 2026-11-24, after scoring; the sections above are unchanged)
+
+- **Scorer:** `python3 -I -B lab/wsp_exp1_blind.py score --out runs/wsp-r1-exp1.fhCR1a` gave **real 4/4** and **shuffled 1/4**, exit 0. Run-folder `EVIDENCE.sha256` is `5dfe8b8d…` (18 files).
+- **Decision: NOT VOID.** Only 1 shuffled item was correct, below the threshold of 2. The real-arm 4/4 stands, and is anecdotal at n = 4.
+- **Answers:**
+
+  | Arm | Game | Reader's answer | Confidence |
+  |---|---|---|---|
+  | Real | Breakout | Breakout | 85% |
+  | Real | Pong | Pong (single-player) | 70% |
+  | Real | Pac-Man | Pac-Man | 75% |
+  | Real | Freeway | Frogger | 70% |
+  | Shuffled | Pac-Man | Pac-Man-style (the hit) | 20% |
+  | Shuffled | Pong | Pac-Man / Snake / Asterix | 15% |
+  | Shuffled | Breakout | Snake-like | 10% |
+  | Shuffled | Freeway | Catch / Breakout-like | 15% |
+
+- **What the readers saw:** on shuffled weights, all four said the first layer looked like noise. Their confidence was 10–20%, against 70–85% on real weights.
+- **Audit:** every reader made exactly 6 tool uses, the six 100-line Reads its brief asked for. The count is the only audit available.
+- **Independent check (Opus reviewer): ACCEPT.**
+  - Checksums pass.
+  - A deterministic rebuild gives byte-identical items and key (this lane rechecked all 8 items with `cmp`).
+  - Grading by hand agrees with the scorer on whether each answer is correct.
+  - The script was not changed after the freeze.
+- **Reviewer's caveats:**
+  - The single shuffled hit is probably a "Pac-Man-like grid" prompt prior, not reading.
+  - `runs/` is git-ignored, so custody rests on `EVIDENCE.sha256`.
+  - Reader isolation rests on the brief and the tool count.
+- **Batch:** closed at 8 calls under the rule 8 default ceiling, with no reruns.
