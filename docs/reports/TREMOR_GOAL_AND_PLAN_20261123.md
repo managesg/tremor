@@ -97,6 +97,8 @@ Acceptance: 1/10 (M1). Candidate of record `f62cfe1` (tree `cdaee764…`). All c
 | M10 remainder | PC | `OWNER_DECISION_M10_release_and_T7.md` | Console totals, T7 settlement, timer executor |
 | WSP-R1 spend reconciliation | Assistant | `prereg/WSP-R1-exp1-blind-read.md` (`5938fed`) | record the actual cost; unknown until then |
 
+**OD4 decisions (2026-11-24):** see `DECISION_LOG.md`, "parked owner-yes items decided under OD4". The X42 windows and the M8 0.1 GPU-h reservation are now decided yes by this lane and wait only on **PC binding** (and, for M8, the runner reviewer and Spark operator). L5, M3 R3-L2, M5, M6 and M9 are not admitted until their preconditions exist. The D8 refetch waits for a paid-call yes (Safety gate). M4 rulings: L3 = C, the conjunction rule, and R = first generation.
+
 **Next real items for this lane (offline):**
 - Carried-forward advisory gaps for the next candidate (quarantine: missing parent and unknown id; sgv: bool budget and redundant dict check). Not cut unless a new candidate is needed.
 - M4 protocol drafting for L2-C and L3-C under the frozen scope.
