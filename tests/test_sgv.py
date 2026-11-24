@@ -123,6 +123,7 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
     def test_malformed_inputs_raise(self):
         for call in (lambda: sgv.allocate({"A": [1] * 10}, ITEMS, 5, 1),        # reruns cost 10 > budget 5
                      lambda: sgv.dispersion({"A": [5] * 10}, ITEMS),              # count above items
+                     lambda: sgv.dispersion({"A": [-1, 4] * 5}, {"A": 4}),        # negative pass count
                      lambda: sgv.dispersion({"A": []}, ITEMS),
                      lambda: sgv.dispersion({"Z": [1, 2]}, ITEMS),                # no item count
                      lambda: sgv.dispersion({"A": [1, 2]}, {"A": 0}),

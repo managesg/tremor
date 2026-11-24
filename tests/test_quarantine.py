@@ -92,6 +92,15 @@ class Quarantine(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_supported_notes_use_no_verification_budget(self):
+        # a is released by independent verified support from e: only b (unsupported) still needs checking.
+        # b has a descendant (R 1) so it comes first; c and d tie at R 0 and go by id.
+        self.assertEqual(Q.verification_order(NOTES, {"e"}, {"a": ["e"]}), ["b", "c", "d"])
+
+    def test_parents_string_is_rejected_not_split(self):
+        with self.assertRaises(ValueError):
+            Q.releasable([{"id": "a", "parents": []}, {"id": "c", "parents": "ab"}], set())
+
     def test_equal_r_ties_are_ordered_by_id(self):
         # Twelve unrelated roots all have R = 0: only the id tie-break orders them, whatever the hash seed.
         ids = [f"n{i:02d}" for i in (7, 3, 11, 0, 9, 5, 1, 10, 4, 8, 2, 6)]
