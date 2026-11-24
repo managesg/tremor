@@ -219,3 +219,10 @@ The decision above named `83e4870` as the bytes to verify. That candidate failed
 - **Not modelled.** The operating point (L3-O9; inputs are thresholded 0/1 bits), equal monitor calls, and the other baseline arms.
 
 Independent review: REJECT on the first cut (missing step 5, untested seed and greedy behaviour, unchecked view input), then fixed. All five targeted mutants are now killed.
+
+## 2026-11-24: L4 strength-lowering rule (line author, under OD4)
+
+- **The question:** the proposal says the controller "lowers consolidation strength when they rise" (committed P:516, where "they" means recovery time and R). The accepted R1 module `src/murmuration/vreplay.py:63` lowers the rung when **either** reading rises. `lab/l4_adaptive_replay_policy.py:130` requires **both** to rise.
+- **Decided: either.** One rung down when recovery time or R rises.
+- **Reason:** the proposal's plural does not settle it. Lowering on either rise is the fail-safe choice for a technique meant to keep false notes low. It is also the rule in the module accepted by the row 169 per-module round at `f62cfe1`.
+- **Consequence:** the lab policy aligns to "either" before the L4 freeze (L4-O15 in `prereg/R2-L4-C-protocol.md`, `625ab34`). Until then the lab fixture stays as it is and is labelled as differing.
