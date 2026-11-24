@@ -130,3 +130,22 @@ dea597b814f4221f38af7c1d4334333c8cd3000e943e575c2cf101ca368cac4d  lab/tests/test
 cde7d754aeefd969df44cb34b5a136653197ee4a66d370c3ad2af9cad4f6b982  lab/tests/test_spark_calibration_guard.py
 59a11d9ed6882093c43344ba7e4b4783e270b0de0beebb5424d047fc7339b826  lab/tests/test_spark_decision.py
 ```
+
+### Decision 4: `lab/replication_inventory.py`, adopt exact HEAD (closes the open gap above)
+
+**Decided under owner delegation 2026-11-23T23:40Z**, on the Assistant's request `msg_c0f6cd21db13` (queue item `tremor-m8-inventory-closure-offline`). This is offline and documentary only. It gives no launch, GPU, spend or admission, and the resource and custody gates stay separate.
+
+- **Decided:** the M8 admission binds the exact HEAD bytes `3bfe5af69dd7be6873f3f6013f0d23075ba653150f6ed5c4e1d333cd391db4fc`. No separately staged historical copy, and no shared revert.
+- **Why:**
+  - The preflight calls only `_normalized` and `_snapshot` (`lab/smollm3_smoke_preflight.py:76-79`) and never passes `compare_tensors`.
+  - On that path, the diff `30788cb..63f1890` changes only how bytes are hashed: `_file_digest` now runs through `_check_file` and `_hash_bytes`, which do the same steps in the same order.
+  - The rest of the diff is new code the preflight never reaches: the Safetensors tensor checks behind `compare_tensors`, the identical-payload rejection in `verify`, a `--compare-tensors` flag, and `_capture_bytes`.
+  - Adopting HEAD keeps one source tree. A staged old copy would add a second tree to keep in custody.
+- **Evidence** (`runs/m8-inventory-closure.Wk4Oqq/`, `EVIDENCE.sha256` `fa4fe9cc…`):
+  - **Equivalence:** `equivalence.py` loads both versions (`f7dc8f55…` from `30788cb`, `3bfe5af6…` from HEAD) and runs the preflight path on 14 fake snapshots. Both versions give identical results in all 14 cases (2 accepted, 12 rejected with the same messages), so none diverge. The rejected cases are grown, shortened and same-size corrupt weights, an extra file, a missing file, a symlinked file, no config, empty architectures, a shard not in the index, an empty weight, an identity mismatch and an LFS mismatch. Exit 0.
+  - **Focused fake tests** on a clean `git archive 7d2717b`:
+    - `test_smollm3*`: Ran 50, OK.
+    - `test_replication_inventory*` (`PYTHONPATH=src`): Ran 13, OK, 1 skipped.
+  - **Closure manifest:** regenerated at `7d2717b` as `closure.sha256` (36 files, `9076d475…`). It equals the follow-up 2 block line for line, including `3bfe5af6…`.
+  - **Recipe digest:** unchanged at `27a220e9…`. The recipe is the container create argv, built by `lab/smollm3_smoke_container.py`, which does not import `replication_inventory`.
+- **Remaining:** an independent verdict on this record and the exact tree (requested). Then the runner reviewer accepts the closure for the admission. Memory, storage, reservation and admission stay as in Decisions 1 to 3.
