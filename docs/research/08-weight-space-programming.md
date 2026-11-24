@@ -118,3 +118,50 @@ Falsified if any of: (a) repetition penalty, thinking-off or a steering vector m
 - Independent 51.0% figure, 52% thinking-off, 43.95% Toledo, repetition-penalty 54% are second-hand or unopened; treat as leads.
 - Moonshots ep. 308 content, the Honnibal post, the HF card, the Register article and the Maier article body not opened.
 - All of this is days old, non-peer-reviewed blog/preprint material; one editing run per budget, one editor model in the original.
+
+## 12. Update 2026-11-24: self-rewriting paper, the post's addendum, and a local test
+
+Added at the owner's request ("add this to research and testing", 2026-11-24).
+
+### 12.1 "Language Models Can Rewrite Their Own Weights"
+
+**Source:** Fan, He, Yang, Mao, Zhu, Cheng, Liang, Shen, Li, Guo and Liu (UIUC), arXiv 2611.21885. v1 is dated 16 Nov 2026 and v2 18 Nov 2026. A research subagent read the full text of v2 (HTML). The owner's summary came from a YouTube video, which was not opened. The paper cites the MIT post as its closest work and takes up the post's "self-editing" future work. The two author lists do not overlap.
+
+| Claim in the video | Primary text |
+|---|---|
+| Qwen3.5 27B edits its own weights in a sandbox with no gradients, optimizer or internet | CONFIRMED. Loaders, subprocesses and network are also refused. Each session gets 20 forward passes and 200 code runs. |
+| 3,000 practice math problems | CONFIRMED (DeepScaleR, with benchmark overlap removed) |
+| Compares hidden states of finished and truncated answers | CONFIRMED |
+| Layer-8 rank-one update gives +6.6 points | DIFFERENT, conflated. The layer-8 rank-one edit (first protocol) gave 57.2% to 58.3%, **+1.1 points, p = 0.038**, on 490 held-out problems with 8 seeds each. The +6.6 points (57.2% to about 63.8%) is **one session out of 8** in a second protocol. That edit raised the time-step bias of all 48 linear-attention layers by 0.5, so it is not rank-one. Another session gave +4.0 with a layer-63 projection. 5 of the 8 sessions withdrew. |
+| Self-repair: values about 1,400x normal, clipped | CONFIRMED. The largest value is 1,397x the median, against at most 162x elsewhere. The rule clips weights above 15x the median in 20 matrices. |
+| Six image benchmarks recover from 7% to 70% using only text probes | CONFIRMED: 7.3% to 70.2%, against a base of 84.3%, on 100 items per benchmark, one answer each. On held-out text problems the repair recovered only 0.0% to 33.0%, against a base of 58.5%. |
+| Works at 27B, not 9B | CONFIRMED: the 2B model makes no edit, and the 4B and 9B models damage themselves. This rests on one session per smaller size. |
+| No code released | No repo or release statement found. arXiv licence only. |
+
+**Baselines:** none of the three that note 08 uses to judge the MIT result, namely a steering vector, a decoding fix (thinking off, repetition penalty) or a random-direction control. The only controls are the base model, the damaged copy and ablations of the repair parts.
+
+**Read for TREMOR:**
+- The headline gain is a best-of-8 session. The pre-specified rank-one edit is marginal.
+- The repair result is real but easy for a model to find. A matrix with a 1,397x outlier is a large, obvious target, so it says little about diagnosing subtle faults.
+- It falls under the same kill rule as H7: a decoding or steering rival at matched cost must be beaten first.
+- No independent critique found. A literature issue (openinterpretability #4798) restates the abstract.
+
+**Local test:** not possible without GPU admission. A 27B model in bf16 also exceeds the T7 envelope. It stays documentary.
+
+### 12.2 The post's 12 Nov addendum
+
+The post added "Response to Comments" on 12 Nov:
+- WSP is "a concept, not a method".
+- Gradients are allowed when the programmer decides the edit.
+- The baselines test narrow claims rather than ranking methods.
+- No comparison with interpretability researchers is claimed.
+
+The local log clone, `data/lm_understand-logs` at `4d09ba6` (2026-10-29), predates the addendum. Refetching it is a network action and is not needed for Exp 1, so it was not done.
+
+### 12.3 Local test: WSP-R1
+
+**WSP-R1** is a blind cross-model replication of the post's Exp 1, where a model names the game from the raw weights of a 17,253-parameter PPO policy with no tools.
+- **Design:** the released prompts are read by Claude Opus 5.5, against within-tensor shuffled controls.
+- **Preregistration:** `prereg/WSP-R1-exp1-blind-read.md`, with script `lab/wsp_exp1_blind.py`, both frozen at `5367f53` before any call.
+- **Cost:** no GPU, no install and no fetch. 8 subagent calls under the rule 8 default ceiling.
+- **Result:** recorded below when graded.
