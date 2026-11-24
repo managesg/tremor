@@ -165,3 +165,15 @@ cde7d754aeefd969df44cb34b5a136653197ee4a66d370c3ad2af9cad4f6b982  lab/tests/test
   - Each is reviewed read-only on a clean `git archive 83e4870`.
 - **Acceptance:** nine verdicts at `83e4870` bytes, each module's sha256 recorded. Any REJECT reopens that module through the normal fix and review loop, which needs a new candidate and a bench recheck. Row 169 moves to ACCEPT only when all nine ACCEPT at the candidate bytes.
 - **Not decided here:** row 167 (custody and L5), and the quiet-machine window, which is PC's runtime binding.
+
+### Row 169 follow-up: when a per-module round rejects (decided under owner delegation 2026-11-24T05:35Z)
+
+Three rounds (83e4870, a673019, 4cdbb35) found real defects, and also kept finding new input guards that the tests did not cover. To keep the bar fixed and finite, a verifier rules as follows.
+
+- **REJECT:**
+  - any wrong result or uncaught exception outside the ValueError contract (a correctness defect);
+  - a fix from an earlier round that no test protects;
+  - any rule stated in the module's docstring or spec that no test protects.
+- **ACCEPT, with surviving mutants listed as advisory test gaps:** an input-validation guard with no test, where removing the guard changes only which error type is raised. Advisory gaps are carried forward and fixed in the next candidate if one is cut.
+
+The bar is unchanged for spec behaviour, so lease would still have been rejected under it. The decision only stops adding guard-coverage rounds without limit.
