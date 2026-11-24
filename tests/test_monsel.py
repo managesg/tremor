@@ -61,6 +61,16 @@ class MonitorSelection(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_guard_regressions_raise_value_error(self):
+        for call in (lambda: M.hidden_view(["a", "b"], True),
+                     lambda: M.hidden_view(["a", "b"], "7"),
+                     lambda: M.select({"a": []}, 1),  # not ZeroDivisionError
+                     lambda: M.select({"a": [True, 0]}, 1),
+                     lambda: M.select({"a": [0, 1]}, True),
+                     lambda: M.select({"a": [0, 1]}, 2)):
+            with self.assertRaises(ValueError):
+                call()
+
     def test_hidden_view_seeds_are_replay_stable(self):
         # Expected values computed from the current implementation (random.Random(seed).choice on sorted views).
         sel = ["actions", "board", "counts"]

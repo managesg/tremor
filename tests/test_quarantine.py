@@ -79,6 +79,19 @@ class Quarantine(unittest.TestCase):
         with self.assertRaises(ValueError):
             Q.verification_order(mixed, set())
 
+    def test_grandparent_cannot_release_its_grandchild(self):
+        # d derives from b, which derives from a: a is in d's lineage two levels up.
+        self.assertEqual(Q.releasable(NOTES, {"a"}, {"d": ["a"]}), {"a"})
+        self.assertEqual(Q.ancestors(NOTES, "d"), {"a", "b"})
+
+    def test_one_shot_iterator_notes_are_rejected(self):
+        # notes are read more than once; an iterator would be empty on the second pass.
+        for call in (lambda: Q.releasable(iter(NOTES), {"a"}, {"d": ["a"]}),
+                     lambda: Q.verification_order(iter(NOTES), set()),
+                     lambda: Q.ancestors(iter(NOTES), "d")):
+            with self.assertRaises(ValueError):
+                call()
+
 
 if __name__ == "__main__":
     unittest.main()

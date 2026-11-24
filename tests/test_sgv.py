@@ -122,6 +122,31 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_negative_rerun_cost_rejected(self):
+        with self.assertRaises(ValueError):
+            sgv.allocate({"A": [0, 4] * 5}, ITEMS, 100, -1)
+
+    def test_budget_exactly_spent_by_reruns_is_accepted(self):
+        # 2 units x 2 reruns x cost 1 = 4 = budget: remaining 0, so every share is 0.
+        r = {"A": [1, 3], "B": [0, 4]}
+        out = sgv.allocate(r, ITEMS, 4, 1, min_reruns=2)
+        self.assertEqual(out, {"A": 0.0, "B": 0.0})
+
+    def test_untyped_units_do_not_pool_with_each_other(self):
+        # A has 10 reruns and a defined estimate; B has 2 and no task type, so it has no peers: None.
+        r = {"A": [0, 4] * 5, "B": [1, 3]}
+        est = sgv.dispersion(r, ITEMS)
+        self.assertAlmostEqual(est["A"], 40 / 9)
+        self.assertIsNone(est["B"])
+
+    def test_min_reruns_floor_is_two(self):
+        with self.assertRaises(ValueError):
+            sgv.dispersion({"A": [1, 3]}, ITEMS, min_reruns=1)
+        with self.assertRaises(ValueError):
+            sgv.allocate({"A": [1, 3]}, ITEMS, 10, 1, min_reruns=1)
+        # a unit with 1 rerun has no estimate at all
+        self.assertIsNone(sgv.dispersion({"A": [2]}, ITEMS, min_reruns=2)["A"])
+
 
 if __name__ == "__main__":
     unittest.main()

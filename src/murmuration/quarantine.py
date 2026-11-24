@@ -21,6 +21,8 @@ from murmuration.readouts import reproduction_number
 
 
 def _index(notes):
+    if not isinstance(notes, (list, tuple)):  # notes are read more than once: a one-shot iterator would empty
+        raise ValueError("notes must be a list or tuple of note dicts")
     byid = {}
     for n in notes:
         if not isinstance(n, dict) or "id" not in n or not isinstance(n.get("parents"), (list, tuple)):
