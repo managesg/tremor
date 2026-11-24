@@ -38,9 +38,17 @@ class Quarantine(unittest.TestCase):
         self.assertEqual(Q.releasable(NOTES, verified={"c"}), {"c"})
 
     def test_budget_goes_to_highest_r_first(self):
-        # R with one root: a -> {a,b,c,d}: (4-1)/4 = 0.75; b -> {b,d}: 1/2 = 0.5; c, d, e: 0.
+        # R = first-generation offspring: a has b and c (2); b has d (1); c, d have none (0).
         order = Q.verification_order(NOTES, verified={"e"})
         self.assertEqual(order, ["a", "b", "c", "d"])
+
+    def test_r_is_first_generation_not_descendant_share(self):
+        # Chain x -> y -> z -> w: x has 1 child but 3 descendants. Star s -> t, u: s has 2 children.
+        # First-generation R ranks s first; a descendant-share R would rank x first.
+        notes = [{"id": "x", "parents": []}, {"id": "y", "parents": ["x"]}, {"id": "z", "parents": ["y"]},
+                 {"id": "w", "parents": ["z"]}, {"id": "s", "parents": []}, {"id": "t", "parents": ["s"]},
+                 {"id": "u", "parents": ["s"]}]
+        self.assertEqual(Q.verification_order(notes, set())[:2], ["s", "x"])
 
     def test_malformed_inputs_raise(self):
         with self.assertRaises(ValueError):

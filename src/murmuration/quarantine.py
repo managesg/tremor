@@ -6,18 +6,18 @@ verified by a scripted re-check or supported by an independent source; support t
 note itself does not count (a cycle check on the provenance graph). (3) The verification budget goes
 first to the notes with the highest measured R.
 
-Reading: notes are dicts with "id" and "parents" (provenance), as in readouts.reproduction_number.
+Reading: notes are dicts with "id" and "parents" (provenance), as in the readouts module.
 Reading: support is a caller mapping note id -> ids of notes offered as corroboration; a supporter counts
 only if it shares no provenance with the note: the two lineages (each note plus all its ancestors) are
 disjoint. This covers the cycle check (support descending from the note), a note's own source, and a
 sibling derived from the same source. A supporter must itself be verified: two unverified notes
 cannot release each other (planted copies of one wrong note need not be linked by provenance).
-Reading: a note's measured R is readouts.reproduction_number with that note as the only planted root;
+Reading: a note's measured R is its number of first-generation offspring (notes naming it as a parent),
+as the proposal defines R (PROPOSAL-RESIDENCY-V3.md, Line 2 kill rule; decided 2026-11-24 under OD4);
 ties are broken by note id.
 """
 from collections.abc import Mapping
 
-from murmuration.readouts import reproduction_number
 
 
 def _index(notes):
@@ -80,4 +80,4 @@ def releasable(notes, verified, support=None):
 def verification_order(notes, verified, support=None):
     """Quarantined note ids, highest measured R first."""
     held = set(_index(notes)) - releasable(notes, verified, support)
-    return sorted(held, key=lambda nid: (-reproduction_number(notes, [nid])[0], nid))
+    return sorted(held, key=lambda nid: (-sum(nid in n["parents"] for n in notes), nid))
