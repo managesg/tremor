@@ -60,8 +60,8 @@ def releasable(notes, verified, support=None):
             continue
         own = ancestors(notes, nid) | {nid}
         offered = support.get(nid, ())
-        if isinstance(offered, (str, bytes)):
-            raise ValueError(f"support for {nid!r} must be a list of note ids, not a string")
+        if not isinstance(offered, (list, tuple, set, frozenset)):
+            raise ValueError(f"support for {nid!r} must be a list of note ids")
         for s in offered:
             if s in byid and s in verified and own.isdisjoint(ancestors(notes, s) | {s}):
                 out.add(nid)

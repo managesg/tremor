@@ -66,6 +66,9 @@ class MonitorSelection(unittest.TestCase):
         sel = ["actions", "board", "counts"]
         got = [M.hidden_view(sel, s) for s in (0, 1, 2, 3, 7, 42)]
         self.assertEqual(got, EXPECTED_HIDDEN)
+        # Input order and container type must not matter (a set follows per-process string hashing).
+        for sel in (["counts", "board", "actions"], {"counts", "actions", "board"}):
+            self.assertEqual([M.hidden_view(sel, s) for s in (0, 1, 2, 3, 7, 42)], EXPECTED_HIDDEN)
 
     def test_hidden_view_covers_every_selected_view_across_seeds(self):
         sel = ["actions", "board", "counts"]

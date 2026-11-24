@@ -17,7 +17,7 @@ receives no share.
 Reading: if every estimate is zero or None there is no signal to allocate on, and the result is None.
 """
 import math
-import statistics as st
+from fractions import Fraction
 
 MIN_RERUNS = 10  # stated in the proposal, not tuned here
 
@@ -64,7 +64,8 @@ def dispersion(reruns, items, task_type=None, min_reruns=MIN_RERUNS):
         kind = task_type.get(u)
         peers = [v for p, v in enough.items()
                  if v is not None and kind is not None and task_type.get(p) == kind]
-        out[u] = st.fmean(peers) if peers else None
+        # exact mean: a float sum of finite peers can overflow, the exact mean cannot exceed the largest peer
+        out[u] = float(sum(map(Fraction, peers)) / len(peers)) if peers else None
     return out
 
 
@@ -79,14 +80,14 @@ def allocate(reruns, items, budget, rerun_cost, task_type=None, min_reruns=MIN_R
             raise ValueError(f"{name} must be a finite non-negative number")
     if not isinstance(reruns, dict) or not isinstance(items, dict):
         raise ValueError("reruns and items must be dicts keyed by unit")
+    est = dispersion(reruns, items, task_type, min_reruns)  # validates the rerun lists first
     try:
         remaining = budget - rerun_cost * sum(len(cs) for cs in reruns.values())
     except OverflowError:  # a cost too large to represent cannot fit in a finite budget
         raise ValueError("reruns cost more than the budget") from None
     if remaining < 0:
         raise ValueError("reruns cost more than the budget")
-    est = dispersion(reruns, items, task_type, min_reruns)
-    total = sum(v for v in est.values() if v)
+    total = sum(Fraction(v) for v in est.values() if v)  # exact: a float total can overflow to inf
     if total == 0:
         return None
-    return {u: (remaining * (v / total) if v else 0.0) for u, v in est.items()}  # share first: no overflow
+    return {u: (float(Fraction(remaining) * Fraction(v) / total) if v else 0.0) for u, v in est.items()}

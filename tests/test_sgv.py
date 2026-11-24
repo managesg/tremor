@@ -1,3 +1,4 @@
+import math
 import unittest
 
 from murmuration import sgv
@@ -75,6 +76,33 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
                      lambda: sgv.dispersion({"A": [0, 4] * 5}, ITEMS, task_type=["t"])):
             with self.assertRaises(ValueError):
                 call()
+
+    def test_wrong_rerun_type_in_allocate_is_value_error(self):
+        for bad in (5, None, "ab"):
+            with self.assertRaises(ValueError):
+                sgv.allocate({"a": bad}, {"a": 3}, 10, 1)
+
+    def test_pooled_mean_near_float_max_is_exact_or_value_error(self):
+        big = 10 ** 308
+        cs = [0] * 9 + [big]
+        r, n = {"a": cs, "b": cs, "c": [1]}, {"a": big, "b": big, "c": big}
+        tt = {"a": "t", "b": "t", "c": "t"}
+        est = sgv.dispersion(r, n, tt)  # fmean overflowed: OverflowError
+        self.assertEqual(est["c"], est["a"])
+        self.assertTrue(math.isfinite(est["c"]))
+
+    def test_allocate_total_overflow_never_drops_budget(self):
+        big = 10 ** 308
+        cs = [0] * 9 + [big]
+        out = sgv.allocate({"a": cs, "b": cs}, {"a": big, "b": big}, 10, 0)  # total was inf: all shares 0.0
+        self.assertEqual(out, {"a": 5.0, "b": 5.0})
+
+    def test_allocate_unequal_shares_with_huge_estimates(self):
+        big = 10 ** 308
+        a, b = [0] * 9 + [big], [0] * 8 + [big, big]
+        out = sgv.allocate({"a": a, "b": b}, {"a": big, "b": big}, 10, 0)
+        self.assertTrue(all(math.isfinite(v) for v in out.values()))
+        self.assertAlmostEqual(sum(out.values()), 10)
 
     def test_malformed_inputs_raise(self):
         for call in (lambda: sgv.allocate({"A": [1] * 10}, ITEMS, 5, 1),        # reruns cost 10 > budget 5

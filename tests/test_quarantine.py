@@ -52,6 +52,19 @@ class Quarantine(unittest.TestCase):
         with self.assertRaises(ValueError):
             Q.releasable(NOTES, {"e"}, {"b": "e"})  # a string support list
 
+    def test_root_note_not_released_by_its_own_verified_child(self):
+        n = [{"id": "a", "parents": []}, {"id": "b", "parents": ["a"]}]
+        self.assertEqual(Q.releasable(n, {"b"}, {"a": ["b"]}), {"b"})
+
+    def test_unknown_supporter_does_not_release(self):
+        n = [{"id": "a", "parents": []}, {"id": "b", "parents": ["a"]}]
+        self.assertEqual(Q.releasable(n, {"ghost"}, {"a": ["ghost"]}), set())
+
+    def test_non_list_support_value_is_rejected(self):
+        for bad in (5, None):
+            with self.assertRaises(ValueError):
+                Q.releasable(NOTES, {"e"}, {"b": bad})
+
     def test_verified_string_is_rejected(self):
         with self.assertRaises(ValueError):
             Q.releasable(NOTES, "e")
