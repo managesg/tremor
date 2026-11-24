@@ -44,6 +44,25 @@ class VerifiedReplay(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_huge_ints_are_finite_readings(self):
+        self.assertEqual(V.next_strength(3, (10**400, 0), (10**401, 0)), 2)
+        self.assertEqual(V.next_strength(3, (1, 0), (1, 10**309)), 2)
+        self.assertEqual(V.next_strength(3, (10**401, 0), (10**400, 0)), 3)
+        self.assertEqual(V.next_strength(3, (1.5, 0), (10**400, 0)), 2)
+
+    def test_inf_readings_refused(self):
+        for bad in (float("inf"), float("-inf")):
+            with self.assertRaises(ValueError):
+                V.next_strength(3, (bad, 0), (1, 0))
+            with self.assertRaises(ValueError):
+                V.next_strength(3, (1, 0), (1, bad))
+
+    def test_retain_capacity_validation(self):
+        for cap in (True, False, -1, 1.0, "1", None):
+            with self.assertRaises(ValueError):
+                V.retain(["a"], {"a": 1}, cap)
+        self.assertEqual(V.retain(["a", "b"], {"a": 1}, 0), [])
+
     def test_crashing_check_drops_the_claim(self):
         self.assertEqual(V.gate([1, 2], lambda c: 1 / (c - 1) > 0), [2])
 

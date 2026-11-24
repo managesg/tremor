@@ -17,6 +17,8 @@ import random
 def _views(views):
     if isinstance(views, (str, bytes)) or not isinstance(views, (list, tuple, set, frozenset)):
         raise ValueError("views must be a list, tuple or set of view names, not a string")
+    if any(not isinstance(v, str) for v in views):
+        raise ValueError("view names must be strings")
     if len(set(views)) != len(views):
         raise ValueError("views must not repeat")
     return list(views)
@@ -27,6 +29,8 @@ def _check(misses):
         raise ValueError("misses must be a nonempty dict of view name -> miss list")
     if any(not isinstance(v, str) for v in misses):
         raise ValueError("view names must be strings")
+    if any(not isinstance(row, (list, tuple)) for row in misses.values()):
+        raise ValueError("each miss row must be a list or tuple of 0/1")
     lengths = {len(row) for row in misses.values()}
     if len(lengths) != 1 or 0 in lengths:
         raise ValueError("every view needs the same nonzero number of calibration episodes")

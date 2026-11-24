@@ -67,6 +67,46 @@ class EvidenceLeases(unittest.TestCase):
         with self.assertRaises(ValueError):
             EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate).end_round(used="edit")
 
+    def test_bound_equal_to_target_does_not_widen(self):
+        L = EvidenceLease(target=0.5, idle_rounds=2, bound=lambda s, p: 0.5)
+        L.observe("edit", False)
+        L.end_round(used=())
+        self.assertFalse(L.allowed("edit"))   # widens only when the bound falls below the target
+        below = EvidenceLease(target=0.5, idle_rounds=2, bound=lambda s, p: 0.49)
+        below.observe("edit", False)
+        below.end_round(used=())
+        self.assertTrue(below.allowed("edit"))
+
+    def test_violation_keeps_scope_revoked_until_new_observation(self):
+        L = EvidenceLease(target=0.5, idle_rounds=3, bound=pooled_rate)
+        for _ in range(5):
+            L.observe("edit", False)
+        L.observe("edit", True)           # pooled 1/6 is below 0.5, yet the violation revoked it
+        L.end_round(used=())
+        self.assertFalse(L.allowed("edit"))
+        L.end_round(used=())
+        self.assertFalse(L.allowed("edit"))
+        L.observe("edit", False)
+        L.end_round(used=())
+        self.assertTrue(L.allowed("edit"))
+
+    def test_idle_rounds_are_consecutive(self):
+        L = EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate)
+        L.observe("edit", False)
+        L.end_round(used=())              # granted
+        L.end_round(used=())              # idle 1
+        L.end_round(used={"edit"})        # use resets the idle count
+        L.end_round(used=())              # idle 1 again, not 2
+        self.assertTrue(L.allowed("edit"))
+        L.end_round(used=())              # idle 2 counted from the last use
+        self.assertFalse(L.allowed("edit"))
+
+    def test_bool_bound_proves_nothing(self):
+        L = EvidenceLease(target=0.5, idle_rounds=2, bound=lambda s, p: False)
+        L.observe("edit", False)
+        L.end_round(used=())
+        self.assertFalse(L.allowed("edit"))
+
     def test_solo_scope_does_not_pool_with_a_lookalike_group_key(self):
         L = EvidenceLease(target=0.5, idle_rounds=2, bound=pooled_rate, group={"x": ("solo", "y")})
         L.observe("x", True)

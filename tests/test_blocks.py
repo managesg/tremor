@@ -30,6 +30,24 @@ class BlockAndSummarise(unittest.TestCase):
         # Float remainders made 20/3 - 6 look larger and gave 2, 1, 7.
         self.assertEqual([len(b) for b in B.assign(range(10), [["a"], ["b"], ["c", "d", "e", "f"]])], [2, 2, 6])
 
+    def test_minimum_seat_comes_from_most_over_served_block_lowest_index_on_tie(self):
+        # 4 agents over 10, 6, 1 tasks: floors 2, 1, 0 and the spare seat goes to group 1 -> 2, 2, 0.
+        # Group 2 needs one: group 1 (2 seats for a 1.41 share) is more over-served than group 0 (2.35).
+        self.assertEqual([len(b) for b in B.assign(range(4), [[f"a{i}" for i in range(10)], [f"b{i}" for i in range(6)], ["c"]])], [2, 1, 1])
+        # 4 agents over 1, 3, 3 tasks: 0, 2, 2 seats; groups 1 and 2 are equally over-served, lowest index gives.
+        self.assertEqual([len(b) for b in B.assign(range(4), [["a"], ["b", "c", "d"], ["e", "f", "g"]])], [1, 1, 2])
+
+    def test_weight_equal_to_threshold_couples(self):
+        self.assertEqual(B.groups(["a", "b"], {("a", "b"): 0.5}, 0.5), [["a", "b"]])
+
+    def test_unhashable_agents_raise_value_error(self):
+        with self.assertRaises(ValueError):
+            B.assign([[1], [2]], [["a"], ["b"]])
+
+    def test_upward_rejects_a_string(self):
+        with self.assertRaises(ValueError):
+            B.upward("ab", lambda ls: "x")
+
     def test_upward_one_line_per_block(self):
         out = B.upward([["x ok", "y ok"], ["z failed"]], lambda ls: "; ".join(ls))
         self.assertEqual(out, [{"agent": "block-0", "summary": "x ok; y ok"},

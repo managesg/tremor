@@ -15,6 +15,8 @@ cannot release each other (planted copies of one wrong note need not be linked b
 Reading: a note's measured R is readouts.reproduction_number with that note as the only planted root;
 ties are broken by note id.
 """
+from collections.abc import Mapping
+
 from murmuration.readouts import reproduction_number
 
 
@@ -23,6 +25,8 @@ def _index(notes):
     for n in notes:
         if not isinstance(n, dict) or "id" not in n or not isinstance(n.get("parents"), (list, tuple)):
             raise ValueError("each note needs an 'id' and a 'parents' list")
+        if not isinstance(n["id"], str):
+            raise ValueError(f"note id {n['id']!r} must be a string")
         if n["id"] in byid:
             raise ValueError(f"duplicate note id {n['id']!r}")
         byid[n["id"]] = n
@@ -46,7 +50,9 @@ def releasable(notes, verified, support=None):
     if isinstance(verified, (str, bytes)) or not isinstance(verified, (set, frozenset, list, tuple)):
         raise ValueError("verified must be a set of note ids")
     verified = set(verified)
-    support = support or {}
+    support = {} if support is None else support
+    if not isinstance(support, Mapping):
+        raise ValueError("support must map note ids to lists of note ids")
     out = set()
     for nid in byid:
         if nid in verified:

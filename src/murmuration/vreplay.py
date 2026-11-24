@@ -27,7 +27,7 @@ def _seq(x, name):
 def _reading(x):
     if x is None:
         return None
-    if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x):
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or (isinstance(x, float) and not math.isfinite(x)):
         raise ValueError("readings must be finite numbers or None")
     return x
 

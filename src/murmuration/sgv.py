@@ -29,21 +29,30 @@ def _int(x, lo):
 def _overdispersion(counts, n):
     if not _int(n, 1):
         raise ValueError("items per unit must be a positive integer")
-    if not counts or any(not _int(c, 0) or c > n for c in counts):
+    if not isinstance(counts, (list, tuple)) or not counts or any(not _int(c, 0) or c > n for c in counts):
         raise ValueError("rerun pass counts must be a nonempty list of integers in [0, items]")
-    p = st.fmean(counts) / n
-    if n == 1 or len(counts) < 2 or p in (0, 1):
+    k, total = len(counts), sum(counts)
+    if n == 1 or k < 2 or total in (0, n * k):  # decided on the integer sum, not a rounded float
         return None
-    return st.variance(counts) / (n * p * (1 - p))
+    # sample variance over n p (1 - p) with p = total / (n k), in exact integers
+    num = n * k * (k * sum(c * c for c in counts) - total * total)
+    try:
+        return num / ((k - 1) * total * (n * k - total))
+    except OverflowError:  # a ratio too large for a float
+        raise ValueError("overdispersion is too large to represent") from None
 
 
 def dispersion(reruns, items, task_type=None, min_reruns=MIN_RERUNS):
     """Per-unit overdispersion estimate, pooled by task type for under-sampled units."""
     if not _int(min_reruns, 2):
         raise ValueError("min_reruns must be an integer >= 2")
+    if not isinstance(reruns, dict) or not isinstance(items, dict):
+        raise ValueError("reruns and items must be dicts keyed by unit")
+    if task_type is not None and not isinstance(task_type, dict):
+        raise ValueError("task_type must be a dict keyed by unit")
     missing = set(reruns) - set(items)
     if missing:
-        raise ValueError(f"no item count for units {sorted(missing)}")
+        raise ValueError(f"no item count for units {sorted(missing, key=repr)}")
     task_type = task_type or {}
     own = {u: _overdispersion(cs, items[u]) for u, cs in reruns.items()}
     enough = {u: v for u, v in own.items() if len(reruns[u]) >= min_reruns}

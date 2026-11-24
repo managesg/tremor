@@ -45,6 +45,15 @@ class EvaporatingClaims(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_bool_mark_and_bool_agent_rank_raise(self):
+        # bool is an int subclass: True passes 0 <= s <= 1 and isinstance(int)
+        with self.assertRaises(ValueError):
+            E.evaporate({"a": True}, (), 0.5)
+        with self.assertRaises(ValueError):
+            E.choose({"a": True}, ["a"], 0)
+        with self.assertRaises(ValueError):
+            E.choose({}, ["a"], True)
+
 
 if __name__ == "__main__":
     unittest.main()

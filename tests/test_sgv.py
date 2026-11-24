@@ -43,6 +43,39 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
     def test_no_signal_returns_none(self):
         self.assertIsNone(sgv.allocate({"A": [4] * 10, "B": [0] * 10}, ITEMS, 50, 1))
 
+    def test_pooling_uses_matching_task_type_and_skips_none_peer(self):
+        # A, B differ in type; C (type t) has estimate None (p == 1) and must not drag the pool down.
+        r = {"A": [0, 4] * 5, "B": [1, 3] * 5, "C": [4] * 10, "D": [0, 4, 0], "E": [1, 3, 1]}
+        tt = {"A": "t", "B": "u", "C": "t", "D": "t", "E": "u"}
+        est = sgv.dispersion(r, {k: 4 for k in r}, task_type=tt)
+        self.assertIsNone(est["C"])
+        self.assertAlmostEqual(est["D"], 40 / 9)
+        self.assertAlmostEqual(est["E"], 10 / 9)
+
+    def test_probability_decided_on_integer_sum(self):
+        # 2**53 items: the float share rounds to 1.0, but 9 of 10 reruns differ by one item.
+        big = 2 ** 53
+        est = sgv.dispersion({"A": [big] * 9 + [big - 1]}, {"A": big}, min_reruns=2)
+        self.assertAlmostEqual(est["A"], 1.0)
+        self.assertEqual(sgv.dispersion({"A": [big] * 10, "B": [0] * 10}, {"A": big, "B": big}),
+                         {"A": None, "B": None})
+
+    def test_huge_counts_overflow_is_value_error_or_exact(self):
+        with self.assertRaises(ValueError):
+            sgv.dispersion({"A": [0, 10 ** 400] * 5}, {"A": 10 ** 400})
+        n = 10 ** 307
+        est = sgv.dispersion({"A": [0, n] * 5}, {"A": n})["A"]
+        self.assertAlmostEqual(est / n, 10 / 9)
+
+    def test_dispersion_type_checks(self):
+        for call in (lambda: sgv.dispersion([[0, 4] * 5], ITEMS),
+                     lambda: sgv.dispersion({"A": [0, 4] * 5}, [4]),
+                     lambda: sgv.dispersion({"A": 5}, ITEMS),
+                     lambda: sgv.dispersion({1: [0, 4], "b": [0, 4]}, {}),   # mixed-type unit keys
+                     lambda: sgv.dispersion({"A": [0, 4] * 5}, ITEMS, task_type=["t"])):
+            with self.assertRaises(ValueError):
+                call()
+
     def test_malformed_inputs_raise(self):
         for call in (lambda: sgv.allocate({"A": [1] * 10}, ITEMS, 5, 1),        # reruns cost 10 > budget 5
                      lambda: sgv.dispersion({"A": [5] * 10}, ITEMS),              # count above items

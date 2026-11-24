@@ -52,6 +52,20 @@ class Quarantine(unittest.TestCase):
         with self.assertRaises(ValueError):
             Q.releasable(NOTES, {"e"}, {"b": "e"})  # a string support list
 
+    def test_verified_string_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Q.releasable(NOTES, "e")
+
+    def test_non_mapping_support_is_rejected(self):
+        for bad in (["b"], "b"):
+            with self.assertRaises(ValueError):
+                Q.releasable(NOTES, {"e"}, bad)
+
+    def test_non_string_ids_are_rejected(self):
+        mixed = [{"id": 1, "parents": []}, {"id": "x", "parents": []}]
+        with self.assertRaises(ValueError):
+            Q.verification_order(mixed, set())
+
 
 if __name__ == "__main__":
     unittest.main()

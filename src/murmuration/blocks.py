@@ -71,7 +71,11 @@ def assign(agents, task_groups):
     if isinstance(agents, (str, bytes, dict)) or not isinstance(agents, (list, tuple, range)):
         raise ValueError("agents must be a list, tuple or range, not a string")
     agents, n = list(agents), len(task_groups)
-    if len(set(agents)) != len(agents):
+    try:
+        repeats = len(set(agents)) != len(agents)
+    except TypeError:
+        raise ValueError("agents must be hashable") from None
+    if repeats:
         raise ValueError("agents must not repeat")
     if n == 0:
         return []
@@ -103,6 +107,8 @@ def assign(agents, task_groups):
 
 def upward(block_lines, summarise):
     """One summary line per block; the level above sees each block as one agent."""
+    if isinstance(block_lines, (str, bytes, dict)):
+        raise ValueError("block_lines must be a list of blocks, not a string")
     out = []
     for i, lines in enumerate(block_lines):
         line = summarise(lines)

@@ -10,6 +10,8 @@ MISSES = {
     "counts": [1, 1, 1, 0],     # catches e3 only (catch 0.25)
 }
 
+EXPECTED_HIDDEN = ["board", "actions", "actions", "actions", "board", "counts"]  # seeds 0, 1, 2, 3, 7, 42
+
 
 class MonitorSelection(unittest.TestCase):
     def test_greedy_prefers_complementary_views(self):
@@ -47,6 +49,23 @@ class MonitorSelection(unittest.TestCase):
                      lambda: M.select({1: [0, 1], "a": [1, 0]}, 1)):
             with self.assertRaises(ValueError):
                 call()
+
+    def test_non_list_rows_and_non_string_views_raise(self):
+        for call in (lambda: M.ensemble_catch({"a": {0: "x", 1: "y"}}, ["a"]),
+                     lambda: M.select({"a": {0: "miss", 1: "miss"}, "b": [0, 1]}, 1),
+                     lambda: M.select({"a": {0, 1}}, 1),
+                     lambda: M.select({"a": "01"}, 1),
+                     lambda: M.hidden_view(["a", 1], 0),
+                     lambda: M.hidden_view([["a"], "b"], 0),
+                     lambda: M.ensemble_catch({"a": [1, 0]}, [["a"]])):
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_hidden_view_seeds_are_replay_stable(self):
+        # Expected values computed from the current implementation (random.Random(seed).choice on sorted views).
+        sel = ["actions", "board", "counts"]
+        got = [M.hidden_view(sel, s) for s in (0, 1, 2, 3, 7, 42)]
+        self.assertEqual(got, EXPECTED_HIDDEN)
 
     def test_hidden_view_covers_every_selected_view_across_seeds(self):
         sel = ["actions", "board", "counts"]

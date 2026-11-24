@@ -85,5 +85,5 @@ class EvidenceLease:
             if scope in self.idle or scope in self.irreversible or scope in self.stale:
                 continue
             ub = self.bound((v, n), self._pooled(scope))
-            if ub is not None and ub < self.target:
+            if ub is not None and not isinstance(ub, bool) and ub < self.target:  # bool, like NaN, proves nothing
                 self.idle[scope] = 0
