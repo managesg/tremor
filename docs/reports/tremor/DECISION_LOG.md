@@ -205,3 +205,17 @@ The decision above named `83e4870` as the bytes to verify. That candidate failed
 | M4 L2-C and L3-C conjunctions | **Both conjuncts must hold** (intersection-union test, each at the stated level, no multiplicity adjustment), and each is reported separately | That is the proposal's own wording ("and"). An intersection-union test needs no correction and cannot be passed by one conjunct alone. | `prereg/R2-L2-C-protocol.md`, `prereg/R2-L3-C-protocol.md` (`462da48`) | none |
 | M4 L2: definition of R | **First-generation offspring, as in the proposal** (P:386) | The proposal is the frozen source. `quarantine.verification_order` ranks by descendant share, so the code aligns in the next candidate, after the `f62cfe1` windows, so the nominated bytes don't move now. | `462da48` conflict 1; `quarantine.py:83` | none (lane work) |
 | WSP-R2 (a second weight-reading eval batch) | **Not run** | Safety rule 8: a second live-eval batch needs a new current-session approval. | `prereg/WSP-R1-exp1-blind-read.md` (`5938fed`) | Alejandro (rule 8). |
+
+## 2026-11-24: L3-C harness definitions (line author, under OD4)
+
+`lab/l3c_harness.py` builds protocol section 6, steps 1-5, offline. These choices fill protocol OPEN items for the toy harness. They are recorded so the freeze can confirm them or replace them.
+
+- **Selector (L3-O3).** The pressured selector maximises the summed misses over the views it can see. The first candidate wins ties. The proposal's "look clean to one of them" (P:460) per-monitor form is not modelled, so the manipulation check is not computed yet.
+- **Fixed arm (L3-O3).** Its selector sees all selected views.
+- **Rotation seed (L3-O7).** The seed for each task is base seed plus task index, so adjacent base seeds alias. The seed map stays OPEN.
+- **Without pressure.** The mean ensemble catch over all n candidates of each task.
+- **Conservative arm (L3-O4).** An OR of view flags. It takes the first unflagged candidate, otherwise candidate 0. This proposal citation has no further definition.
+- **Scoring and loss.** Every arm is scored by the full selected ensemble. Loss is catch without pressure minus catch under pressure (step 4). The primary is loss(rotating) / loss(fixed) (step 5). The ratio refuses a fixed-arm loss at or below 0; the near-zero rule stays OPEN (L3-O10).
+- **Not modelled.** The operating point (L3-O9; inputs are thresholded 0/1 bits), equal monitor calls, and the other baseline arms.
+
+Independent review: REJECT on the first cut (missing step 5, untested seed and greedy behaviour, unchecked view input), then fixed. All five targeted mutants are now killed.
