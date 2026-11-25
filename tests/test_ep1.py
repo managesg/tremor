@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import fakeclaude  # noqa: E402
 from murmuration import __main__ as cli  # noqa: E402
-from murmuration import analysis, ep1, formal_alloc, manifest, router, spend  # noqa: E402
+from murmuration import analysis, ep1, formal_alloc, manifest, router, spend, team_claude  # noqa: E402
 from murmuration import backend_claude as bc  # noqa: E402
 from murmuration.trapbench import alloc, alloc2  # noqa: E402
 
@@ -746,7 +746,7 @@ class CliTests(Base):
 
     def test_refuses_without_the_confirm_flag_and_without_the_key(self):
         out = os.path.join(self.d, "cliout")
-        for cmd in ("canary", "pilot", "pilot2", "pilot3", "run"):
+        for cmd in ("canary", "pilot", "pilot2", "pilot3", "pilot4", "run"):
             rc, text = self.run_cli(["ep1", cmd, "--out-dir", out], {ep1.KEY_ENV: KEY})  # key but no confirm
             self.assertEqual(rc, 2)
             self.assertIn("--i-have-owner-confirm", text)
@@ -927,12 +927,12 @@ class CliTests(Base):
         common = ["--i-have-owner-confirm", "--base-url", url, "--ledger-dir", self.ldir, "--price-sheet", sheet,
                   "--review", self.review]
         outs = []
-        for cmd, out in (("canary", "c"), ("pilot", "p"), ("pilot2", "p2"), ("pilot3", "p3")):
+        for cmd, out in (("canary", "c"), ("pilot", "p"), ("pilot2", "p2"), ("pilot3", "p3"), ("pilot4", "p4")):
             rc, text = self.run_cli(["ep1", cmd, "--out-dir", os.path.join(self.d, out)] + common, {ep1.KEY_ENV: KEY})
             outs.append(text)
             self.assertNotIn(KEY, text)
             self.assertEqual(rc, 0, text)
-        self.assertEqual([json.loads(t)["reason"] for t in outs[1:]], ["complete"] * 3)
+        self.assertEqual([json.loads(t)["reason"] for t in outs[1:]], ["complete"] * 4)
         self.assertNotIn(KEY.encode(), files_text(self.d))  # ledger, schedule, episodes, trace, canary, final
         self.assertTrue(all(KEY not in t for t in outs))
         self.assertIn(b"[redacted]", files_text(self.ldir))  # the echoed key was scrubbed, not stored
@@ -945,7 +945,7 @@ class CliTests(Base):
         self.assertEqual(rc, 2)
 
     def test_base_url_alone_is_refused(self):  # G0-2R3 N10: a fake canary must not settle in the real runs/spend
-        for cmd in ("canary", "pilot", "pilot2", "pilot3", "run"):
+        for cmd in ("canary", "pilot", "pilot2", "pilot3", "pilot4", "run"):
             rc, text = self.run_cli(["ep1", cmd, "--out-dir", os.path.join(self.d, "z" + cmd), "--i-have-owner-confirm",
                                      "--base-url", "http://127.0.0.1:9"], {ep1.KEY_ENV: KEY})
             self.assertEqual(rc, 2, text)
@@ -1278,6 +1278,54 @@ class Pilot3Tests(Base):
         self.assertTrue(out["reason"].startswith("stopped:"))
         with self.assertRaises(spend.BatchStopped):
             self.batch("pilot3", n_sets=1, canary=False)
+
+
+class Pilot4Tests(Base):
+    """Pilot 4 is the pilot 3 design; only the round-2 instruction line differs (array_only wording)."""
+    BASE = team_claude.TURN_BASELINE_LAST
+    WORDING = "Return exactly one JSON action array, starting with [ and ending with ]. Do not include any other text."
+
+    def bodies(self, kind, out):
+        self.batch(kind, n_sets=1, out=out, canary=kind != "pilot4")
+        return [json.dumps(x["body"], sort_keys=True) for x in self.seen]
+
+    def test_pilot4_registration_and_plan_equal_pilot3(self):
+        for seed in range(6):
+            self.assertEqual(ep1.plan("pilot4", seed), ep1.plan("pilot3", seed))
+        self.assertEqual(spend.BATCH_SPECS["pilot4"], spend.BATCH_SPECS["pilot3"])
+        self.assertEqual((ep1.ID_PREFIX["pilot4"], ep1.DEFAULT_SETS["pilot4"], ep1.SPLIT["pilot4"]), ("p4", 6, "train"))
+
+    def test_round1_identical_and_round2_differs_only_in_the_instruction_line(self):
+        b3 = self.bodies("pilot3", "p3")
+        b4 = self.bodies("pilot4", "p4")
+        self.assertEqual(len(b3), len(b4))
+        self.assertEqual(len(b3), 40)
+        r1 = r2 = 0
+        for x, y in zip(b3, b4):
+            if "Round 1 of 2" in x:
+                self.assertEqual(x, y)
+                r1 += 1
+            else:
+                self.assertIn("Round 2 of 2", x)
+                self.assertNotEqual(x, y)
+                self.assertEqual(x.replace(self.BASE, self.WORDING), y)
+                self.assertEqual(x.count(self.BASE), 1)
+                r2 += 1
+        self.assertEqual((r1, r2), (20, 20))
+
+    def test_wording_digest_is_recorded_only_for_pilot4(self):
+        self.batch("pilot3", n_sets=1, out="p3")
+        self.batch("pilot4", n_sets=1, out="p4", canary=False)
+        digest = hashlib.sha256(self.WORDING.encode()).hexdigest()
+        self.assertEqual(team_claude.PILOT4_ROUND2_WORDING, self.WORDING)
+        self.assertEqual({r["round2_wording_sha256"] for r in self.records("p4")}, {digest})
+        self.assertTrue(all("round2_wording_sha256" not in r for r in self.records("p3")))
+
+    def test_pilot4_refused_after_a_canary_stop(self):
+        out, _ = self.canary(with_stop("max_tokens"))
+        self.assertTrue(out["reason"].startswith("stopped:"))
+        with self.assertRaises(spend.BatchStopped):
+            self.batch("pilot4", n_sets=1, canary=False)
 
 
 def _gate(cells, n_sets=6):

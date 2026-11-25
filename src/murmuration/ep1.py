@@ -1,6 +1,6 @@
 """EP-1 batch driver: canary, pilot and the pre-registered EP-1 schedule (prereg/EP1.md sections 6, 10, 12). stdlib only.
 
-`run_batch(kind, client, ledger, schedule_seed, outdir, dry_run=False)` for kind in canary, pilot, pilot2, pilot3, ep1. One process, one
+`run_batch(kind, client, ledger, schedule_seed, outdir, dry_run=False)` for kind in canary, pilot, pilot2, pilot3, pilot4, ep1. One process, one
 ledger file per batch, one episode at a time. Output directory: `schedule.json` (the plan), `episodes.jsonl` (append-only,
 one line per episode attempt), `events.jsonl` (interrupted attempts), `final.json` (stop reason and ledger report), and for
 the pilot `pilot_trace.txt` (compact per-episode trace for manual review).
@@ -49,18 +49,18 @@ KEY_ENV = "MURMURATION_EP1_KEY"
 REVIEW_FILE = os.path.join(ROOT, "docs", "reports", "card-A-review.md")  # non-author review; names the card sha256
 PRICE_SHEET = os.path.join(ROOT, "docs", "reports", "price-sheet.json")
 PILOT_DIR = os.path.join(ROOT, "practices", "pilot")
-KINDS = ("canary", "pilot", "pilot2", "pilot3", "ep1")
-PILOTS = ("pilot", "pilot2", "pilot3")  # pilots 2 and 3: same 5 conditions, own batch and ids (design notes, prereg change 19)
+KINDS = ("canary", "pilot", "pilot2", "pilot3", "pilot4", "ep1")
+PILOTS = ("pilot", "pilot2", "pilot3", "pilot4")  # pilots 2 to 4: same 5 conditions, own batch and ids (design notes, prereg change 19)
 BASE_CONDS = ("none", "play", "code")
 PILOT_CARDS = {"states_check": "states_the_check.md", "keyword_stuffed": "keyword_stuffed.md"}
 COND_TAG = {"states_check": "sc", "keyword_stuffed": "kw"}
-DEFAULT_SETS = {"ep1": 20, "pilot": 3, "pilot2": 6, "pilot3": 6}  # pilot: 3 x 5 x 8 = 120 of 150; pilot2/3: 6 x 5 x 8 = 240 of 260
-SPLIT = {"ep1": "heldout", "pilot": "train", "pilot2": "train", "pilot3": "train"}
-ID_PREFIX = {"pilot2": "p2", "pilot3": "p3"}  # pilots 2 and 3 rerun pilot 1's train sets: ids must not collide in the ledger directory
+DEFAULT_SETS = {"ep1": 20, "pilot": 3, "pilot2": 6, "pilot3": 6, "pilot4": 6}  # pilot: 3 x 5 x 8 = 120 of 150; pilot2/3: 6 x 5 x 8 = 240 of 260
+SPLIT = {"ep1": "heldout", "pilot": "train", "pilot2": "train", "pilot3": "train", "pilot4": "train"}
+ID_PREFIX = {"pilot2": "p2", "pilot3": "p3", "pilot4": "p4"}  # pilots 2 to 4 rerun pilot 1's train sets: ids must not collide in the ledger directory
 # Owner 2026-11-20 (prereg 16b): pilot 2 runs both task orders (team_claude.TASK_ORDERS). Each task set gets one order,
 # balanced and seeded without the arm; every condition of a set runs with that order, so arm contrasts are within-order.
 # Other kinds carry no task_order in their plan and run the default shared order.
-ORDER_KINDS = ("pilot2", "pilot3")  # pilot 3 repeats the pilot 2 design (prereg change 19)
+ORDER_KINDS = ("pilot2", "pilot3", "pilot4")  # pilot 3 repeats the pilot 2 design (prereg change 19)
 ORDER_TAG = {"per_agent": "pa"}  # in the episode id after the kind prefix; shared adds nothing (ids as before)
 CALLS_PER_EPISODE = 8
 CANARY_BYTES = 90_000
@@ -723,6 +723,7 @@ def dry_run_all(outdir, schedule_seed=0, review=None, third_scorer=None, n_sets=
     out["ep1_report"] = analyse(os.path.join(outdir, "ep1"))
     out["pilot2_report"] = analyse(os.path.join(outdir, "pilot2"))
     out["pilot3_report"] = analyse(os.path.join(outdir, "pilot3"))
+    out["pilot4_report"] = analyse(os.path.join(outdir, "pilot4"))
     out["bracket"] = _bracket(outdir, schedule_seed, review, third_scorer)
     out["verdict"] = "GREEN" if out["bracket"]["floor_fails"] and out["bracket"]["oracle_passes"] else "VOID"
     return out
@@ -770,7 +771,7 @@ def cli(a):
         raise ValueError("refused: --ledger-dir is a test hook that needs --base-url")
     if a.base_url and not a.ledger_dir:  # G0-2R3 N10: a fake run must never settle a batch in the real pinned ledger
         raise ValueError("refused: --base-url is a test hook that needs --ledger-dir")
-    kind = {"canary": "canary", "pilot": "pilot", "pilot2": "pilot2", "pilot3": "pilot3", "run": "ep1"}[c]
+    kind = {"canary": "canary", "pilot": "pilot", "pilot2": "pilot2", "pilot3": "pilot3", "pilot4": "pilot4", "run": "ep1"}[c]
     if kind == "ep1" and not a.base_url:
         _check_freeze()  # Before the Ledger constructor can create its directory.
     try:

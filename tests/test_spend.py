@@ -1002,7 +1002,7 @@ class Pilot2Tests(unittest.TestCase):
             self.assertLessEqual(sp["usd"], spend.BATCH_SPECS[spend._lineage(n, spend.BATCH_SPECS)[-1]]["usd"])
         total = sum(spend.BATCH_SPECS[n]["usd"] for n in roots)
         self.assertLessEqual(total, spend.HARD_CAP_USD)
-        self.assertAlmostEqual(spend.HARD_CAP_USD - total, 1.00)  # pilot2 and pilot3 came out of the unallocated 1.50
+        self.assertAlmostEqual(spend.HARD_CAP_USD - total, 0.75)  # pilot2, pilot3 and pilot4 came out of the unallocated 1.50
 
     def test_pilot2_refused_unless_the_canary_completed(self):
         with self.assertRaises(spend.BatchStopped):  # canary never ran

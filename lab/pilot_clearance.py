@@ -40,13 +40,17 @@ def _usage(turns):
     return usage
 
 
-def _validate_episodes(schedule, rows):
-    plan = ep1.plan("pilot3", 0)
+def _label(batch):
+    return "Pilot " + batch[5:]
+
+
+def _validate_episodes(schedule, rows, batch="pilot3"):
+    plan = ep1.plan(batch, 0)
     _require(
-        schedule["kind"] == "pilot3" and schedule["dry_run"] is False
+        schedule["kind"] == batch and schedule["dry_run"] is False
         and type(schedule["schedule_seed"]) is int and schedule["schedule_seed"] == 0
         and schedule["plan"] == plan,
-        "saved schedule differs from the Pilot 3 design",
+        f"saved schedule differs from the {_label(batch)} design",
     )
     expected = [(block["set"], block["task_order"], cond) for block in plan for cond in block["order"]]
     _require([(r["set"], r["task_order"], r["cond"]) for r in rows] == expected,
@@ -56,10 +60,10 @@ def _validate_episodes(schedule, rows):
     for row in rows:
         episode = row["episode_id"]
         _require(
-            row["kind"] == row["batch"] == "pilot3" and row["schedule_seed"] == 0
+            row["kind"] == row["batch"] == batch and row["schedule_seed"] == 0
             and row["ended"] == "complete" and row["valid"] is True and row["void"] is None
             and row["attempt"] == 0 and row["calls"] == 8,
-            f"incomplete or unexpected Pilot 3 episode: {episode}",
+            f"incomplete or unexpected {_label(batch)} episode: {episode}",
         )
         taskset = alloc.gen(row["set"], "train")
         digest = hashlib.sha256(alloc.dumps(taskset).encode()).hexdigest()
@@ -89,11 +93,11 @@ def _validate_episodes(schedule, rows):
     return turns
 
 
-def _reconcile(final, ledger, rows, turns):
-    _require(all(line["batch"] == "pilot3" for line in ledger), "unexpected ledger batch")
+def _reconcile(final, ledger, rows, turns, batch="pilot3"):
+    _require(all(line["batch"] == batch for line in ledger), "unexpected ledger batch")
     _require(len(ledger) == 2 * len(turns) + 2, "incomplete or unexpected ledger length")
     _require(ledger[0]["kind"] == "batch_open" and ledger[-1]["kind"] == "batch_stop"
-             and ledger[-1]["reason"] == "complete", "ledger lacks completed Pilot 3 bookends")
+             and ledger[-1]["reason"] == "complete", f"ledger lacks completed {_label(batch)} bookends")
     for turn, offset in zip(turns, range(1, len(ledger) - 1, 2), strict=True):
         reserve, charge = ledger[offset:offset + 2]
         call_id = turn["call_id"]
@@ -109,7 +113,7 @@ def _reconcile(final, ledger, rows, turns):
     usage = _usage(turns)
     usd = math.fsum(t["usd"] for t in turns)
     _require(
-        final["kind"] == summary["batch"] == "pilot3" and final["reason"] == summary["stop_reason"] == "complete"
+        final["kind"] == summary["batch"] == batch and final["reason"] == summary["stop_reason"] == "complete"
         and final["aborts"] == 0 and final["episodes"] == len(rows)
         and final["voids"] == dict.fromkeys(ep1.BASE_CONDS + tuple(ep1.PILOT_CARDS), 0)
         and summary["calls"] == len(turns) and summary["tokens"] == sum(usage.values())
@@ -149,14 +153,14 @@ def _usage_readout(rows):
     }
 
 
-def audit(directory: Path, ledger_path: Path):
-    """Return the replay, or raise when Pilot 3 evidence is missing or inconsistent."""
+def audit(directory: Path, ledger_path: Path, batch="pilot3"):
+    """Return the replay, or raise when the batch's (default Pilot 3) evidence is missing or inconsistent."""
     schedule, schedule_sha = _read(directory / "schedule.json")
     rows, episodes_sha = _read(directory / "episodes.jsonl", lines=True)
     final, final_sha = _read(directory / "final.json")
     ledger, ledger_sha = _read(ledger_path, lines=True)
-    turns = _validate_episodes(schedule, rows)
-    local_ledger = _reconcile(final, ledger, rows, turns)
+    turns = _validate_episodes(schedule, rows, batch)
+    local_ledger = _reconcile(final, ledger, rows, turns, batch)
 
     core_rows = [row for row in rows if row["cond"] in CORE]
     all_rows = _usage_readout(rows)
@@ -185,7 +189,7 @@ def audit(directory: Path, ledger_path: Path):
         "7_console_and_manual_review": "unavailable",
     }
     return {
-        "batch": "pilot3",
+        "batch": batch,
         "clearance": "failed" if "fail" in criteria.values() else "incomplete",
         "source_sha256": {"schedule": schedule_sha, "episodes": episodes_sha, "final": final_sha, "ledger": ledger_sha},
         "readouts": {"all_conditions": all_rows, "core": core, "per_order": orders, "per_condition": conditions},
@@ -213,11 +217,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
     parser.add_argument("ledger", type=Path)
+    parser.add_argument("--batch", default="pilot3", choices=("pilot3", "pilot4"))
     args = parser.parse_args(argv)
     try:
-        result = audit(args.directory, args.ledger)
+        result = audit(args.directory, args.ledger, args.batch)
     except (OSError, KeyError, TypeError, ValueError) as error:
-        parser.exit(2, f"Pilot 3 evidence unavailable or inconsistent: {error}\n")
+        parser.exit(2, f"{_label(args.batch)} evidence unavailable or inconsistent: {error}\n")
     print(json.dumps(result, sort_keys=True, indent=2))
     return 0
 

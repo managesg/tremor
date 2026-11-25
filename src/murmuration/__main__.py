@@ -102,7 +102,7 @@ def build_parser():
     d.add_argument("--out-dir", required=True)
     d.add_argument("--schedule-seed", type=int, default=0)
     d.add_argument("--review", default=ep1.REVIEW_FILE, help="recorded non-author review of the play card")
-    for name in ("canary", "pilot", "pilot2", "pilot3", "run"):
+    for name in ("canary", "pilot", "pilot2", "pilot3", "pilot4", "run"):
         g = es.add_parser(name, help=f"paid {name}: needs --i-have-owner-confirm and MURMURATION_EP1_KEY in the environment")
         g.add_argument("--out-dir", required=True)
         g.add_argument("--schedule-seed", type=int, default=0)

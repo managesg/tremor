@@ -45,6 +45,10 @@ ROUND_ORDER = (("claim",), ("claim", "work", "release"))  # prereg section 6; `p
 ALLOWED_TEXT = ("This round send one action: claim one task, or pass.",
                 "This round send, in this order and each optional: one claim, one work (task, integer answer, a name), "
                 "one release; or pass alone.")
+# pilot4 round 2 only: replaces turn.md's last line (turn.md's hash stays pinned); wording from lab/pilot3_prompt_replay.py array_only
+TURN_BASELINE_LAST = "Reply with one JSON array."
+PILOT4_ROUND2_WORDING = "Return exactly one JSON action array, starting with [ and ending with ]. Do not include any other text."
+PILOT4_ROUND2_WORDING_SHA256 = hashlib.sha256(PILOT4_ROUND2_WORDING.encode()).hexdigest()
 SPEC = {"claim": {"item": str}, "pass": {}, "release": {"item": str, "done": bool},
         "work": {"task": str, "answer": int, "name": str}}
 OPTIONAL = {("release", "done")}
@@ -247,8 +251,12 @@ class _ModelEpisode(team._Episode):
         claims = json.dumps(view["claims"], sort_keys=True, separators=(",", ":"))
         user = _fill(head, round=rnd + 1, rounds=2, agent=agent, left=2 - rnd, allowed=ALLOWED_TEXT[min(rnd, 1)],
                      tasks=tasks)
-        user = practicemod.attach(user, self.cards[agent])[0] + _fill(
-            tail.lstrip("\n"), claims=claims, status=self.last.get(agent, "none yet"))
+        tail = _fill(tail.lstrip("\n"), claims=claims, status=self.last.get(agent, "none yet"))
+        if self.batch == "pilot4" and rnd == 1:
+            if not tail.endswith(TURN_BASELINE_LAST):
+                raise ValueError("turn template last line is not the expected instruction")
+            tail = tail[:-len(TURN_BASELINE_LAST)] + PILOT4_ROUND2_WORDING
+        user = practicemod.attach(user, self.cards[agent])[0] + tail
         return self.system, user
 
     def calling(self, rnd):
@@ -515,6 +523,7 @@ def run_episode_model(taskset, arm, practice, client, seed=0, batch=None, n_agen
             "malformed": mal, "malformed_by_reason": dict(ep.malformed), "model_refusals": ep.model_refusals,
             "refused": len(ep.reasons), "refusals": list(ep.reasons), "stopped_agents": sorted(ep.stopped),
             "violations_executed": ep.violations, "card_sha256": ep.card_sha, "template_sha256": template_hashes(tpl),
+            **({"round2_wording_sha256": PILOT4_ROUND2_WORDING_SHA256} if batch == "pilot4" else {}),
             "taskset_sha256": hashlib.sha256(alloc.dumps(taskset).encode()).hexdigest(),
             "taskset_id": f"{taskset['split']}:{taskset['seed']}",
             "agent_answers": [{"agent": e["agent"], "task": e["task"], "answer": e["answer"],

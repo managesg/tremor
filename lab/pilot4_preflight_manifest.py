@@ -44,8 +44,9 @@ def _candidate_schedule(archive, rows, model):
     _require(historical["kind"] == "pilot3" and historical["model"] == model
              and historical["schedule_seed"] == 0 and historical["plan"] == blocks,
              "historical schedule does not match seed-zero Pilot 3 plan")
-    _require(BATCH not in ep1.KINDS and BATCH not in spend.BATCH_SPECS
-             and PREFIX not in ep1.ID_PREFIX.values(), "prospective batch namespace already registered")
+    _require(BATCH in ep1.KINDS and spend.BATCH_SPECS[BATCH] == spend.BATCH_SPECS["pilot3"]
+             and ep1.ID_PREFIX[BATCH] == PREFIX and ep1.plan(BATCH, 0) == blocks,
+             "registered pilot4 spec, prefix or plan differs from the expected ones")
     cells = [(block, condition) for block in blocks for condition in block["order"]]
     _require(len(rows) == len(cells) == 30, "expected thirty historical episodes")
     schedule = []
