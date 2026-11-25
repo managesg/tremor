@@ -85,8 +85,8 @@ Repo `/home/adelmar/SeaBridgeAI/murmuration` master, HEAD `f791802`, local only.
 | M4 L2-C, L3-C, L4-C DRAFT protocols (this file:32) | each cites sources or marks OPEN; independent review ACCEPT | DONE (`462da48`, `625ab34`) |
 | M4 L3-C harness (this file:32) | reuses monsel; mutants killed; review | DONE (`1dabf53`) |
 | M4 readiness register tracked (this file:32) | file committed, sha256 `1352e894` unchanged | DONE (`f791802`) |
-| M4 L4-O15: align `lab/l4_adaptive_replay_policy.py` to "either reading rises" (this file:32) | test fails on current code, passes after; clean-archive lab suite OK | READY |
-| M4 commit lab and docs cited by the three drafts that are still untracked (this file:32) | every cited path is tracked; sha256 unchanged | READY |
+| M4 L4-O15: align `lab/l4_adaptive_replay_policy.py` to "either reading rises" (this file:32) | test fails on current code, passes after; clean-archive lab suite OK | DONE (committed after `c0daf55`; lab 1010 tests, same 10 host errors) |
+| M4 commit lab and docs cited by the three drafts that are still untracked (this file:32) | every cited path is tracked; sha256 unchanged | DONE (`c0daf55`, 40 files) |
 | M4 advisory test gaps in quarantine and sgv (this file:32) | tests only, in the next candidate after the windows | NOT STARTED: waits for the windows (changing module tests moves the tree) |
 | M4 full freezes L2-L4 (this file:32) | OPEN items closed, freeze record with protocol sha and tree hash | BLOCKED: line authors, custodian, Alejandro admission |
 | M2, M7 (this file:18, :41) | D8 refetch, Pilot 4, EP-1 | BLOCKED: Alejandro (paid calls) |
