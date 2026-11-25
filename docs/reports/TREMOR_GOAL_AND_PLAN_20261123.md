@@ -73,6 +73,28 @@ The data map lists no TREMOR data, and no TREMOR step depends on AWS or PC data.
 - **M8 SmolLM3 weights and backing storage:** waiting on the storage operator's admission, not on the transfer.
 - **AWS:** none needed. The only AWS reference in `docs/reports/workplan-ep/` is the M2 hold in `Pilot4-pricing-verification-gates.md`. This lane never connects to AWS.
 
+## Hourly checklist (2026-11-25, Assistant instruction; refresh at least hourly)
+
+Repo `/home/adelmar/SeaBridgeAI/murmuration` master, HEAD `f791802`, local only. Acceptance 1/10 (M1). Candidate `f62cfe1`. Status key: DONE, IN PROGRESS, BLOCKED (owner), NOT STARTED. Milestone rows are lines 18-49 of this file.
+
+| Item (file:line) | Acceptance | Status |
+|---|---|---|
+| M3 Gate R1 rows 155-165, 169 (this file:22) | independent bench ACCEPT at `f62cfe1` (`runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md`) | DONE |
+| M3 row 167 (this file:22; `X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`) | custody binding, L5 admission, reveal review | BLOCKED: custodian (Assistant), then Alejandro |
+| M3 three quiet-machine windows (this file:22; packet `f80a26c`) | three ELIGIBLE windows on `f62cfe1`, roster 912/929 | BLOCKED: PC (freeze, host reviewer, operator, D2); the lane's yes is recorded (`628f9b4`) |
+| M4 L2-C, L3-C, L4-C DRAFT protocols (this file:32) | each cites sources or marks OPEN; independent review ACCEPT | DONE (`462da48`, `625ab34`) |
+| M4 L3-C harness (this file:32) | reuses monsel; mutants killed; review | DONE (`1dabf53`) |
+| M4 readiness register tracked (this file:32) | file committed, sha256 `1352e894` unchanged | DONE (`f791802`) |
+| M4 L4-O15: align `lab/l4_adaptive_replay_policy.py` to "either reading rises" (this file:32) | test fails on current code, passes after; clean-archive lab suite OK | READY |
+| M4 commit lab and docs cited by the three drafts that are still untracked (this file:32) | every cited path is tracked; sha256 unchanged | READY |
+| M4 advisory test gaps in quarantine and sgv (this file:32) | tests only, in the next candidate after the windows | NOT STARTED: waits for the windows (changing module tests moves the tree) |
+| M4 full freezes L2-L4 (this file:32) | OPEN items closed, freeze record with protocol sha and tree hash | BLOCKED: line authors, custodian, Alejandro admission |
+| M2, M7 (this file:18, :41) | D8 refetch, Pilot 4, EP-1 | BLOCKED: Alejandro (paid calls) |
+| M5, M6, M9 (this file:35, :38, :47) | admitted native runs | BLOCKED: Alejandro; preconditions unmet |
+| M8 (this file:44) | runner reviewer accepts closure `a6a7875`; memory, storage paths; 0.1 GPU-h reservation | BLOCKED: runner reviewer, Spark operator, PC binding |
+| M10 (this file:49) | Console totals, T7, timer executor | BLOCKED: PC |
+| WSP-R1 (`prereg/WSP-R1-exp1-blind-read.md`) | real 4/4, shuffled 1/4 recorded; spend reconciled | DONE; spend reconciliation BLOCKED: Assistant |
+
 ## Blockers and next items (refreshed 2026-11-24 about 14 UTC, owner request via PC msg_caa7882ac737)
 
 Acceptance: 1/10 (M1). Candidate of record `f62cfe1` (tree `cdaee764…`). All commits are local; nothing is pushed.
