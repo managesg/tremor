@@ -93,7 +93,7 @@ Repo `/home/adelmar/SeaBridgeAI/murmuration` master, HEAD `f791802`, local only.
 | M5, M6, M9 (this file:35, :38, :47) | admitted native runs | BLOCKED: Alejandro; preconditions unmet |
 | M8 (this file:44) | runner reviewer accepts closure `a6a7875`; memory, storage paths; 0.1 GPU-h reservation | BLOCKED: runner reviewer, Spark operator, PC binding |
 | M10 (this file:49) | Console totals, T7, timer executor | BLOCKED: PC |
-| WSP-R1 (`prereg/WSP-R1-exp1-blind-read.md`) | real 4/4, shuffled 1/4 recorded; spend reconciled | DONE; spend reconciliation BLOCKED: Assistant |
+| WSP-R1 (`prereg/WSP-R1-exp1-blind-read.md`; prereg `5367f53`, result `5938fed`) | real 4/4, shuffled 1/4 recorded; spend reconciled | DONE; spend: tokens measured by the Assistant (8 calls: input 62, output 39,791, cache create 983,957, cache read 1,841,140; file not readable on this host), cost not computed, unknown not zero; BLOCKED on a billing ledger |
 
 ## Blockers and next items (refreshed 2026-11-24 about 14 UTC, owner request via PC msg_caa7882ac737)
 
