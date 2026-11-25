@@ -261,3 +261,13 @@ Request 2 (storage operator): the SmolLM3-3B weights are not on this host; the r
 ## 2026-11-25: package skip count on a bare archive (hourly re-check)
 
 A bare `git archive 01dcec8` run on Spark gives package 913 OK with 21 skips: 20 Lean tests skip because `data/tools/lean/lean-4.35.0-linux_aarch64` is outside git ("Lean 4.35.0 toolchain absent"), and 1 needs torch. The pinned container mounts the toolchain read-only, so the window roster must show 1 skip, not 21; a window that shows 20 Lean skips is insufficient (mount missing). Not a regression. The lab suite shows the same 10 host-only errors (numpy, torch, pilot3 inputs).
+
+## 2026-11-25: Pilot 4 D8 rulings (line author under OD4; paid-call budget USD 10 total approved by the owner via PC, running total 0.00)
+
+Source: independent Opus plan over `OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md`, `Pilot4-pricing-verification-gates.md`, `P3-clearance-criterion-2.md`, `EP1.md`.
+- **D8-b wording: `array_only`** (`lab/pilot3_prompt_replay.py:18`). Every Pilot 3 overage had text before the final array (`P3-clearance-criterion-2.md:7`); 1,586 bytes against the 2,000-byte cap. Limit: the offline replays hold archived replies fixed, so neither wording is shown to shorten replies.
+- **D8-c scoring:** no new ruling; `EP1.md:997-1007` and `:1297` already fix it (core 144 calls for the 150-token maximum and for format and arithmetic; whole batch for zero `max_tokens`; shape, identity and spend over all attempts).
+- **D8-d order:** apply the rule unchanged; Pilot 4 never replaces Pilot 3's `shared` selection (`EP1.md:279`); a different or absent order result goes back to the author and the EP-1 freeze stays blocked.
+- **D8-e second canary: none.** Pilot 2 precedent (`EP1.md:990-992`); `spend.py` changes since the reviewed canary touch no rate or charge code; the first Pilot 4 call is the test and an HTTP 400 stops the batch.
+- **Check 7 substitution (P6):** ledger charges are compared with each response's `usage` and `msg_` ids and an independent agent hand-reads the 30 episodes; recorded as an EP1 section 19 deviation, and check 7 stays PENDING (not passed) until a human reads the Console.
+- **Not yet possible:** no paid call has run. `MURMURATION_EP1_KEY` is unset in this session (reported to PC, msg_2d41fd44eea9); the price sheet lapsed 2026-11-24 and is refetched only just before the window, because a sheet is valid 3 days. M7 stays blocked (no spend figure, protocol or custodian). EP-1 needs all seven Pilot 4 checks and the author's freeze.
