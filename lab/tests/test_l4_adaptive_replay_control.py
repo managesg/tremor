@@ -96,6 +96,13 @@ class CausalReplayTests(unittest.TestCase):
         self.assertEqual(source_twin[3]["decision"], last["decision"])
         self.assertNotEqual(source_twin[3]["source_prefix_sha256"], last["source_prefix_sha256"])
 
+    def test_either_diagnostic_rising_lowers_strength(self):
+        old, same, rise = self.windows
+        for single in (replace(rise, predicates=same.predicates), replace(rise, relay=same.relay)):
+            with self.subTest(case=single):
+                result = self.decision((old, same, single), pins=FIXTURE_PINS | {2: window_pin(single)})
+                self.assertEqual((result["strength"], result["reason"]), (0, "a_diagnostic_rose"))
+
     def test_future_archive_is_not_read_and_visible_bad_pin_refuses(self):
         old, same, rise = self.windows
         bad = replace(rise, relay=replace(rise.relay, path=self.root / "absent"))
@@ -113,8 +120,7 @@ class CausalReplayTests(unittest.TestCase):
             (replace(rise, predicates=(None, True, True)), "unknown_diagnostic"),
             (replace(rise, terminal="operational_stop"), "unknown_diagnostic"),
             (replace(rise, protocol="another-clock"), "incomparable_windows"),
-            (replace(rise, predicates=same.predicates), "no_lowering"),
-            (replace(rise, relay=same.relay), "no_lowering"),
+            (replace(rise, predicates=same.predicates, relay=same.relay), "no_lowering"),
         ):
             with self.subTest(case=incomplete):
                 result = self.decision((old, same, incomplete), pins=FIXTURE_PINS | {2: window_pin(incomplete)})

@@ -127,9 +127,9 @@ def decide(windows, *, day, current, weaker, clock, expected_windows):
             reason = "incomparable_windows"
         else:
             before, after = (Fraction(sum(row["root_counts"].values()), len(row["root_counts"])) for row in receipts)
-            rise = after > before and new["confirmed_recovery_night"] > old["confirmed_recovery_night"]
-            if rise and current > weaker:
-                strength, reason = weaker, "both_diagnostics_rose"
+            rises = (after > before, new["confirmed_recovery_night"] > old["confirmed_recovery_night"])
+            if any(rises) and current > weaker:
+                strength, reason = weaker, "both_diagnostics_rose" if all(rises) else "a_diagnostic_rose"
             else:
                 reason = "no_lowering"
     return {"day": day, "strength": strength, "reason": reason, "diagnostics": receipts}
