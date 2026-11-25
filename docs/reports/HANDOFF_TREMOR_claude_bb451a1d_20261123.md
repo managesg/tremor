@@ -52,3 +52,15 @@
 - Edit the shared working tree's other-session files. Twelve `lab/` files are preserved as uncommitted working-tree edits; their list is in `runs/x42-rebuild-lineage-receipt.fPcr5u/working-tree-newer-than-commit.txt`.
 - Run `git restore` or `git reset` (both are refused by policy). Use the `GIT_INDEX_FILE` temporary-index commit and `git update-index --cacheinfo` instead.
 - Push, spend, install, delete, or touch systemd.
+
+## Evidence block, 2026-11-25 about 01:00 UTC (Sonnet 5.5; sessions continued from the Opus 5.5 lane chat)
+
+Repo `/home/adelmar/SeaBridgeAI/murmuration` master, HEAD `398391c`, local only, nothing pushed. Acceptance 1/10 (M1). Candidate of record `f62cfe1` (tree `cdaee764…`).
+
+- **Checklist progress:** the hourly checklist is in `docs/reports/TREMOR_GOAL_AND_PLAN_20261123.md`, "Hourly checklist (2026-11-25)". Done since `f62cfe1`: M4 draft protocols for L2-C, L3-C and L4-C, the L3-C harness, the quarantine R alignment, the L4 policy alignment, the M4 readiness register and 40 cited files tracked, the OD4 decisions (`628f9b4`, `f33164d`), the M8 requests (`398391c`), and the advisory-gaps patch (prepared, not applied).
+- **Passing suites:**
+  - Container, pinned image, offline and read-only, at `f62cfe1`: package 912 OK, lab 929 OK, exit 0 (`runs/container-suite-f62cfe1.z58nsD`, EVIDENCE.sha256 `bc905905…`).
+  - Clean archive of HEAD plus the L4 alignment, host: lab 1010 tests, the same 10 host-environment errors (numpy, torch, pilot3), 9 skipped. Package on the quarantine R change: 913 OK (skipped 21).
+- **Endpoints and frontend:** none apply. TREMOR is a research repo with no servers or frontend, and no live, native or shared-data proof is claimed.
+- **git diff --stat since `f62cfe1`:**  54 files changed, 6172 insertions(+), 28 deletions(-).
+- **Open gates (owner, smallest action):** X42 windows and M8 placement (PC); row 167 N2 binding (custodian) then L5 (Alejandro); M2/M7 paid calls and M3 R3/M5/M6/M9 admissions (Alejandro); M8 closure review and storage paths (runner reviewer, Spark operator; requests `398391c`); M10 (PC); WSP-R1 spend (Assistant). Details: `~/.agents/agent-manager/pilot-lanes/outbox/tremor-coordinator-status.md`.
