@@ -52,7 +52,7 @@ Paths are relative to the repository root.
   - **Blocker owners:**
     - The release owner and Alejandro own release adoption and G8 sharing.
     - The claims reviewer and resource owner own the provider Console totals and T7 accounting. The provisional 4.0 GPU-hour T7 hold stays until it is backed by evidence.
-- [ ] **Goal registry BLOCKED.** The chat goal is null and the registry reports `paused`. **Blocker owners:** PC 7ce2c340 and the Assistant `codex_c125641a`. BLOCKED: goal registry state held by PC 7ce2c340 and Assistant codex_c125641a; this file:55
+- [x] **Goal registry CLOSED 2026-11-25.** Owner cleared the /goal and PC removed the goal and loop hooks everywhere, so no goal registry remains to wait on (Assistant relay, sup:9f33b3f027c3a347). The Assistant is now `claude_683b11af` (`codex_c125641a` retired).
 - [x] **Cross-cutting, OPEN, this chat.** DONE 2026-11-25: standing duties are met as far as offline allows; unmet-criteria report is docs/reports/TREMOR_CHECKPOINT_20261125.md (OD4: closed here because the Wednesday report was its only deliverable).
   - Keep the evidence boundaries and one-writer ownership.
   - Commit only verified local work.
@@ -80,7 +80,7 @@ Repo `/home/adelmar/SeaBridgeAI/murmuration` master, HEAD `f791802`, local only.
 | Item (file:line) | Acceptance | Status |
 |---|---|---|
 | M3 Gate R1 rows 155-165, 169 (this file:22) | independent bench ACCEPT at `f62cfe1` (`runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md`) | DONE |
-| M3 row 167 (this file:22; `X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`) | custody binding, L5 admission, reveal review | BLOCKED: custodian (Assistant), then Alejandro |
+| M3 row 167 (this file:22; `X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`) | custody binding, L5 admission, reveal review | BLOCKED: owner:custody-X42-row-167 (owner decides custody; the Assistant holds none), then Alejandro |
 | M3 three quiet-machine windows (this file:22; packet `f80a26c`) | three ELIGIBLE windows on `f62cfe1`, roster 912/929 | BLOCKED: PC (freeze, host reviewer, operator, D2); the lane's yes is recorded (`628f9b4`) |
 | M4 L2-C, L3-C, L4-C DRAFT protocols (this file:32) | each cites sources or marks OPEN; independent review ACCEPT | DONE (`462da48`, `625ab34`) |
 | M4 L3-C harness (this file:32) | reuses monsel; mutants killed; review | DONE (`1dabf53`) |
@@ -111,7 +111,7 @@ Acceptance: 1/10 (M1). Candidate of record `f62cfe1` (tree `cdaee764…`). All c
 | Gate or dependency | Owner | Evidence | Smallest action |
 |---|---|---|---|
 | X42 quiet-machine windows W1-W3 | Alejandro + PC (named yes; carried in the morning owner batch) | `OWNER_DECISION_X42_quiet_host_window.md` (`f80a26c`), dry preflight `3a16b006` | yes for the three windows, then PC binds the freeze, operator and host reviewer |
-| X42 row 167 (N2 custody, L5, reveal) | custodian (Assistant), then Alejandro | `X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`, commitment `6def4efc` | custodian binding message, then the one-use L5 admission |
+| X42 row 167 (N2 custody, L5, reveal) | owner:custody-X42-row-167 (owner), then Alejandro | `X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`, commitment `6def4efc` | owner's custody decision, then the one-use L5 admission |
 | M2/M7: D8 price sheet lapsed 2026-11-24 00:00 UTC | Alejandro (named yes: network refetch + spend) | `OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md` (`50fb635`) P4 | yes to refetch, then a continuity review and window instants |
 | M8 SmolLM3 smoke | runner reviewer; Spark operator (memory at execution, storage paths); Alejandro or PC (0.1 GPU-h yes) | `DECISION_LOG.md` Decisions 1-4 (`54cc69e`) | runner reviewer accepts the closure at `a6a7875`; operator names and freezes the paths |
 | M3 R3, M5, M6, M9 run admissions | Alejandro | `OWNER_DECISION_protected_admissions_M3R3_M4_M9.md` | named one-use admissions |
@@ -136,7 +136,7 @@ Acceptance: 1/10 (M1). Repository HEAD is recorded in each checkpoint. All commi
   - e11df9d: rows 155, 158, 159, 162, 165 and 169 ACCEPT.
   - 83e4870: row 157 ACCEPT (episode design only).
 - [x] **Row 157: ACCEPTED** on bench re-check at `83e4870` (`runs/x42-bench-recheck-83e4870.4P3pJg/VERDICT.md`, sha256 `48834c15…`), for the episode design only. Behaviour is not established, because the agents are scripted.
-- [ ] **Row 167:** INCOMPLETE. Custody binding (custodian), L5 admission (Alejandro), then the reveal review. Requirements: `docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`. BLOCKED: custodian binding then L5 admission (Assistant, Alejandro); docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md:1
+- [ ] **Row 167:** INCOMPLETE. Custody binding (custodian), L5 admission (Alejandro), then the reveal review. Requirements: `docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`. BLOCKED: owner:custody-X42-row-167, custody of sealed material is the owner's decision (the Assistant is not the custodian), then L5 admission (Alejandro); docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md:1
 - [ ] **Three quiet-machine runs:** packet `OWNER_DECISION_X42_quiet_host_window.md` (`9a3897d`). The dry preflight passes. Needs PC's window after the integration freeze, with the packet predicates confirmed. BLOCKED: PC window and host reviewer; docs/reports/tremor/OWNER_DECISION_X42_quiet_host_window.md:1
 - [x] **Row 169: ACCEPTED at `f62cfe1`** (decided under owner delegation 2026-11-24T05:35Z, `88b19c1`: per-module Opus verdicts on the exact candidate bytes plus the bench interrogate pass). The per-module round found real defects in five modules (sgv, quarantine, monsel, vreplay, lease), fixed over five rounds. All nine are ACCEPT at `f62cfe1`, and the bench re-check `runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md` (`6ada3cf4…`) confirms rows 155, 157, 158, 159, 162, 165 and 169 ACCEPT, with row 167 INCOMPLETE. **New candidate of record: `f62cfe1`** (tree `cdaee764…`, 623 files). Container suites: package 912 OK, lab 929 OK. The dry preflight passes, with roster 912 `caf3dc41…` and 929 `d5082bb1…`. `83e4870` is superseded. The quiet-window packet is re-targeted and needs a fresh nomination and yes from PC.
 
