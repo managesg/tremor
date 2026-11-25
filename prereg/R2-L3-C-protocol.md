@@ -302,3 +302,11 @@ outcome is seen (SC:21-22; P:462; RR:57; W:50-51). The lock works as follows.
    episodes the kill is low-powered (P:467); minima of 400 clean and 200 failure episodes (P:189-190;
    RR:46-47). The selection arm is then not run, and line 3 measures effective monitors and the
    selection technique without pressure (P:982).
+
+## Decisions since drafting (2026-11-24, line author under OD4; the freeze confirms or replaces them)
+
+Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided under OD4" (`628f9b4`) and "L3-C harness definitions" (`1dabf53`).
+- **C or B:** C, locked before any outcome (section 16).
+- **Conjunction rule:** both conjuncts must hold (an intersection-union test, each reported separately).
+- **Harness (`lab/l3c_harness.py`):** the offline harness covers steps 1-5. Its definition choices (selector, fixed arm, per-task rotation seed, conservative arm, loss as a difference) are recorded in the decision log as proposals for the open items L3-O3, L3-O4, L3-O7 and L3-O8. L3-O8 is built; the others still need the freeze to confirm them.
+- **Still OPEN:** the operating point (L3-O9), the near-zero-loss rule (L3-O10), the seed map and every other item in section 14 that is not listed above.

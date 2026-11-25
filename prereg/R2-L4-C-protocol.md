@@ -368,3 +368,10 @@ be passed on behalf of another, and no setting on behalf of the other.
    denominator, whatever the joint result (DL:205).
 9. **Not locked means not frozen.** A freeze record without the lock of step 2 and the bound token
    reference (L4-O1) is invalid, and no L4 admission can cite it.
+
+## Decisions since drafting (2026-11-24, line author under OD4; the freeze confirms or replaces them)
+
+Source: `docs/reports/tremor/DECISION_LOG.md`, "L4 strength-lowering rule" (`f33164d`).
+- **Rule for lowering strength (L4-O15):** one rung down when either recovery time or R rises. This matches the accepted `vreplay` module (`vreplay.py:63`). `lab/l4_adaptive_replay_policy.py` now follows it (`1b30daf`).
+- **Conjunction rule:** the joint decision across the two settings requires every conjunct (an intersection-union test, each reported).
+- **Still OPEN:** every other item in section 14, including the token reference (L4-O1), the token meter (L4-O2) and the freeze record.

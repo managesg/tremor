@@ -283,3 +283,10 @@ Per RR:48-52 and SC:35-39:
 
 A freeze is a pre-registration. It does not authorise a GPU run; each batch needs its own admission
 (ADM:89).
+
+## Decisions since drafting (2026-11-24, line author under OD4; the freeze confirms or replaces them)
+
+Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided under OD4" (`628f9b4`).
+- **Definition of R:** first-generation offspring, as the proposal says (P:386). `src/murmuration/quarantine.py` now ranks that way (`fc41783`). This closes the conflict about the descendant share.
+- **Conjunction rule:** the prediction holds only if every conjunct holds (an intersection-union test, each conjunct at the stated level and reported separately, no multiplicity adjustment). This closes the conjunction part of the endpoint item.
+- **Still OPEN:** every item in section 14 that is not listed above, and the freeze record.
