@@ -226,3 +226,24 @@ Independent review: REJECT on the first cut (missing step 5, untested seed and g
 - **Decided: either.** One rung down when recovery time or R rises.
 - **Reason:** the proposal's plural does not settle it. Lowering on either rise is the fail-safe choice for a technique meant to keep false notes low. It is also the rule in the module accepted by the row 169 per-module round at `f62cfe1`.
 - **Consequence:** the lab policy aligns to "either" before the L4 freeze (L4-O15 in `prereg/R2-L4-C-protocol.md`, `625ab34`). Until then the lab fixture stays as it is and is labelled as differing.
+
+## 2026-11-25: M4 rule-type OPEN items closed (line author under OD4)
+
+Method rules only. No number is set; sizes, margins, splits, seeds, rates, tiers and budget splits stay OPEN with their owners. The freeze confirms or replaces each rule. Advised by an independent Opus review of what remains closable offline.
+
+| Items | Decision | Reason |
+|---|---|---|
+| L2-O2, L3-O2 | "Supported" requires every clause of C | The proposal states C as a conjunction; this repeats the intersection-union rule at `DECISION_LOG.md` (OD4 table). |
+| **L4-O18** | The intersection-union rule applies to **L4-C by name**: both settings and every cost conjunct must hold, each reported separately, no multiplicity adjustment | The earlier OD4 entry named only L2-C and L3-C. The section 16 lock line stands: the custodian locks the two setting IDs before any assessment label is opened. |
+| L2-O11, L3-O11, L4-O11 | Fixed sample size, no interim look, one analysis | The simplest rule that keeps the error rate honest; the proposal gives no sequential design. Sizes stay OPEN (O10 items). |
+| L2-O6 | Preserve the toy store; do not delete it | Deleting data is a hard rule (P:981 and RR:39 conflict; the hard rule decides). |
+| L4-O3 | Read C2 and C3 at each of the two settings | Follows the intersection-union rule above. |
+| L4-O12 | A failed manipulation check blocks "supported"; the result is reported as "invalid manipulation" | A claim must not rest on a check that did not hold. |
+| L2-O14, L3-O14, L4-O17 (tracking half) | Closed: the register, the L2-C and L4 lab modules, their tests and eight notes are tracked (`f791802`, `c0daf55`). A freeze must pin a commit at or after `c0daf55`, not `f62cfe1` | `f62cfe1` does not contain them. The native launch entry point (L4-O17, other half) stays OPEN. |
+| L4-O2, L4-O5 | Remain OPEN: tokenizer, which calls count, orientation and tie rule need the L4 author | Method detail that depends on the lab meter definitions. |
+
+**Reconciliation of the L5 hours (M3 R3-L5).** The L5 first slice plans about 4 GPU-hours (`FS:12`, `L5D:3`; packet `OWNER_DECISION_protected_admissions_M3R3_M4_M9.md:12`, `:29`, `:69`) and the L5 line ceiling is 3 (`RR:22`). No document settles the difference. **Decision:** the lower figure, 3, governs unless a named ruling raises it, and the L5 author re-scopes the first slice to fit. This sets no new figure. The L5 admission stays not admitted (precondition: N2 custody and a native launcher).
+
+**Correction (record):** `fc41783` (quarantine R aligned to first generation) was committed after `f62cfe1`, although the 2026-11-24 OD4 entry said the change would wait until after the windows. The windows archive `f62cfe1` by SHA, so the window bytes are unaffected. But master's `src/murmuration/quarantine.py` now differs from `f62cfe1`, so no M4 freeze may pin `f62cfe1`. The advisory-gap patch (`runs/advisory-gaps-patch.zlCV0b`) is still unapplied.
+
+**Note:** the shared working tree holds uncommitted edits to `lab/l5_*`, `lab/r3_l2_*` and their tests that are not in this lane's commits. This lane does not touch them. Whoever owns them should commit or hand them over before any L5 or R3 work.
