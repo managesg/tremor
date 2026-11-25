@@ -245,19 +245,19 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 
 | ID | Decision still needed | Owner |
 |---|---|---|
-| L2-O1 | Which R ranks the targeted arm: first-generation offspring (P:386) or the descendant share now in `quarantine.py:83`. A code change moves the candidate tree hash | Line author proposes; independent reviewer audits; owner approves the freeze |
-| L2-O2 | Whether "supported" requires all three clauses of C or the equivalence clause alone | Line author proposes; owner approves at freeze |
-| L2-O3 | Whether A, B and D stay as registered secondaries, and the Holm family size with E out | Owner (scope); line author |
-| L2-O4 | Final arm list: keep the unprotected store and the Nakayashiki rule, which RR:19 omits | Line author; independent reviewer |
+| L2-O1 | **CLOSED(decision)**, see Decisions 2026-11-25. Which R ranks the targeted arm: first-generation offspring (P:386) or the descendant share now in `quarantine.py:83`. A code change moves the candidate tree hash | Line author proposes; independent reviewer audits; owner approves the freeze |
+| L2-O2 | **CLOSED(decision)**, see Decisions 2026-11-25. Whether "supported" requires all three clauses of C or the equivalence clause alone | Line author proposes; owner approves at freeze |
+| L2-O3 | **Interim rule 2026-11-25, still OPEN (owner scope).** Whether A, B and D stay as registered secondaries, and the Holm family size with E out | Owner (scope); line author |
+| L2-O4 | **CLOSED(decision)**, see Decisions 2026-11-25. Final arm list: keep the unprotected store and the Nakayashiki rule, which RR:19 omits | Line author; independent reviewer |
 | L2-O5 | The five fraction values, the store size, and the exact bytes of the planted note, clean twin and trigger-only source | Line author writes; custodian seals |
-| L2-O6 | Delete the toy store after the run (P:981) or preserve it (RR:39, RR:51-52). Any deletion is the owner's to run | Owner |
+| L2-O6 | **Interim rule 2026-11-25, still OPEN (DECISION_LOG keeps it the owner's).** Delete the toy store after the run (P:981) or preserve it (RR:39, RR:51-52). Any deletion is the owner's to run | Owner |
 | L2-O7 | Pilot, tuning and held-out chain IDs; seed map | Custodian |
-| L2-O8 | Adoption denominator and the eligible parent-offspring events | Line author; independent reviewer |
-| L2-O9 | Verification-share grid, one dose scale for the 50% and 80% clauses, and the search rule for the minimum successful dose | Line author |
+| L2-O8 | **Partly decided 2026-11-25, still OPEN for the denominator.** Adoption denominator and the eligible parent-offspring events | Line author; independent reviewer |
+| L2-O9 | **Partly decided 2026-11-25, still OPEN for the grid size and the search test.** Verification-share grid, one dose scale for the 50% and 80% clauses, and the search rule for the minimum successful dose | Line author |
 | L2-O10 | n, E and K for the equivalence contrast, pilot SD and ICC, and the reachable outcomes at the cap. Needs the approved variance pilot, which is not released (ADM:136) | Owner releases the pilot; line author computes; reviewer checks |
-| L2-O11 | Statistical stopping rule | Line author; owner approves |
-| L2-O12 | Mapping of `reed_frost` parameters (population, seeds, q) to the experiment | Line author |
-| L2-O13 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
+| L2-O11 | **CLOSED(decision)**, see Decisions 2026-11-25. Statistical stopping rule | Line author; owner approves |
+| L2-O12 | **CLOSED(decision)**, see Decisions 2026-11-25. Mapping of `reed_frost` parameters (population, seeds, q) to the experiment | Line author |
+| L2-O13 | **Partly decided 2026-11-25, still OPEN.** Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
 | L2-O14 | The L2-C harness (`lab/l2c_*.py`), the L2-C lab docs and RR are untracked and are not in the candidate tree `f62cfe1`. A freeze must pin a committed or closure-archived tree (ADM:27) | Owner approves the commit; integration owner makes it |
 | L2-O15 | No native launch entry point exists for this batch (ADM:26, ADM:91) | Line author builds; owner admits |
 | L2-O16 | Independent review of this protocol (SC:39) | Independent reviewer |
@@ -290,3 +290,29 @@ Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided u
 - **Definition of R:** first-generation offspring, as the proposal says (P:386). `src/murmuration/quarantine.py` now ranks that way (`fc41783`). This closes the conflict about the descendant share.
 - **Conjunction rule:** the prediction holds only if every conjunct holds (an intersection-union test, each conjunct at the stated level and reported separately, no multiplicity adjustment). This closes the conjunction part of the endpoint item.
 - **Still OPEN:** every item in section 14 that is not listed above, and the freeze record.
+
+## Decisions since drafting (2026-11-25, line author under OD4)
+
+Method, scope and rule decisions only. No weight, threshold, rate, size, fraction or seed is set here. The freeze confirms or replaces each decision. Where a decision below changes wording earlier in this file, this subsection governs: the earlier mentions of Holm correction and of L2-O1, O2, O4, O11 and O12 as OPEN (sections 2, 5, 6, 7, 9, 10) are superseded, and a freeze must rewrite them. No run, spend or admission follows from it.
+
+Sources added: `docs/reports/tremor/DECISION_LOG.md`, "2026-11-25: M4 rule-type OPEN items closed" and "parked owner-yes items decided under OD4"; `lab/l2c_detached_scoring.py:86-113`; `src/murmuration/nulls.py:10-13, 74`; `src/murmuration/readouts.py:74-102`.
+
+### Closed
+
+- **L2-O1, definition of R.** First-generation offspring (P:386; RR:19). Code aligned in `fc41783` (`quarantine.py:15`, `:83`). Two consequences. (a) A freeze must pin a tree at or after `fc41783`, never `f62cfe1` (DECISION_LOG correction note). (b) `verification_order` counts every child that names a note as a parent, while `readouts.first_generation_offspring` refuses ambiguous parentage (`readouts.py:99-100`). Sanity check 6 therefore compares the two orders and records any difference. The audit stays with L2-O16.
+- **L2-O2, conjunction.** "Supported" for C requires all three clauses: equivalence at no more than half the checks, random needing at least 80%, and measured R beating each of the three cheap orderings (P:377-379). Intersection-union test: each clause at its stated level, reported separately, no multiplicity adjustment (DECISION_LOG 2026-11-25 and OD4 table). Section 9 item 3 is therefore the list of C's clauses, not a Holm family.
+- **L2-O3, A, B, D (interim rule, owner scope; reviewer rejected it as CLOSED).** Proposed: they are out of this protocol's inference. Reasons: RR:19 names C alone as the primary contrast (SC does not itself exclude A, B or D); the warning replication and R in an unprotected store belong to the separate pilot slice (W:196); A needs a neutral-line arm and B a share sweep of its own, neither in section 3. They may be re-registered by a separate protocol. With the C clauses unadjusted (O2) and A, B, D, E out, no Holm family remains here. Holm (RR:45) applies only if a freeze re-registers a secondary. R's dispersion and the section 9 readouts stay descriptive (P:386-387).
+- **L2-O4, arms.** Keep the unprotected store and the Nakayashiki one-sentence rule. Both are in the proposal's baseline list (P:363-367; W:42). RR:19 lists comparators "to retain" and does not exclude them. The unprotected store is also the reference for the floor kill (P:392-393) and the calibration source of R (O12). The cost of each arm is charged to it (P:193-194); fit to the cap stays in L2-O10.
+- **L2-O6, toy store (interim rule only; DECISION_LOG keeps the item the owner's).** Preserve it with provenance (RR:39; RR:51-52 replayable evidence). No agent deletes it; P:981's "deleted after the run" is not executed by this line. If the owner wants it deleted after the evidence is archived and hashed, the owner runs that, from a command prepared with scope and backup (AGENTS_SYSTEM.md Safety rule 1; DECISION_LOG interim rule).
+- **L2-O11, stopping.** Fixed n, one analysis, no interim look at arm outcomes (DECISION_LOG 2026-11-25; the proposal gives no sequential design, P:181-183). The economic stop at 6 GPU-hours or USD 15 (RR:19) is a spend stop, not an outcome look, and stays.
+- **L2-O12, `reed_frost` mapping.** population = the fixed store size N (L2-O5); seeds k = the planted notes; immune = the number of verified notes at the dose, a count only (`nulls.py:10-13`). q is measured, not chosen: from the unprotected arm on the calibration prefix (section 5), solve the null's expected first-generation offspring per seed, R_hat = (N - k)(1 - (1 - q)^k)/k (each susceptible, N - k because the unprotected arm has no immune notes, is hit with probability 1 - (1 - q)^k, `nulls.py:74`), for q. Refuse if no q in [0, 1] solves it. Values of N and k come from L2-O5.
+
+### Decided in structure, still OPEN
+
+- **L2-O8.** *Decided:* an eligible parent-offspring event is a non-planted note on the Board log whose single parent is a planted note; a note naming a planted id with another parent is ambiguous, the calculation refuses (`readouts.py:99-100`), and the run is reported as refused, never as zero. The denominator is a fixed opportunity inventory, identical in every arm of a chain and pinned before dispatch (`l2c_detached_scoring.py:86-113`; LAB-share:6-8); an empty inventory leaves adoption undefined, not zero. *Missing source:* how section 6's adopter count (notes) maps onto that inventory (dispatch attempts). No document defines it, and W:161 says the harness must still supply the events.
+- **L2-O9.** *Decided:* one dose scale, share = checks spent / checks of full verification, on integer check counts (LAB-share:18-22). The 50% clause, the 80% clause and the 80%-of-random kill (P:377-379, P:390-391) all read on it. The grid step is at most 0.05 (P:388), so a grid at that step implies at least 20 checkable notes, which L2-O5 must confirm; no size is set here. The minimum successful dose of an arm is the smallest grid share whose 95% interval of the paired difference from full verification lies inside the 3-point margin (P:378, P:184-185). *Missing source:* any rule for multiplicity across grid points, and the test form for "random needs at least 80%". Neither is in P or RR.
+- **L2-O13.** *Decided:* "every tier and task" (P:392) ranges over exactly the tiers and tasks the freeze registers, and the local tier is the reproducible floor (P:969; W:230). Its pin is Qwen3.5-4B revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` (ADM:47). *Missing source:* any hosted tier and snapshot, which are owner spend (RR:19, USD 9 plan, 15 stop); the task-family revision; the team size. P:341-342 gives 4 to 8 agents as a range.
+
+### Not touched
+
+L2-O5, O7, O10, O14 (owner approval of the commit), O15 and O16 stay OPEN as listed in section 14.

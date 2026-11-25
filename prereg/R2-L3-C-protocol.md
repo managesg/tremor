@@ -239,17 +239,17 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 | ID | Decision still needed | Owner |
 |---|---|---|
 | L3-O1 | The primary lock of section 16: a written statement that C is not declined, or a decline that makes B primary | Owner |
-| L3-O2 | Whether "supported" requires every clause of C or the loss ratio alone | Line author proposes; owner approves at freeze |
+| L3-O2 | **CLOSED(decision):** "supported" requires every clause of C (see Decisions since drafting, D1) | Freeze confirms |
 | L3-O3 | The registered selection rule: what the output selector sees in the fixed arm, and the definition of the selection-pressure condition | Line author; independent reviewer checks it stays inside P:982 |
-| L3-O4 | Final arm list, including the P:452-455 baselines that RR:20 does not name | Line author; independent reviewer |
+| L3-O4 | **CLOSED(decision):** all arms of the section 3 table, at equal calls (D3) | Independent reviewer checks at freeze |
 | L3-O5 | k, the view definitions and the call budget per arm (RR:20) | Line author |
 | L3-O6 | How the failure and clean pools are generated, their sizes, and the exact toy stand-in | Line author writes; custodian seals |
 | L3-O7 | Calibration, threshold-fit and assessment split IDs; seed map, including `hidden_view` seeds | Custodian |
 | L3-O8 | Harness and tests for best-of-16 selection, conservative aggregation and the loss ratio. New code moves the candidate tree hash | Line author; independent reviewer |
 | L3-O9 | Monitor operating point for C | Line author |
 | L3-O10 | K for the loss ratio, n, pilot discordance and ICC, the rule when the fixed arm's loss is near zero, and the reachable outcomes at the cap. Needs the approved pilot, which is not released (ADM:136) | Owner releases the pilot; line author computes; reviewer checks |
-| L3-O11 | Statistical stopping rule | Line author; owner approves |
-| L3-O12 | Fitting rule for p and c in `correlated_monitors` | Line author |
+| L3-O11 | **CLOSED(decision):** fixed n, one analysis, no interim look (D2) | Owner approves at freeze |
+| L3-O12 | **CLOSED(decision):** two-moment fit on the calibration set (D4) | Freeze confirms |
 | L3-O13 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
 | L3-O14 | RR and RC are untracked. A freeze must pin a committed or closure-archived tree (ADM:27) | Owner approves the commit; integration owner makes it |
 | L3-O15 | No native launch entry point exists for this batch (ADM:26, ADM:91) | Line author builds; owner admits |
@@ -310,3 +310,17 @@ Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided u
 - **Conjunction rule:** both conjuncts must hold (an intersection-union test, each reported separately).
 - **Harness (`lab/l3c_harness.py`):** the offline harness covers steps 1-5. Its definition choices (selector, fixed arm, per-task rotation seed, conservative arm, loss as a difference) are recorded in the decision log as proposals for the open items L3-O3, L3-O4, L3-O7 and L3-O8. L3-O8 is built; the others still need the freeze to confirm them.
 - **Still OPEN:** the operating point (L3-O9), the near-zero-loss rule (L3-O10), the seed map and every other item in section 14 that is not listed above.
+
+## Decisions since drafting (2026-11-25, line author under OD4)
+
+Method rules only; no number is set. The freeze confirms or replaces each. Source for D1 and D2: `docs/reports/tremor/DECISION_LOG.md`, "2026-11-25: M4 rule-type OPEN items closed".
+
+- **D1, L3-O2 (CLOSED).** "Supported" requires every clause of C: the loss ratio at or below one half, the manipulation check, and rotation beating conservative aggregation. This is an intersection-union test, each clause reported separately, no multiplicity adjustment. The clause "beats conservative aggregation" is therefore a conjunct as well as a key secondary; section 9 step 4's Holm correction applies to the secondary reporting, and whether it also governs the conjunct is for the freeze to confirm. Source: P:459-462 ("and"); DECISION_LOG 2026-11-24 OD4 table row "L2-C and L3-C conjunctions".
+- **D2, L3-O11 (CLOSED).** Fixed n, one analysis, no interim look at arm outcomes (section 8 draft default adopted). Source: DECISION_LOG 2026-11-25 row "L2-O11, L3-O11, L4-O11"; the proposal gives no sequential design. The size n stays OPEN under L3-O10.
+- **D3, L3-O4 (CLOSED).** The arm list is the section 3 table in full: RR:20's arms plus the P:452-455 baselines (all views, Koran rule, Jha split, majority-vote panel), all at equal monitor calls (P:451-452). Only the rotating-versus-fixed ratio is primary; the key secondaries stay as in section 9 step 4 and the other arms are descriptive, with no test. Source: P:451-455 lists them as baselines "at equal monitor calls"; RR:20 requires "the registered selection rules". The independent reviewer (L3-O16) checks the list.
+- **D4, L3-O12 (CLOSED).** Fit `correlated_monitors(m=k, p, c)` by matching two moments of the selected ensemble S on the calibration failure set: q is the mean per-view miss rate and j the mean pairwise joint miss over the k(k-1)/2 pairs. Then 1-c = (1-q)^2 / (1 + j - 2q) and p = (q-c)/(1-c), the closed form of the model at `nulls.py:8-9` (checked on one exact case). If 1 + j - 2q is 0 or j < q^2 (negative phi), c would leave [0,1]: report "null not fitted" and give no null comparison. No calibration or assessment data is touched by the rule itself.
+- **Sub-rule recorded under L3-O10 (item stays OPEN).** The near-zero-loss rule needs no number: if the 95% interval of loss(fixed) includes 0, the ratio is reported as not testable (section 9 step 3) and the line outcome is inconclusive, never supported. K, n, ICC and reachable outcomes still need the unreleased pilot.
+- **Sub-rule recorded under L3-O3 (item stays OPEN).** The fixed arm's selector sees all selected views (DECISION_LOG 2026-11-24 harness definitions; P:446-447 hides a view only in the rotating arm). The pressure condition (which monitor is selected against, and the per-monitor form) is still undefined in the repo.
+- **L3-O14 (stays OPEN).** RR (sha256 `1352e894...`, unchanged) and RC are now tracked (`f791802`, `c0daf55`), so the tracking half is done and a freeze must pin a commit at or after `c0daf55`. The owner's approval of that commit is not on record.
+
+Still OPEN, with the missing source: L3-O1 (owner's lock line with message id and UTC time; custodian attestation), L3-O3 (pressure-condition definition), L3-O5 (k and the call budget; no number in the repo), L3-O6 (pool sizes and the stand-in; custody), L3-O7 (split IDs and seed map; custodian), L3-O8 (harness built at `1dabf53`, but no ACCEPT verdict on it is recorded), L3-O9 (C's operating point; P:458 gives 5% only for B), L3-O10 (K, n, pilot ICC and discordance; ADM:136 pilot unreleased), L3-O13 (tiers, snapshots, spend; owner), L3-O14 (owner approval), L3-O15 (launcher; owner admits), L3-O16 (independent review).

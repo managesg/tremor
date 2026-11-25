@@ -283,21 +283,21 @@ text arms (W:214); the split between C, B and any A work is OPEN (L4-O14).
 
 | ID | Decision still needed | Owner |
 |---|---|---|
-| L4-O1 | The token reference for C2: which arm's tokens the 1.5 times bound is measured against. Candidates in the proposal's baseline list (P:517-520): plain model dream, evaluator-gated write, no memory, equal-token search. The baselines are stated "at equal total tokens" (P:517-518), which a 1.5 times allowance against any of them contradicts | Line author proposes; owner approves at freeze |
+| L4-O1 | **CLOSED(decision, D1 below)** The token reference for C2: which arm's tokens the 1.5 times bound is measured against. Candidates in the proposal's baseline list (P:517-520): plain model dream, evaluator-gated write, no memory, equal-token search. The baselines are stated "at equal total tokens" (P:517-518), which a 1.5 times allowance against any of them contradicts | Line author proposes; owner approves at freeze |
 | L4-O2 | The token meter: tokenizer, rendering policy, which calls count (day work, consolidation pass, scripted re-checks, controller readings), and the charge for measurement (P:193-194; LM:36-38) | Line author; independent reviewer |
-| L4-O3 | Whether C2 and C3 are read once across both settings or at each setting (section 16, step 5) | Line author proposes; owner approves at freeze |
-| L4-O4 | Status of prediction A in this batch. SC:27 does not retain it, yet B's boundary (P:535) and C's manipulation check use the ladder sweep | Owner |
+| L4-O3 | **CLOSED(decision, D2 below)** Whether C2 and C3 are read once across both settings or at each setting (section 16, step 5) | Line author proposes; owner approves at freeze |
+| L4-O4 | **CLOSED(decision, D3 below)** Status of prediction A in this batch. SC:27 does not retain it, yet B's boundary (P:535) and C's manipulation check use the ladder sweep | Owner |
 | L4-O5 | The compression index: tokens or bytes, orientation (`after / before`, LM:4, means a smaller value is stronger), tie rule, and the calibration protocol that ranks settings (RR:21; LM:36-38) | Line author; custodian holds the calibration chains |
 | L4-O6 | Daily error rate, nights per chain, store size, and the planted note inventory | Line author |
 | L4-O7 | Calibration and assessment split IDs; seed map | Custodian |
 | L4-O8 | Margins: minimum advantage for C3; numeric meaning of "ties" and "matches" in the two kills and the measure on which the gated write "matches"; whether C1 refuted is a kill; whether a kill at one setting suffices | Line author proposes; owner approves at freeze |
 | L4-O9 | Native harness and tests: night loop around `vreplay`, all seven arms, token meter, false-share and cost-per-pass functions. New code moves the candidate tree hash | Line author; independent reviewer |
 | L4-O10 | n per conjunct, pilot variance and ICC, reachable outcomes at the cap. Needs the approved pilot, which is not released (ADM:136) | Owner releases the pilot; line author computes; reviewer checks |
-| L4-O11 | Statistical stopping rule | Line author; owner approves |
-| L4-O12 | Whether a failed manipulation check blocks "supported" | Line author proposes; owner approves at freeze |
+| L4-O11 | **CLOSED(decision, D4 below)** Statistical stopping rule | Line author; owner approves |
+| L4-O12 | **CLOSED(decision, D5 below)** Whether a failed manipulation check blocks "supported" | Line author proposes; owner approves at freeze |
 | L4-O13 | Fitting rule for keep, add and tol in the `nulls` comparison | Line author |
 | L4-O14 | Split of the 12 GPU-hours and USD 40 between C, B and A work | Owner |
-| L4-O15 | Controller rule: `vreplay.next_strength` lowers when either reading rose (`vreplay.py:63-64`); the fixture lowers only when both rose (LA:12-14; `lab/l4_adaptive_replay_policy.py:132`). Also which R the controller reads (section 12) | Line author; independent reviewer |
+| L4-O15 | **CLOSED(decision, D6 below)** Controller rule: `vreplay.next_strength` lowers when either reading rose (`vreplay.py:63-64`); the fixture lowers only when both rose (LA:12-14; `lab/l4_adaptive_replay_policy.py:132`). Also which R the controller reads (section 12) | Line author; independent reviewer |
 | L4-O16 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
 | L4-O17 | RR, LC, LA, LM and the `lab/l4*` modules are untracked. A freeze must pin a committed or closure-archived tree (ADM:27). No native launch entry point exists (ADM:26, ADM:91) | Owner approves the commit; integration owner makes it; line author builds the launcher |
 | L4-O18 | A DL entry that applies the intersection-union rule to L4-C by name (DL:205 names L2-C and L3-C), and the section 16 lock line | Orchestrator under OD4; owner for the lock |
@@ -375,3 +375,26 @@ Source: `docs/reports/tremor/DECISION_LOG.md`, "L4 strength-lowering rule" (`f33
 - **Rule for lowering strength (L4-O15):** one rung down when either recovery time or R rises. This matches the accepted `vreplay` module (`vreplay.py:63`). `lab/l4_adaptive_replay_policy.py` now follows it (`1b30daf`).
 - **Conjunction rule:** the joint decision across the two settings requires every conjunct (an intersection-union test, each reported).
 - **Still OPEN:** every other item in section 14, including the token reference (L4-O1), the token meter (L4-O2) and the freeze record.
+
+## Decisions since drafting (2026-11-25, line author under OD4)
+
+Method, scope and rule-type decisions only, each taken from a cited source line. No number is set here. They bind by the same OD4 delegation as the 2026-11-24 entries above, and the freeze confirms or replaces each. Marked CLOSED(decision) in section 14 only where fully resolved.
+
+| # | Item | Decision | Source |
+|---|---|---|---|
+| D1 | L4-O1, token reference for C2 | The reference is the evaluator-gated write with no consolidation. C2 is the ratio of realized total tokens, verified replay over that arm, on the same chains. Equal total budget stays the cap given to every arm (P:517-518), and realized tokens may differ under it (LC:43), so the 1.5 times bound is not contradicted: it limits the extra cost of the replay step and the controller. C3 keeps equal-token search as its own comparator. | P:517-520 ("verified replay without the replay"); P:536-537; RR:21, RR:55; LC:43 |
+| D2 | L4-O3 | C2 and C3 are read at each of the two settings (six conjuncts with C1a, C1b), which is the section 16 step 5 default. | `DECISION_LOG.md` "2026-11-25: M4 rule-type OPEN items closed" (L4-O3 row); DL:240 |
+| D3 | L4-O4, prediction A | A is not retained (SC:27), is not a conjunct and takes no Holm slot. The plain dream's false share against 0.25 is reported as descriptive context only (P:531), as in section 9 step 2. B and C still use the ladder sweep. | SC:27; P:530-531; P:236-237 |
+| D4 | L4-O11, statistical stop | Fixed n, no interim look at arm outcomes, one analysis. The economic stop of section 8 is unchanged. n itself stays OPEN (L4-O10). | `DECISION_LOG.md` 2026-11-25 (L4-O11 row); P:180-185 gives no sequential design |
+| D5 | L4-O12, failed manipulation check | A failed or uninformative manipulation check (section 9 step 2) blocks "supported". The result is reported as inconclusive with the failed check named, unless the line-level kill of section 10 applies. No new outcome label. | `DECISION_LOG.md` 2026-11-25 (L4-O12 row); P:560-561 |
+| D6 | L4-O15, controller | Lowering: one rung down when either reading rises, as already decided above. R is the first-generation reading (mean first-generation offspring per planted note), as the proposal defines it and as the fixture meter uses. `readouts.reproduction_number` returns the descendant share (section 12); aligning it, or supplying a first-generation reading to the controller, is code work under L4-O9 and moves the candidate tree hash. A chain belongs to the setting it starts at (section 16 step 3 default is confirmed); the rung sequence is reported. | P:386; P:516; DL:206 (L2 R definition, `quarantine.py` aligned in `fc41783`); LA:22; `vreplay.py:63` |
+
+Part decisions (the item stays OPEN):
+
+- **L4-O8.** A false share whose interval lies above 0.05 is "not supported, C1 refuted at setting s", not a kill. The kill list for C is closed at two criteria (P:566-567). Still OPEN: the numeric meaning of "ties" and "matches", the minimum advantage for C3, and whether a kill at one setting suffices (the proposal states no per-setting kill rule; only the line-level kill says "every setting", P:560-561).
+- **L4-O2.** The charge rule is decided: every model call in the day work and the consolidation pass counts for every arm, and the cost of any scripted check or controller reading that spends operations or tokens is charged to the arm that uses it (P:193-194; LC:5-6). Still OPEN: tokenizer, rendering policy, and which model snapshot serves them (L4-O16).
+- **L4-O5.** Orientation is decided: the index is `after / before`, so a smaller value is the stronger setting (LM:3-4). Still OPEN: tokens or bytes (LM:34-38 gives no index), the tie rule, and the calibration protocol.
+- **L4-O13.** `keep` and `add` are fitted on the calibration chains only, never on assessment chains (section 5), against the exact `nulls.iterated_map` curve. Still OPEN: the fitting loss and `tol` (the repo gives no tolerance for the recovery reading, `nulls.py:14-16`).
+- **L4-O17 and L4-O18.** The tracking half of L4-O17 and the decision-log half of L4-O18 are closed by `DECISION_LOG.md` 2026-11-25 (`f791802`, `c0daf55`): a freeze must pin a commit at or after `c0daf55`, and the intersection-union rule applies to L4-C by name (C1a, C1b, C2, C3 at both settings, each reported, no multiplicity adjustment). Still OPEN: the owner's approval of the commit, the native launcher, and the section 16 lock line (owner or custodian, not settled).
+
+Still OPEN, with the missing source: L4-O6 (daily error rate, nights per chain, store size, note inventory: no value in P or the repo; P:531 gives six nights for A only), L4-O7 (split IDs and seed map: custodian), L4-O9 (code and tests: build work, not a decision), L4-O10 (n, variance, ICC: the approved pilot is unreleased, ADM:136), L4-O14 (split of 12 GPU-hours and USD 40: owner spend), L4-O16 (tiers, snapshots, team size: owner), L4-O19 (independent review).
