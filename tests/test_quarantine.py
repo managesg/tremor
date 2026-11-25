@@ -109,6 +109,17 @@ class Quarantine(unittest.TestCase):
         with self.assertRaises(ValueError):
             Q.releasable([{"id": "a", "parents": []}, {"id": "c", "parents": "ab"}], set())
 
+    def test_parent_missing_from_the_notes_is_tolerated(self):
+        # A parent that is not itself a note (an external source) is part of the lineage but needs no entry.
+        notes = [{"id": "b", "parents": ["src"]}, {"id": "c", "parents": ["src"]}]
+        self.assertEqual(Q.releasable(notes, set()), set())
+        self.assertEqual(Q.ancestors(notes, "b"), {"src"})
+        # b and c share the external source, so neither may release the other.
+        self.assertEqual(Q.releasable(notes, {"c"}, {"b": ["c"]}), {"c"})
+
+    def test_ancestors_of_an_unknown_id_is_empty(self):
+        self.assertEqual(Q.ancestors(NOTES, "nope"), set())
+
     def test_equal_r_ties_are_ordered_by_id(self):
         # Twelve unrelated roots all have R = 0: only the id tie-break orders them, whatever the hash seed.
         ids = [f"n{i:02d}" for i in (7, 3, 11, 0, 9, 5, 1, 10, 4, 8, 2, 6)]

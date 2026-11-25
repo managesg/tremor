@@ -87,7 +87,7 @@ Repo `/home/adelmar/SeaBridgeAI/murmuration` master, HEAD `f791802`, local only.
 | M4 readiness register tracked (this file:32) | file committed, sha256 `1352e894` unchanged | DONE (`f791802`) |
 | M4 L4-O15: align `lab/l4_adaptive_replay_policy.py` to "either reading rises" (this file:32) | test fails on current code, passes after; clean-archive lab suite OK | DONE (committed after `c0daf55`; lab 1010 tests, same 10 host errors) |
 | M4 commit lab and docs cited by the three drafts that are still untracked (this file:32) | every cited path is tracked; sha256 unchanged | DONE (`c0daf55`, 40 files) |
-| M4 advisory test gaps in quarantine and sgv (this file:32) | tests only, in the next candidate after the windows | PATCH READY, not applied: `runs/advisory-gaps-patch.zlCV0b/advisory-gaps.patch` (sha256 `19032089…`, 4 new tests, applies clean to `ba0a910`, three mutants killed). Apply only after the windows, because it moves the tree. |
+| M4 advisory test gaps in quarantine and sgv (this file:32) | tests only, in the next candidate after the windows | DONE 2026-11-25: patch `19032089…` applied on master as tests only (quarantine and sgv, 43 tests OK). The windows pin `f62cfe1` by SHA, so this commit does not move their source; a freeze must pin a commit at or after it. |
 | M4 full freezes L2-L4 (this file:32) | OPEN items closed, freeze record with protocol sha and tree hash | BLOCKED: line authors, custodian, Alejandro admission |
 | M2, M7 (this file:18, :41) | D8 refetch, Pilot 4, EP-1 | BLOCKED: Alejandro (paid calls) |
 | M5, M6, M9 (this file:35, :38, :47) | admitted native runs | BLOCKED: Alejandro; preconditions unmet |

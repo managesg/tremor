@@ -46,6 +46,12 @@ class SusceptibilityGuidedVerification(unittest.TestCase):
             with self.assertRaises(ValueError):
                 call()
 
+    def test_bool_budget_and_rerun_cost_raise(self):
+        r = {"A": [0, 4] * 5}
+        for args in ((True, 0), (1, True), (False, 0)):
+            with self.assertRaises(ValueError):
+                sgv.allocate(r, {"A": 4}, *args)
+
     def test_single_item_pass_fail_has_no_signal(self):
         # One pass/fail item: variance is fixed by the mean, so overdispersion is undefined, not a constant.
         r = {"half": [1, 0] * 5, "one_in_ten": [1] + [0] * 9}
