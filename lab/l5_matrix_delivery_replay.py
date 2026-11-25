@@ -8,7 +8,8 @@ from pathlib import Path
 import subprocess
 import time
 
-from lab import l5_matrix, l5_shard_cpu_replay as isolation, spark_calibration_guard as guard
+from lab import l5_matrix, l5_matrix_delivery_audit as audit
+from lab import l5_shard_cpu_replay as isolation, spark_calibration_guard as guard
 from lab.r3_cpu_guard_replay import _require, _write
 from murmuration.board import read_log
 
@@ -48,6 +49,14 @@ def _exchange(child, session, guide):
     return observed["receipt"]
 
 
+def _sync_path(path):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 def run(output, *, seed):
     root = Path(output).absolute()
     _require(os.geteuid() != 0 and root.resolve() == root,
@@ -58,21 +67,64 @@ def run(output, *, seed):
     matrix = root / "matrix"
     witnesses = []
 
-    def verify_delivery(frame, guide):
-        session = _delivery_session(matrix, frame)
-        _require(guard.available_kib() > guard.FLOOR_KIB, "Spark memory floor blocks matrix delivery CPU replay")
-        with isolation._isolated_worker(script) as (identity, _):
-            command = [*guard.DOCKER, "start", "--attach", "--interactive", identity]
-            with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                  bufsize=0) as child:
-                try:
-                    receipt = _exchange(child, session, guide)
-                finally:
-                    guard._reap_attachment(child)
-        witnesses.append({"frame": frame, "worker_receipt": receipt, "container_id": identity, "removed": True})
-        return receipt["sessions"][0]["observations"]["own"]
+    with (root / audit.TAPE).open("x", encoding="utf-8") as tape:
+        _sync_path(root)
+        _sync_path(root.parent)
 
-    l5_matrix.run(matrix, seed=seed, contended=True, verify_delivery=verify_delivery)
+        def verify_delivery(frame, guide):
+            ordinal = len(witnesses)
+
+            def record(event, **fields):
+                row = {"event": event, "ordinal": ordinal, "monotonic_ns": time.monotonic_ns(), **fields}
+                tape.write(json.dumps(row, sort_keys=True, allow_nan=False) + "\n")
+                tape.flush()
+                os.fsync(tape.fileno())
+
+            arm = matrix / frame["arm_id"]
+            _sync_path(arm / "board.jsonl")
+            if frame["item"] is not None:
+                _sync_path(arm / "delivery.jsonl")
+            _sync_path(arm / "intent.json")
+            _sync_path(matrix / "plan.json")
+            for directory in (arm, matrix, root):
+                _sync_path(directory)
+            record("attempt", frame=frame)
+            transport_error = None
+            stage = "preflight"
+            try:
+                session = _delivery_session(matrix, frame)
+                _require(guard.available_kib() > guard.FLOOR_KIB,
+                         "Spark memory floor blocks matrix delivery CPU replay")
+                stage = "create"
+                with isolation._isolated_worker(script) as (identity, _):
+                    record("created", container_id=identity)
+                    stage = "attach"
+                    command = [*guard.DOCKER, "start", "--attach", "--interactive", identity]
+                    with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                          stderr=subprocess.DEVNULL, bufsize=0) as child:
+                        try:
+                            receipt = _exchange(child, session, guide)
+                        except Exception as error:
+                            transport_error = error
+                            raise
+                        else:
+                            record("ack", container_id=identity, worker_receipt=receipt)
+                        finally:
+                            stage = "reap"
+                            guard._reap_attachment(child)
+                            stage = "cleanup"
+                record("cleanup", container_id=identity)
+            except Exception as error:
+                if error is transport_error and stage == "cleanup":
+                    # The isolation context returned the original error after exact removal.
+                    record("cleanup", container_id=identity)
+                    stage = "exchange"
+                record("stop", stage=stage)
+                raise
+            witnesses.append({"frame": frame, "worker_receipt": receipt, "container_id": identity, "removed": True})
+            return receipt["sessions"][0]["observations"]["own"]
+
+        l5_matrix.run(matrix, seed=seed, contended=True, verify_delivery=verify_delivery)
     summary_pin = hashlib.sha256((matrix / "summary.json").read_bytes()).hexdigest()
     index = {"evidence": "scripted_cpu_matrix_delivery", "summary_sha256": summary_pin, "worker_sha256": worker_pin,
              "rows": witnesses}

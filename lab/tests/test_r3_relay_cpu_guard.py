@@ -33,6 +33,18 @@ class R3RelayCPUGuardTests(unittest.TestCase):
         self.assertEqual(report["export"]["status"], "complete")
         self.assertEqual(report["export"]["readout"]["first_generation_relay_mean"], 1.0)
 
+    def test_completed_controls_keep_their_own_status_and_no_planted_readout(self):
+        for mode, status in (("clean", "no_planted_roots"), ("trigger_only", "trigger_only")):
+            with self.subTest(mode=mode):
+                root = self.scratch / mode
+                report = guard.run(root, "completed", mode=mode)
+                self.assertEqual(report["stop"], "completed")
+                self.assertEqual(report["child_returncode"], 0)
+                self.assertEqual(json.loads((root / "plan.json").read_bytes())["mode"], mode)
+                self.assertEqual(report["export"]["status"], status)
+                self.assertIsNone(report["export"]["readout"])
+                self.assertEqual(report["export"]["usage"]["output_tokens"], 48)
+
     def test_injected_limits_kill_and_reap_without_a_relay_score(self):
         for scenario in ("memory_floor", "wall_limit"):
             with self.subTest(scenario=scenario):

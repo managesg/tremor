@@ -11,7 +11,7 @@ from lab import l2_adoption_control, l2_generation_audit, l2_reference_custody, 
 
 
 def run(out, conditions, blocks, *, seed, bundle, manifest, manifest_sha256, truth_inventory, truth_sha256,
-        render, generate, max_input_tokens, max_output_tokens, accept_at_limit):
+        render, generate, max_input_tokens, max_output_tokens, accept_at_limit, archive_id=None):
     """Run matched fixture arms. Each block supplies block_id, stratum, and case_id.
 
     The injected callbacks are trusted offline code. A successful index covers
@@ -40,11 +40,15 @@ def run(out, conditions, blocks, *, seed, bundle, manifest, manifest_sha256, tru
         )
         for block_id, case_id in case_ids.items()
     }
+    schedule_digest = hashlib.sha256(json.dumps(schedule, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    archive_id = uuid4().hex if archive_id is None else archive_id
+    r3_l2_generation.validate_identity({
+        "archive_id": archive_id, "schedule_sha256": schedule_digest,
+        "block_id": schedule["blocks"][0]["block_id"], "arm_position": 0,
+    })
     out.mkdir(mode=0o700)
     if stat.S_IMODE(out.stat().st_mode) != 0o700 or out.stat().st_uid != os.geteuid():
         raise ValueError("archive directory must be private and owned by the current user")
-    schedule_digest = hashlib.sha256(json.dumps(schedule, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    archive_id = uuid4().hex
     index = {
         "evidence": "scripted_fixture",
         "archive_id": archive_id,

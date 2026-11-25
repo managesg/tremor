@@ -28,10 +28,11 @@ class _HoldRequest(BaseException):
     """Leave only the parent's durable request receipt before the guarded stop."""
 
 
-def _worker(board, plan_pin, plan=None):
+def _worker(board, plan_pin, plan=None, *, mode="planted"):
     if plan is not None:
         frozen = partial._manifest(plan, plan_pin)
-        _require(frozen["mode"] == "planted" and frozen["caps"] == CAPS, "isolated worker plan differs")
+        _require(frozen["caps"] == CAPS, "isolated worker plan differs")
+        mode = frozen["mode"]
         try:
             fd = os.open(plan, os.O_WRONLY)
         except OSError as error:
@@ -50,8 +51,9 @@ def _worker(board, plan_pin, plan=None):
         return Generation(**json.loads(reply))
 
     report = fixture.run(board, generate=generate, render=json.dumps, max_input_tokens=CAPS["input"],
-                         max_output_tokens=CAPS["output"], plan_sha256=plan_pin)
-    return 0 if report["status"] == "complete" else 1
+                         max_output_tokens=CAPS["output"], plan_sha256=plan_pin,
+                         clean=mode == "clean", trigger_only=mode == "trigger_only")
+    return 0 if report["status"] == fixture.COMPLETED_STATUS[mode] else 1
 
 
 def _mounts(root, plan):
@@ -158,9 +160,10 @@ def _isolated_launch(root, board, plan, plan_pin, *, exact_stop=False):
             })
 
 
-def run(root, scenario, *, isolated=False, exact_container_stops=False):
+def run(root, scenario, *, isolated=False, exact_container_stops=False, mode="planted"):
     """Start and reap one guarded child, then audit its export with a parent-owned tape."""
     _require(scenario in SCENARIOS, "unknown relay guard scenario")
+    _require(mode in fixture.COMPLETED_STATUS, "unknown relay fixture mode")
     _require(not exact_container_stops or (isolated and scenario != "completed"),
              "exact container stops require isolated fault injection")
     root = Path(root).absolute()
@@ -178,7 +181,8 @@ def run(root, scenario, *, isolated=False, exact_container_stops=False):
     plan = root / "plan.json"
     stop_receipt = root / "guard-stop.json"
     container_exit_receipt = root / "container-exit.json"
-    plan_pin = _write(plan, {"manifest_id": f"cpu-watchdog-{scenario}", "mode": "planted",
+    manifest_id = f"cpu-watchdog-{scenario}" if mode == "planted" else f"cpu-watchdog-{scenario}-{mode}"
+    plan_pin = _write(plan, {"manifest_id": manifest_id, "mode": mode,
                              "renderer": "json-dumps-v1", "caps": CAPS, "schedule": fixture.SCHEDULE})
     start = time.monotonic()
     observed_attempt = 0
@@ -206,7 +210,8 @@ def run(root, scenario, *, isolated=False, exact_container_stops=False):
     def memory():
         return guard.FLOOR_KIB if stop_ready and scenario == "memory_floor" else guard.available_kib()
 
-    local = [sys.executable, "-B", "-m", "lab.r3_relay_cpu_guard", str(board), scenario, "--worker-plan-sha256", plan_pin]
+    local = [sys.executable, "-B", "-m", "lab.r3_relay_cpu_guard", str(board), scenario,
+             "--worker-plan-sha256", plan_pin, "--mode", mode]
     launch = (_isolated_launch(root, board, plan, plan_pin, exact_stop=exact_container_stops)
               if isolated else nullcontext((local, None)))
     with (root / "worker.stderr").open("xb") as stderr, l2_host_response.capture(host, scripted) as capture, launch as transport:
@@ -320,8 +325,10 @@ def run(root, scenario, *, isolated=False, exact_container_stops=False):
                  and _sha(plan.read_bytes()) == plan_pin, "isolated export inventory or plan changed")
     if scenario == "completed":
         export = replay.verify(board, render=json.dumps, host_response_path=host, **pins)
-        _require(export["status"] == "complete", "guarded fixture did not close the relay window")
-        export["readout"].pop("trace")
+        _require(export["status"] == fixture.COMPLETED_STATUS[mode],
+                 "guarded fixture did not close the relay window")
+        if export["readout"] is not None:
+            export["readout"].pop("trace")
     else:
         export = partial.verify(board, manifest_path=plan, manifest_sha256=plan_pin, host_response_path=host, **pins)
     report = {"evidence": "scripted_cpu_guard_parent_tape", "stop": stop, "pid": child.pid,
@@ -345,14 +352,15 @@ def main():
     parser.add_argument("scenario", choices=SCENARIOS)
     parser.add_argument("--worker-plan-sha256", help=argparse.SUPPRESS)
     parser.add_argument("--worker-plan", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--mode", choices=fixture.COMPLETED_STATUS, default="planted")
     parser.add_argument("--isolated", action="store_true", help="use the pinned no-network CPU container")
     parser.add_argument("--exact-container-stops", action="store_true",
                         help="opt in to watchdog stops of the exact disposable CPU container")
     args = parser.parse_args()
     if args.worker_plan_sha256:
-        return _worker(args.output, args.worker_plan_sha256, args.worker_plan)
+        return _worker(args.output, args.worker_plan_sha256, args.worker_plan, mode=args.mode)
     print(json.dumps(run(args.output, args.scenario, isolated=args.isolated,
-                         exact_container_stops=args.exact_container_stops), sort_keys=True))
+                         exact_container_stops=args.exact_container_stops, mode=args.mode), sort_keys=True))
     return 0
 
 

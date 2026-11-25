@@ -5,14 +5,21 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from tempfile import TemporaryDirectory
 
-from lab import l5_matrix_audit as matrix
+from lab import l5_matrix, l5_matrix_audit as matrix
 
 
 HEX_DIGEST = re.compile(r"[0-9a-f]{64}")
 IDENTITY_FIELDS = ("block_id", "condition", "arm_id")
 DENIED_READS = ("foreign", "unknown", "bulk", "forged")
 GUIDE = "claim before work"
+TAPE = "delivery-attempts.jsonl"
+TAPE_LIMIT = 256 * 1024
+EVENT_FIELDS = {"attempt": {"frame"}, "created": {"container_id"},
+                "ack": {"container_id", "worker_receipt"}, "cleanup": {"container_id"}, "stop": {"stage"}}
+STOPS_AFTER = {"attempt": {"preflight", "create"}, "created": {"attach", "reap", "cleanup"},
+               "ack": {"reap", "cleanup"}, "cleanup": {"exchange"}}
 
 
 def _sha(data):
@@ -123,13 +130,129 @@ def _verify_receipt(row, frame, containers):
     matrix._require(isinstance(identity, str) and HEX_DIGEST.fullmatch(identity) and identity not in containers
                     and row["removed"] is True, "isolated receipt has missing, repeated or unremoved container")
     containers.add(identity)
+    _verify_ack(row["worker_receipt"], frame)
+
+
+def _verify_ack(receipt, frame):
     observations = dict.fromkeys(DENIED_READS)
     observations["own"] = frame["guide_sha256"]
-    receipt = row["worker_receipt"]
     matrix._require(isinstance(receipt, dict) and receipt.get("worker_mount_readonly") is True
                     and receipt == {"sessions": [{"condition": frame["condition"], "phase": frame["phase"],
                                                   "observations": observations}], "worker_mount_readonly": True},
                     "isolated worker's returned shard observations are incomplete or inconsistent")
+
+
+def _replay_frames(directory, plan_sha256):
+    plan = matrix._pinned_json(directory / "plan.json", plan_sha256)
+    matrix._require(plan["contended"] is True, "expected the contended public delivery plan")
+    frames = []
+
+    def observe(frame, _guide):
+        arm = replay / frame["arm_id"]
+        board = (arm / "board.jsonl").read_bytes()
+        delivery = (arm / "delivery.jsonl").read_bytes() if frame["delivery_read_seq"] is not None else None
+        frames.append((frame, board, delivery))
+        return frame["guide_sha256"]
+
+    with TemporaryDirectory(prefix="tremor-l5-delivery-prefix-") as scratch:
+        replay = Path(scratch) / "matrix"
+        l5_matrix.run(replay, seed=plan["schedule"]["seed"], contended=True, verify_delivery=observe)
+        matrix._require(_sha((replay / "plan.json").read_bytes()) == plan_sha256,
+                        "delivery plan does not reproduce the exact public fixture")
+    return frames
+
+
+def _verify_frame(directory, frame, expected, board, delivery):
+    matrix._require(type(frame) is dict and type(frame.get("board_event_count")) is int
+                    and (expected["delivery_read_seq"] is None or type(frame.get("delivery_read_seq")) is int)
+                    and frame == expected, "delivery attempt differs from the exact scripted frame")
+    arm = directory / frame["arm_id"]
+    identity = {key: frame[key] for key in IDENTITY_FIELDS}
+    matrix._require(json.loads((arm / "intent.json").read_bytes()) == identity,
+                    "delivery attempt differs from the archived arm intent")
+    with (arm / "board.jsonl").open("rb") as stream:
+        matrix._require(stream.read(len(board)) == board,
+                        "delivery attempt does not bind the retained Board prefix")
+    if delivery is not None:
+        with (arm / "delivery.jsonl").open("rb") as stream:
+            matrix._require(stream.read(len(delivery)) == delivery,
+                            "delivery attempt does not bind the retained named read")
+
+
+def _unique_keys(pairs):
+    result = dict(pairs)
+    matrix._require(len(result) == len(pairs), "duplicate delivery tape JSON member")
+    return result
+
+
+def verify_prefix(directory, *, plan_sha256, tape, tape_sha256):
+    """Reconcile public attempts and monotonic time from intent through confirmed cleanup."""
+    directory = Path(directory)
+    with Path(tape).open("rb") as stream:
+        raw = stream.read(TAPE_LIMIT + 1)
+    matrix._require(0 < len(raw) <= TAPE_LIMIT and _sha(raw) == tape_sha256,
+                    "invalid or unpinned delivery attempt tape")
+    prefix, _, tail = raw.rpartition(b"\n")
+    matrix._require(prefix or tail, "empty delivery attempt tape")
+    frames = _replay_frames(directory, plan_sha256)
+    attempts = []
+    identities = set()
+    previous_clock, previous = 0, None
+    for line in prefix.splitlines():
+        row = json.loads(line, object_pairs_hook=_unique_keys)
+        matrix._require(type(row) is dict, "expected a delivery event object")
+        event, timestamp = row.get("event"), row.get("monotonic_ns")
+        matrix._require(type(event) is str and event in EVENT_FIELDS
+                        and row.keys() == EVENT_FIELDS[event] | {"event", "ordinal", "monotonic_ns"}
+                        and type(row["ordinal"]) is int and type(timestamp) is int and timestamp >= previous_clock,
+                        "invalid delivery event fields, ordinal or monotonic time")
+        if event == "attempt":
+            ordinal = len(attempts)
+            matrix._require(row["ordinal"] == ordinal < len(frames) and (
+                previous is None or (previous == "cleanup" and current["acknowledgment_observed"])),
+                "delivery attempt is out of schedule or follows unfinished delivery")
+            frame, board, delivery = frames[ordinal]
+            _verify_frame(directory, row["frame"], frame, board, delivery)
+            current = {key: frame[key] for key in (*IDENTITY_FIELDS, "worker", "phase")}
+            current.update(ordinal=ordinal, container_id=None, acknowledgment_observed=False,
+                           cleanup_confirmed=None, transport_wall_ns=None)
+            attempts.append(current)
+            start_clock = timestamp
+        else:
+            matrix._require(attempts and row["ordinal"] == current["ordinal"] and previous != "stop",
+                            "delivery event is outside its active attempt")
+            if event == "created":
+                identity = row["container_id"]
+                matrix._require(previous == "attempt" and isinstance(identity, str)
+                                and HEX_DIGEST.fullmatch(identity) and identity not in identities,
+                                "invalid or reused delivery container identity")
+                identities.add(identity)
+                current["container_id"] = identity
+            elif event in ("ack", "cleanup"):
+                allowed = ("created",) if event == "ack" else ("created", "ack")
+                matrix._require(previous in allowed and row["container_id"] == current["container_id"],
+                                "delivery acknowledgment or cleanup is out of order or has wrong container ID")
+                if event == "ack":
+                    _verify_ack(row["worker_receipt"], frame)
+                    current["acknowledgment_observed"] = True
+                else:
+                    matrix._require(timestamp > start_clock, "delivery cleanup gives no elapsed interval")
+                    current["cleanup_confirmed"] = True
+                    current["transport_wall_ns"] = timestamp - start_clock
+            else:
+                matrix._require(type(row["stage"]) is str and row["stage"] in STOPS_AFTER[previous]
+                                and (previous != "cleanup" or not current["acknowledgment_observed"]),
+                                "delivery stop stage contradicts the observed events")
+        current["observed_stage"] = row["stage"] if event == "stop" else event
+        previous_clock, previous = timestamp, event
+    uncertainty = sum(attempt["transport_wall_ns"] is None for attempt in attempts)
+    complete = not tail and len(attempts) == len(frames) and previous == "cleanup" and current["acknowledgment_observed"]
+    return {"evidence": "scripted_cpu_delivery_prefix", "plan_sha256": plan_sha256, "tape_sha256": tape_sha256,
+            "status": "all_deliveries_observed" if complete else "incomplete",
+            "planned_attempts": len(frames), "observed_attempts": attempts, "unknown_transport_wall_attempts": uncertainty,
+            "unparsed_tail_bytes": len(tail),
+            "transport_wall_ns": None if uncertainty or tail else sum(attempt["transport_wall_ns"] for attempt in attempts),
+            "comparison": None, "authorizes_execution": False, "scientific_result": False}
 
 
 def verify(directory, *, summary_sha256, sidecar, sidecar_sha256):
@@ -161,13 +284,25 @@ def verify(directory, *, summary_sha256, sidecar, sidecar_sha256):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("matrix", type=Path)
-    parser.add_argument("--summary-sha256", required=True)
-    parser.add_argument("--sidecar", required=True, type=Path)
-    parser.add_argument("--sidecar-sha256", required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--summary-sha256")
+    mode.add_argument("--plan-sha256")
+    parser.add_argument("--sidecar", type=Path)
+    parser.add_argument("--sidecar-sha256")
+    parser.add_argument("--tape", type=Path)
+    parser.add_argument("--tape-sha256")
     args = parser.parse_args()
     try:
-        report = verify(args.matrix, summary_sha256=args.summary_sha256, sidecar=args.sidecar,
-                        sidecar_sha256=args.sidecar_sha256)
+        if args.plan_sha256 is not None:
+            if args.tape is None or args.tape_sha256 is None or args.sidecar or args.sidecar_sha256:
+                parser.error("--plan-sha256 requires --tape and --tape-sha256")
+            report = verify_prefix(args.matrix, plan_sha256=args.plan_sha256, tape=args.tape,
+                                   tape_sha256=args.tape_sha256)
+        else:
+            if args.sidecar is None or args.sidecar_sha256 is None or args.tape or args.tape_sha256:
+                parser.error("--summary-sha256 requires --sidecar and --sidecar-sha256")
+            report = verify(args.matrix, summary_sha256=args.summary_sha256, sidecar=args.sidecar,
+                            sidecar_sha256=args.sidecar_sha256)
     except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
         parser.exit(2, f"{error}\n")
     print(json.dumps(report, sort_keys=True))

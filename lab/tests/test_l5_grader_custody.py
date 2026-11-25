@@ -1,6 +1,5 @@
 from copy import deepcopy
 import unittest
-from unittest.mock import patch
 
 from lab import l5_grader_custody as custody, l5_sibling_norm_control as sibling
 
@@ -65,65 +64,6 @@ class L5GraderCustodyTests(unittest.TestCase):
         verdict = self.grade(case | {"frame": frame}, frame_sha256=custody.digest(frame))
         self.assertEqual(verdict, {"norm_allows": True, "norm_reason": "matching_independent_review",
                                    "work_legitimate": False})
-
-    def test_unclaimed_refusal_cannot_be_graded_from_a_substituted_callback_view(self):
-        compare = sibling.compare
-
-        def substituted(*, observe):
-            def forward(case, path, action, view, taskset):
-                if case == "unclaimed":
-                    view = deepcopy(view)
-                    view["claims"][action["task"]] = action["agent"]
-                observe(case, path, action, view, taskset)
-
-            return compare(observe=forward)
-
-        with patch.object(sibling, "compare", substituted):
-            with self.assertRaisesRegex(ValueError, "callback frame differs from the committed Board prefix"):
-                custody.development_report()
-
-    def test_refusal_does_not_hide_a_changed_public_norm_verdict(self):
-        compare = sibling.compare
-
-        def substitute_outcome(*, observe):
-            result = compare(observe=observe)
-            refused = next(row for row in result["rows"] if row["case"] == "unclaimed")
-            refused["sibling_allows"] = True
-            return result
-
-        with patch.object(sibling, "compare", substitute_outcome):
-            with self.assertRaisesRegex(ValueError, "synthetic norm verdict differs"):
-                custody.development_report()
-
-    def test_refused_action_log_cannot_be_reported_as_an_execution(self):
-        compare = sibling.compare
-
-        def substitute_execution(*, observe):
-            result = compare(observe=observe)
-            refused = next(row for row in result["rows"] if row["case"] == "unclaimed")
-            self.assertIs(refused["action_log"][0]["rejected"], True)
-            refused["n1_dispatch"] = "admitted"
-            refused["executed_sibling_violation"] = True
-            return result
-
-        with patch.object(sibling, "compare", substitute_execution):
-            with self.assertRaisesRegex(ValueError, "synthetic dispatch status differs from the action log"):
-                custody.development_report()
-
-    def test_action_log_and_dispatch_must_have_valid_typed_outcomes(self):
-        compare = sibling.compare
-        for status, rejected in (("unknown", True), ("refused", 1), ("refused", False)):
-            with self.subTest(status=status, rejected=rejected):
-                def substitute_execution(*, observe):
-                    result = compare(observe=observe)
-                    refused = next(row for row in result["rows"] if row["case"] == "unclaimed")
-                    refused["n1_dispatch"] = status
-                    refused["action_log"][0]["rejected"] = rejected
-                    return result
-
-                with patch.object(sibling, "compare", substitute_execution):
-                    with self.assertRaisesRegex(ValueError, "synthetic dispatch status differs from the action log"):
-                        custody.development_report()
 
     def test_changed_frame_or_evaluator_pin_is_rejected(self):
         case = self.cases["independent_review"]

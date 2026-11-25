@@ -170,3 +170,16 @@ DISCLOSED-DECISIONS (orchestrator, Opus 5.5):
 - D5 No human baseline; its absence is stated as a limit.
 - D6 Canary Console reconciliation is required before publishing results, not before running EP-1.
 - API spend within the authorised USD 170 is not treated as a new payment.
+
+## Addendum (10), 2026-11-21 UTC · Pilot 4 and overnight operating scope
+
+Alejandro replied “Authorize one Pilot 4 after the gates pass” to the request for one
+Claude Haiku 5.5 Pilot 4 limited to USD 0.25, 260 calls and 598,000 tokens, with the same
+prospectively approved second-round wording in each arm. Author review and existing
+verification and pricing prerequisites govern execution. This approval covers one batch.
+
+The later Complex System overnight directive governs the current Spark session under PC
+coordinator oversight. It explicitly excludes payments and paid calls during this window.
+It requires local-only work and commits, checkpoint handoff updates, and PC-REQUEST for an
+AWS change. Keep the Pilot 4 authorization for a future window when paid execution is
+allowed and the conditions have passed. [Current overnight handoff](../../coordinator-outbox/complex-system-overnight-20261121.md)

@@ -93,6 +93,23 @@ one underclaim). Moved out of scope on 2026-11-20: 3.3, 3.5, 3.10, 3.15, and the
 oversight, model organisms, safeguards, security, ML systems. NOT STARTED: AI control, 3.13,
 internals, 3.7. Nothing is PILOTED or EVIDENCED.
 
+### Current evidence for sections 2–3 (2026-11-21)
+
+This checkpoint supersedes the older status labels above for the items below.
+The [current workplan](WORKPLAN-CURRENT.md) tracks the remaining gates.
+
+| Area or direction | Current evidence and limit |
+|---|---|
+| 3.9, systematic oversight errors | Scripted canaries and a case study document the failure family and the corrected checks. Correlated model errors still require measured traces. [Case study](reports/workplan-ep/R3-scorer-evidence-case-study.md) |
+| 3.17, multi-agent governance | The instrument was piloted. The archived run selected shared order, with clearance criterion 2 failed. A frozen confirmatory estimate is still pending. [Preregistration](../prereg/EP1.md) |
+| Defensive adversarial robustness and 3.13 | Scripted fixtures establish control behavior. Local 4B replication remains gated on native admission. [R3 admission](reports/workplan-ep/R3-first-slices-admission.md) |
+| 3.7, activation monitoring | The proposed TF-IDF comparison depends on eligible R3 traces. [R2–R4 protocol readiness](reports/workplan-ep/R2-R4-protocol-readiness.md) |
+| ML systems and RL | A verifiable offline reward environment exists. Training and policy improvement remain outside the evidence. [Environment note](reports/workplan-ep/R5-verifiable-environment.md) |
+| Model organisms | Pilot leakage cards supplied an exploratory within-set probe. The experiment contains no trained model organism. [Pilot 3 read-off](reports/workplan-ep/R2-pilot3-leakage.md) |
+| Safeguards research | Lean-checked scoring supports evaluation integrity. The instrument does not evaluate general-purpose safeguards. |
+| Frontier red-teaming | Outside the research scope. Defensive harness checks support instrument QA. |
+| 3.12, false completion | The instrument flags a done claim without an earlier passing work event by the same agent on the same task. The read-off is exploratory and cannot establish intent. |
+
 ## 4. Test catalogue
 
 Every test follows `PRINCIPLES.md`: units on every quantity, one budget held fixed (turns plus input

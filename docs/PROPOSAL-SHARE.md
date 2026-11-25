@@ -8,6 +8,30 @@ machine-generated transcripts, so every quote needs a check against the recordin
 "Sortie" is a working name. We have **not** checked whether it is available (no registry, domain
 or trademark search).
 
+## Current program summary for publication review (2026-11-21)
+
+Sortie tests when coding agents can coordinate through shared practices and when they need
+enforcement in the harness. The first study compares a claim-before-work instruction,
+the same rule enforced in code, and an arm without the rule. The arms share a task and
+work budget, and three scorers check the logged outcomes. Pilot 3 completed 30 episodes
+and selected shared task order. Its longest reply exceeded the preregistered clearance
+ceiling, so the confirmatory experiment remains unfrozen and unrun.
+
+The eight-line research program covers error correlation, memory transmission, monitor
+selection, offline consolidation, norm carriers, permission decay, team size, and
+activation readouts. Each line names a baseline and a measurable outcome. Current scripted
+checks establish that the instruments behave on known fixtures. Scientific claims require
+the matched, held-out comparisons specified for each line.
+
+Sources for release review: [eight-line proposal](PROPOSAL-RESIDENCY-V3.md),
+[EP-1 preregistration](../prereg/EP1.md), and
+[Pilot 3 clearance](reports/workplan-ep/P3-clearance-criterion-2.md).
+The owner still selects the exact publication copy, contact and destination.
+
+## Earlier correspondence draft
+
+The material below preserves the earlier handoff study and its attribution notes.
+
 ## 1. What Sortie is, and the one question
 
 **Prior art first.** None of the mechanisms here is new: orchestrators, model cascades, signed

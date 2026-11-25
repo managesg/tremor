@@ -53,7 +53,7 @@ Paths are relative to the repository root.
     - The release owner and Alejandro own release adoption and G8 sharing.
     - The claims reviewer and resource owner own the provider Console totals and T7 accounting. The provisional 4.0 GPU-hour T7 hold stays until it is backed by evidence.
 - [x] **Goal registry CLOSED 2026-11-25.** Owner cleared the /goal and PC removed the goal and loop hooks everywhere, so no goal registry remains to wait on (Assistant relay, sup:9f33b3f027c3a347). The Assistant is now `claude_683b11af` (`codex_c125641a` retired).
-- [x] **Cross-cutting, OPEN, this chat.** DONE 2026-11-25: standing duties are met as far as offline allows; unmet-criteria report is docs/reports/TREMOR_CHECKPOINT_20261125.md (OD4: closed here because the Wednesday report was its only deliverable).
+- [ ] **Cross-cutting, OPEN, this chat.** Standing duties; stays open per Assistant (sup:9f33b3f027c3a347). Checkpoint report: docs/reports/TREMOR_CHECKPOINT_20261125.md.
   - Keep the evidence boundaries and one-writer ownership.
   - Commit only verified local work.
   - Reread this plan hourly.

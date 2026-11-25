@@ -138,6 +138,16 @@ class L2HostResponseTests(unittest.TestCase):
         plan = {"schedule": schedule, "archive_id": archive_id, "observed_pins": observed}
         result = l2_host_response.verify_archive(export, **plan, response_pins=responses)
         self.assertEqual([arm["raw_replay"]["adoptions"] for arm in result["arms"]], [1, 1])
+        reference_sha = hashlib.sha256(b"Paper ledger marker: green").hexdigest()
+        terms = {"reference_sha256": reference_sha, "max_input_tokens": 50,
+                 "max_output_tokens": 10, "accept_at_limit": False}
+        frozen = {key: dict(terms) for key in observed}
+        governed = l2_host_response.verify_archive(export, **plan, response_pins=responses, frozen_governance=frozen)
+        self.assertEqual(governed["evidence"], "scripted_host_response_governed_verified")
+        self.assertTrue(all(arm["governance"] == terms for arm in governed["arms"]))
+        frozen["matched", 0]["accept_at_limit"] = True
+        with self.assertRaisesRegex(ValueError, "governance differs for accept_at_limit"):
+            l2_host_response.verify_archive(export, **plan, response_pins=responses, frozen_governance=frozen)
         with self.assertRaisesRegex(ValueError, "cover every scheduled arm"):
             l2_host_response.verify_archive(export, **plan, response_pins={})
         missing_digest = responses | {("matched", 0): (responses["matched", 0][0], "0" * 64)}

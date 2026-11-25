@@ -17,7 +17,7 @@ def _score(actions, taskset):
 
 
 def verify(directory, *, summary_sha256):
-    """Bind the phase readbacks to work dispatches and closed Board rounds."""
+    """Bind phase readbacks to the scripted work order and closed Board rounds."""
     directory = Path(directory)
     audited = l5_matrix_audit.audit(directory, summary_sha256=summary_sha256)
     summary = l5_matrix_audit._pinned_json(directory / "summary.json", summary_sha256)
@@ -32,10 +32,17 @@ def verify(directory, *, summary_sha256):
             raise ValueError("phase readback requires the pinned Board and both phase commits")
         attempts = [entry for entry in row["dispatch"] if entry["action"]["type"] == "work"]
         phases = {phase: [] for phase in phase_rounds}
-        for dispatch, work in zip(attempts, row["work"], strict=True):
-            phase = dispatch["phase"]
-            if phase not in phase_rounds or dispatch["round"] != phase_rounds[phase]:
+        # Admitted work has no independent Board event in the legacy archive.
+        # The scripted runner emits its first oracle job before the intervention.
+        oracle = alloc.oracle_log(row["taskset"])
+        for index, (dispatch, work, job) in enumerate(zip(attempts, row["work"], oracle, strict=True)):
+            phase = "pre" if index == 0 else "post"
+            if dispatch["phase"] != phase or dispatch["round"] != phase_rounds[phase]:
                 raise ValueError("work phase does not match its committed Board round")
+            if type(dispatch["action"]["answer"]) is not int or type(work["action"]["answer"]) is not int:
+                raise ValueError("scripted work answers must be exact integers")
+            if {key: value for key, value in work["action"].items() if key != "rejected"} != job:
+                raise ValueError("work order differs from the scripted oracle")
             phases[phase].append(work["action"])
         if len(phases["pre"]) != 1 or len(phases["post"]) != row["taskset"]["n_agents"] - 1:
             raise ValueError("work counts differ from the expected opening and post phases")

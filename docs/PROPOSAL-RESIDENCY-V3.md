@@ -24,11 +24,11 @@ the measurement charged to it. Every prediction has a kill criterion.
 | 7. Renormalization across team size | Error correlation as teams grow | Blocks sized by task coupling | Parallel small teams; single hub | Medium |
 | 8. Activation readouts | Probe-to-text error correlation | A probe as one more ensemble view | Text monitors; published probe designs | Low to medium |
 
-**What exists today.** The bench (shared board, router, perturbation harness, practice cards, three
-scorers with one in Lean 4, spend ledger) is built and has passed scripted checks. One instrument
-pilot ran on a real model (88 calls, USD 0.0115) and was stopped by its own pre-set rule. **No
-hypothesis has been tested, no pre-registration is frozen, and none of the eight techniques has been
-started.** Total real spend: USD 0.0162.
+**What exists today.** The board, router, perturbation harness, practice cards, three scorers
+and spend ledger have passed scripted checks. Three instrument pilots have used the live
+model. Pilot 3 completed, selected shared task order and failed an output-length clearance rule.
+EP-1 remains draft and unrun. The archived local provider charge records total USD 0.04130.
+Console reconciliation remains open.
 
 **Six-week deliverable.** Pre-registrations for all eight lines; lines 1 to 3 tested against their
 baselines; first results for lines 4 and 5; pilots for lines 6 to 8; one release of the bench, logs,
@@ -64,7 +64,7 @@ Reading rules for this document:
   by the project owner. Where an idea is risky we state the risk and the kill criterion; we do not
   shrink the idea.
 - **ArXiv metadata discrepancies fixed in this version:** *Worse Together* (2610.00583) arXiv v1 is 30 Sep 2026 with three authors (Paliskara, Namchittai, Lampinen); the web version adds Tay and Griffin and is dated 11 Nov 2026. *Red-Teaming Auto Mode* (2609.19587) arXiv v1 is 17 Sep 2026, updated 27 Sep. *Would This Change Your Answer?* (2608.16747) is about agents predicting counterfactual behaviour from interpretability tools, not a monitoring study—line 8 cites it correctly as "not our prior".
-- **Quote status.** Lydia Hallie items are paraphrases from our notes of an owner-pasted transcript we did not see; quotation marks around them mark a paraphrase, UNVERIFIED as verbatim. CJ Avilla's "design for appropriate trust, not greater trust" is attributed by the speaker to a 2004 paper (Lee and See 2004 by our reading); it is not in our talk notes and is UNVERIFIED as verbatim. Diogo Almeida and Lance Martin items are TALK CLAIMS.
+- **Quote status.** Lydia Hallie items are paraphrases from our notes of an owner-pasted transcript. Their exact wording is unverified. CJ Avilla attributed the aim of appropriate rather than greater trust to a 2004 paper, which we identify as Lee and See. The exact wording is unverified. Diogo Almeida and Lance Martin items are TALK CLAIMS.
 
 ## 1. Thesis, from first principles
 
@@ -582,8 +582,7 @@ strength; the placebo dream and the equal-token search control. We did not find 
 the gated write. Novelty: medium.
 
 **Cost.** 12 GPU-hours; USD 33 plan, USD 40 stop for the text arms. The adapter arm (E) has up to 13.5
-GPU-hours set aside and is **blocked today**: the owner has cut all training in this project, and
-reversing that cut is pending.
+GPU-hours set aside. The owner approved the local adapter design under D3. Batch execution still requires confirmation.
 
 ### Line 5. Stigmergic coordination and norm carriers
 
@@ -874,12 +873,12 @@ Not cut. Not in the eight because of rank or dependency.
 | Board, router, agent cells, perturbation harness | INSTRUMENTED | Passed review after five rounds; it failed the first four. Scripted checks only. |
 | Practice cards, neutral twins, leak check, code enforcer | INSTRUMENTED | Ten cards. One reviewed for the first study. |
 | Three scorers, one in Lean 4 | INSTRUMENTED | 66 theorem and lemma declarations, no `sorry`, no added axioms; the three agree on 10,000 seeded logs (recorded, not re-run for this draft). The kernel check found that our outcome was not bounded as we assumed, and the definition was fixed before any run. |
-| Spend ledger | INSTRUMENTED, exercised once with real money | Hard stop in code. Total real spend so far: USD 0.0162. |
+| Spend ledger | INSTRUMENTED and exercised in live instrument batches | Archived local charges total USD 0.04130. Console reconciliation remains open. |
 | Consolidation arms, poison task, memory lint, two monitors, order parameters, permission replay ledger, co-change coupling counter | INSTRUMENTED | Scripted only. No model has touched them. Their code was not re-read for this draft. |
-| First study, EP-1 | PILOTED (instrument only) | Pre-registration is a draft, not frozen. Pilot 1 (88 calls, USD 0.0115) was stopped by its own pre-set rule. It is instrument validation, not a result. |
-| Night loop, scripted nulls, and every technique in lines 1 to 8 | NOT STARTED | Designs in this document. |
+| First study, EP-1 | PILOTED (instrument only) | Pilot 3 completed 30 episodes and 240 calls. Its design rule selected shared task order. The longest reply used 263 output tokens against the 150-token clearance ceiling. EP-1 remains draft and unrun. [Clearance record](reports/workplan-ep/P3-clearance-criterion-2.md) |
+| Night loop and scripted controls | INSTRUMENTED offline | The night loop and bench readouts passed an offline gate. Measured model experiments have separate admission checks. [Bench gate](reports/workplan-ep/R1-bench-gate.md) |
 | Local models and GPU | NOT STARTED for this programme | Models downloaded. Earlier GPU smokes on a parked thread hit a host-memory watchdog; the cause is not isolated. Throughput for the 4B model is unmeasured. |
-| Adapter training, activation hooks | NOT STARTED | Training is cut by the owner; reversing the cut is pending. Hook points are unverified. |
+| Adapter training, activation hooks | NOT STARTED | The local adapter design is approved under D3. Batch confirmation and hook-point verification are still pending. |
 
 What pilot 1 taught us: hidden default thinking shared a 300-token cap with the answer, so replies were
 cut at rates that differed by card. A naive run would have shipped that confound. One cost
@@ -922,8 +921,8 @@ results. Lines 6 to 8 give pilots. The three- and six-month placements complete 
 
 - Months 1 to 2: the six weeks above; then lines 4 and 5 in full, and replication of lines 1 to 3 on a
   second open model family.
-- Month 3: lines 6 to 8 in full; larger local teams if the owner lifts the team-size cap for local
-  models; the adapter arm if training is approved.
+- Month 3: lines 6 to 8 in full and the approved larger local teams. Run the adapter batch before L8
+  prediction D once its execution gates pass.
 - Month 4: external validity. The surviving techniques on a public continual-learning benchmark task
   with deterministic scoring and on a task family scored by unit tests; current frontier Claude tiers.
 - Month 5: the techniques combined in one controller (verify by susceptibility, quarantine by R,
@@ -934,29 +933,28 @@ results. Lines 6 to 8 give pilots. The three- and six-month placements complete 
 throughput (61.1 non-padding tokens per second in one batched smoke of 20 prompts on the 0.8B model).
 The 4B throughput is unmeasured, so the GPU-hours are plans. These are not quotes.
 
-**Funded by the project owner on 2026-11-20: USD 170 in total for the Claude API (USD 0.0162 spent)
+**Funded by the project owner on 2026-11-20: USD 170 in total for the Claude API
 and 70 GPU-hours on the local workstation.** Each batch has its own stop, and a batch that reaches its
-stop ends and reports what it has. The stops sum to USD 159.5 (5.25 + 1.25 + 153), which leaves about
-USD 10.5 in reserve. The lines use 56.5 GPU-hours; up to 13.5 more are set aside for the line 4 adapter
-arm, and only if the owner reverses the no-training cut, which is pending. The caps are enforced in
-code, and no batch runs until the code carries these figures. Only the owner changes them.
+stop ends and reports what it has. The eight research lines total USD 106 planned and USD 153 in stops. With the two displayed pilot and EP-1 allocations, the table totals USD 107.30 planned and USD 159.50 in stops, leaving USD 10.50 in reserve. The lines use 56.5 GPU-hours; up to 13.5 more are set aside for the line 4 adapter
+arm under design approval D3. Batch execution still requires confirmation. The current code
+retains the earlier limits until the spend gate carries the approved figures. Only the owner changes them.
 
 | Batch | GPU-hours | Claude API, USD (plan / stop) | Still needs |
 |---|---|---|---|
-| Spent so far, pilot 2 and EP-1 | 0 | 0.3 / 5.25 | One confirm word each |
+| Pilot 2 and EP-1 budget allocation | 0 | 0.3 / 5.25 | Pilot 2 ran and stopped. EP-1 requires its own confirmation. |
 | Sensitivity pilot (rounds, contention, team size) | 0 | 1 / 1.25 | |
 | Scripted nulls for all lines (CPU) | 0 | 0 | |
 | 4B throughput, line 2 pilot slice, line 5 local carriers | 7.5 | 0 / 0 | |
-| Line 1 | 8 | 14 / 24 | Team-size ruling for more than 8 agents |
-| Line 2 | 6 | 9 / 15 | Dual-use ruling |
-| Line 3 | 4 | 16 / 24 | Dual-use ruling for the selection arm |
-| Line 4, text arms | 12 | 33 / 40 | Dual-use ruling for prediction D |
+| Line 1 | 8 | 14 / 24 | D2 covers local 16 and 32. Batch confirmation pending. |
+| Line 2 | 6 | 9 / 15 | D1 covers benign planted notes. Batch confirmation pending. |
+| Line 3 | 4 | 16 / 24 | D1 covers defensive monitor selection. Batch confirmation pending. |
+| Line 4, text arms | 12 | 33 / 40 | D1 covers benign planted notes. Review any setting outside that approval. |
 | Line 5: small tier, frontier slice, evaporating claims | 3 | 20 / 29 | |
 | Line 6 | 2 | 4 / 6 | |
-| Line 7 | 8 | 8 / 12 | Ruling on local teams of 16 and 32 |
-| Line 8 | 6 | 2 / 3 | A ruling if any direction is removed |
+| Line 7 | 8 | 8 / 12 | D2 covers local 16 and 32. Batch confirmation pending. |
+| Line 8 | 6 | 2 / 3 | D1 covers local direction ablation. L8-D requires the L4 adapter checkpoints. |
 | **Lines and pilots** | **56.5** | **107.3 / 159.5** | |
-| Line 4, adapter arm | up to 13.5 | 0 | Reversal of the no-training cut (pending) |
+| Line 4, adapter arm | up to 13.5 | 0 | D3 covers the local design. Batch confirmation pending. |
 | **Whole programme** | **up to 70** | **170, with about 10.5 in reserve** | |
 
 **What this budget does and does not buy.** It buys every line's pilot and a first test of every
@@ -1022,7 +1020,7 @@ If all four hold we keep the bench, the verifier case study and EP-1, and we rep
 - Toy tasks (integer sums, six tasks). Nothing here depends on capability, so nothing here speaks to
   it until month 4.
 - The GPU host-memory fault is not isolated. If it persists, local tiers shrink.
-- The adapter arm may never be approved. No other line depends on it.
+- L8 prediction D needs the L4 adapter checkpoints. The other L8 predictions have independent prerequisites.
 - Our verification effort is far larger than our science so far. That is a fair criticism.
 
 ## 12. What this is not

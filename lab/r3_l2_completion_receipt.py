@@ -4,7 +4,8 @@ import argparse
 import json
 from pathlib import Path
 
-from lab import adapter_lineage, r3_l2_relay_partial, r3_l2_relay_replay, spark_calibration_guard
+from lab import adapter_lineage, r3_l2_relay_generation, r3_l2_relay_partial, r3_l2_relay_replay
+from lab import spark_calibration_guard
 
 
 def verify(bundle, *, completion_sha256, terminal_sha256):
@@ -89,9 +90,11 @@ def verify_bound(bundle, *, completion_sha256, terminal_sha256, plan_sha256):
         render=json.dumps, host_response_path=host_path,
         host_response_sha256=pins.get("host_response_sha256"),
     )
-    if replay["status"] != "complete" or replay["host_responses_verified"] is not True:
+    if (replay["status"] != r3_l2_relay_generation.COMPLETED_STATUS[plan["mode"]]
+            or replay["host_responses_verified"] is not True):
         raise ValueError("expected completed relay with independently recorded host responses")
-    replay["readout"].pop("trace")
+    if replay["readout"] is not None:
+        replay["readout"].pop("trace")
     if replay != terminal.get("export"):
         raise ValueError("host receipt differs from the completed relay replay")
     return {**receipt, "plan_id": plan["manifest_id"], "cpu_export_replayed": True}

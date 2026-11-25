@@ -53,6 +53,52 @@ class MatrixPhaseScoreTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "phase does not match"):
                 l5_matrix_phase_scores.verify(clone, summary_sha256=_digest(summary_path))
 
+    def test_re_pinned_work_cannot_exchange_opening_and_post_rounds(self):
+        with TemporaryDirectory() as scratch:
+            clone = Path(scratch) / "clone"
+            shutil.copytree(self.root / "False", clone)
+            summary_path = clone / "summary.json"
+            summary = json.loads(summary_path.read_bytes())
+            arm = next(row for row in summary["rows"] if row["condition"] == "neutral:clean")
+            opening, post, *_ = [event for event in arm["dispatch"] if event["action"]["type"] == "work"]
+            opening["round"], post["round"] = post["round"], opening["round"]
+            opening["phase"], post["phase"] = post["phase"], opening["phase"]
+            arm["work"][0]["phase"], arm["work"][1]["phase"] = opening["phase"], post["phase"]
+            arm_path = clone / arm["arm_id"] / "result.json"
+            arm_path.write_text(json.dumps({key: value for key, value in arm.items() if key != "result_sha256"}))
+            arm["result_sha256"] = _digest(arm_path)
+            summary_path.write_text(json.dumps(summary))
+
+            # The unchanged Board and matched attempts still satisfy the base archive audit.
+            l5_matrix_phase_scores.l5_matrix_audit.audit(clone, summary_sha256=_digest(summary_path))
+            with self.assertRaisesRegex(ValueError, "phase does not match"):
+                l5_matrix_phase_scores.verify(clone, summary_sha256=_digest(summary_path))
+
+    def test_re_pinned_float_answers_cannot_change_the_opening_score(self):
+        with TemporaryDirectory() as scratch:
+            clone = Path(scratch) / "clone"
+            shutil.copytree(self.root / "False", clone)
+            summary_path = clone / "summary.json"
+            summary = json.loads(summary_path.read_bytes())
+            first_block = summary["rows"][0]["block_id"]
+            for arm in summary["rows"]:
+                if arm["block_id"] != first_block:
+                    continue
+                opening = next(event for event in arm["dispatch"] if event["action"]["type"] == "work")
+                opening["action"]["answer"] = float(opening["action"]["answer"])
+                arm["work"][0]["action"]["answer"] = opening["action"]["answer"]
+                arm["score"] = l5_matrix_phase_scores._score(
+                    [row["action"] for row in arm["work"]], arm["taskset"],
+                )
+                arm_path = clone / arm["arm_id"] / "result.json"
+                arm_path.write_text(json.dumps({key: value for key, value in arm.items() if key != "result_sha256"}))
+                arm["result_sha256"] = _digest(arm_path)
+            summary_path.write_text(json.dumps(summary))
+
+            l5_matrix_phase_scores.l5_matrix_audit.audit(clone, summary_sha256=_digest(summary_path))
+            with self.assertRaisesRegex(ValueError, "must be exact integers"):
+                l5_matrix_phase_scores.verify(clone, summary_sha256=_digest(summary_path))
+
     def test_verified_stopped_prefix_cannot_be_mistaken_for_a_zero_score(self):
         with patch.object(l5_matrix_phase_scores.l5_matrix_partial, "verify",
                           return_value={"status": "incomplete", "comparison": None}) as verify:
