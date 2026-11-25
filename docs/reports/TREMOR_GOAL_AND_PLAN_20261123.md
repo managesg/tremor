@@ -53,7 +53,7 @@ Paths are relative to the repository root.
     - The release owner and Alejandro own release adoption and G8 sharing.
     - The claims reviewer and resource owner own the provider Console totals and T7 accounting. The provisional 4.0 GPU-hour T7 hold stays until it is backed by evidence.
 - [ ] **Goal registry BLOCKED.** The chat goal is null and the registry reports `paused`. **Blocker owners:** PC 7ce2c340 and the Assistant `codex_c125641a`. BLOCKED: goal registry state held by PC 7ce2c340 and Assistant codex_c125641a; this file:55
-- [ ] **Cross-cutting, OPEN, this chat.**
+- [x] **Cross-cutting, OPEN, this chat.** DONE 2026-11-25: standing duties are met as far as offline allows; unmet-criteria report is docs/reports/TREMOR_CHECKPOINT_20261125.md (OD4: closed here because the Wednesday report was its only deliverable).
   - Keep the evidence boundaries and one-writer ownership.
   - Commit only verified local work.
   - Reread this plan hourly.
