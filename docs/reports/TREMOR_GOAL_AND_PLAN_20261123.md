@@ -15,11 +15,11 @@ l Complete all ten TREMOR research milestones on Spark by Wednesday morning, Nov
 Paths are relative to the repository root.
 
 - [x] **M1 DONE · Spark calibration.** The guarded Qwen R2 run, exact teardown and 0.023123 GPU-hour settlement are accepted. Evidence: `docs/reports/workplan-ep/Spark-readiness.md#calibration-result-and-settlement`.
-- [ ] **M2 BLOCKED · Pilot 4 and EP-1.** Offline retry and B4 reply custody were exercised. Pilot 3 criterion 2 still fails, with 263 output tokens against a 150 ceiling. Evidence: `runs/pilot4-full-retry.ZwWZHE/OWNER_PACKET.md` and `runs/m2-enabled-response-custody.cHx1kP/OWNER.md`.
+- [ ] **M2 BLOCKED · Pilot 4 and EP-1.** Offline retry and B4 reply custody were exercised. Pilot 3 criterion 2 still fails, with 263 output tokens against a 150 ceiling. Evidence: `runs/pilot4-full-retry.ZwWZHE/OWNER_PACKET.md` and `runs/m2-enabled-response-custody.cHx1kP/OWNER.md`. BLOCKED: paid/live provider calls + D8 price-sheet refetch, Alejandro; docs/reports/tremor/OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md:1
   - **Blocker owners:** Alejandro, the preregistration author, and the spend and driver reviewers.
   - **Needed:** D8 hold release; wording, scoring and order decisions; pricing and driver clearance; named release. After that, seven Pilot 4 checks, the EP-1 freeze and 60 admitted episodes.
   - Gate register: `docs/reports/workplan-ep/Pilot4-pricing-verification-gates.md`.
-- [ ] **M3 OPEN, partly blocked · CPU benchmark and R3.** All 351 files and modes match the X42 nominated cut. The source manifest hash is `e972484a4db7c24f75058bf904c273545a4a4684a6dcc370caed2de44b1726de`; the binding target is `1c7b3af9433d17528ed093aaeacab1fb3d919af6265dbe46482455dc530dd7f4`. Zero of the three archived host windows are eligible. The R3 L5 CPU interruption receipt is verified. Evidence: `runs/tremor-chat-intake.f0VZwV/OWNER.md` and `runs/r3-l5-real-cpu-interruption.VMBB6X/verified.json`.
+- [ ] **M3 OPEN, partly blocked · CPU benchmark and R3.** All 351 files and modes match the X42 nominated cut. The source manifest hash is `e972484a4db7c24f75058bf904c273545a4a4684a6dcc370caed2de44b1726de`; the binding target is `1c7b3af9433d17528ed093aaeacab1fb3d919af6265dbe46482455dc530dd7f4`. Zero of the three archived host windows are eligible. The R3 L5 CPU interruption receipt is verified. Evidence: `runs/tremor-chat-intake.f0VZwV/OWNER.md` and `runs/r3-l5-real-cpu-interruption.VMBB6X/verified.json`. BLOCKED: row 167 custodian/L5 admission and quiet-host windows (PC, Alejandro); docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md:1, docs/reports/tremor/OWNER_DECISION_X42_quiet_host_window.md:1
   - **X42 blocker owners:**
     - Source owners decide whether to adopt the BtUauk grader fix (`runs/r1-execution-consistency.BtUauk/OWNER.md`).
     - PC 7ce2c340 then launches the designated bench reviewer, or delegates the launch to this lane.
@@ -29,30 +29,30 @@ Paths are relative to the repository root.
   - **Defect D1 fixed:** local commit `899ffeb`. Undefined Kish values now return None. Lab 384 OK and package 776 OK on a clean archive (`runs/commit-suite-d1fix.5AglpS`, EVIDENCE `1a17ed73…`).
   - **Next for M3 R1:** build the missing row-159, 162 and 165 deliverables, then get a fresh PC nomination and a bench re-review. Owner: this lane for the build. The preregistration author owns definitions such as "contention above 1".
   - **R3 L2/L5 blocker owners:** the runner owner, custodian, admission reviewer and Alejandro. Register: `docs/reports/workplan-ep/R3-L2-admission-inventory.md`.
-- [ ] **M4 BLOCKED on protocol freezes · L1–L8.** Offline L7 rotation and L8-D lineage groundwork exist. Evidence: `runs/m4-l7-combined-rotation.X5jf6W/OWNER.md`.
+- [ ] **M4 BLOCKED on protocol freezes · L1–L8.** Offline L7 rotation and L8-D lineage groundwork exist. Evidence: `runs/m4-l7-combined-rotation.X5jf6W/OWNER.md`. BLOCKED: freeze admission, Alejandro (offline L2-C/L3-C/L4-C drafts done); docs/reports/workplan-ep/R2-R4-protocol-readiness.md:1
   - **Blocker owners:** the line authors, custodians and reviewers. Alejandro owns the R2 sensitivity release.
   - Register: `docs/reports/workplan-ep/R2-R4-protocol-readiness.md`.
-- [ ] **M5 BLOCKED · L4-E to L8-D.** The Qwen loader and hook receipt exist. Evidence: `docs/reports/workplan-ep/Qwen-base-cpu-hook-receipt.md`.
+- [ ] **M5 BLOCKED · L4-E to L8-D.** The Qwen loader and hook receipt exist. Evidence: `docs/reports/workplan-ep/Qwen-base-cpu-hook-receipt.md`. BLOCKED: protected run admission, Alejandro; docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md:1
   - **Blocker owners:** the trainer, protocol author and L8-D custodian.
   - Packet: `runs/l4e-prospective-trainer.QIXxzB/coordinator-packet.md`.
-- [ ] **M6 BLOCKED · Coordination.** Public matched-traversal controls exist. Evidence: `docs/reports/workplan-ep/Topology-matched-traversal.md`.
+- [ ] **M6 BLOCKED · Coordination.** Public matched-traversal controls exist. Evidence: `docs/reports/workplan-ep/Topology-matched-traversal.md`. BLOCKED: protected run admission, Alejandro; docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md:1
   - **Blocker owners:** the author, custodian and resource reviewer.
   - Packet: `runs/topology-two-round-joined.FRL4cn/owner-packet.md`.
-- [ ] **M7 BLOCKED · Grover and quantum simulator.** Release and fallback replay exist. Evidence: `docs/reports/workplan-ep/Grover-topology-scripted.md`.
+- [ ] **M7 BLOCKED · Grover and quantum simulator.** Release and fallback replay exist. Evidence: `docs/reports/workplan-ep/Grover-topology-scripted.md`. BLOCKED: EP-1 paid calls, Alejandro; docs/reports/tremor/OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md:1
   - **Blocker owners:** EP-1 (see M2), the Grover authors, the custodian and scorer, and the resource reviewer.
   - Packet: `runs/grover-statistical-envelope.6Cln7i/OWNER.md`.
-- [ ] **M8 BLOCKED · SmolLM3 second family.** The V3 reserve-to-settlement binding is done offline. Evidence: `runs/m8-worker-runtime-binding.DV7iql/OWNER.md`.
+- [ ] **M8 BLOCKED · SmolLM3 second family.** The V3 reserve-to-settlement binding is done offline. Evidence: `runs/m8-worker-runtime-binding.DV7iql/OWNER.md`. BLOCKED: storage paths, runner reviewer, 0.1 GPU-h reservation (Spark operator, PC); docs/reports/tremor/OWNER_DECISION_M4_L2_L3_L4_and_M8_prereqs.md:1
   - **Blocker owners:** the storage operator, admission issuer and resource owner. They provide backing storage, the memory and runtime window, a 0.1 GPU-hour reservation and one-use admission.
   - Packet: `runs/smollm3-native-owner.vt3Sj1/OWNER.md`.
-- [ ] **M9 BLOCKED · Combined controller.** Scripted controller coverage exists. Evidence: `runs/controller-cluster-join.iJZn9z/OWNER.md`.
+- [ ] **M9 BLOCKED · Combined controller.** Scripted controller coverage exists. Evidence: `runs/controller-cluster-join.iJZn9z/OWNER.md`. BLOCKED: protected run admission, Alejandro; docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md:1
   - **Blocker owners:** the integration author, task custodian, claims reviewer and witnesses.
-- [ ] **M10 PARTLY ACCEPTED · Report, resources and release.** The Assistant accepted the offline release and reader evidence at local scope (`msg_805f62c63b42`, relayed by PC).
+- [ ] **M10 PARTLY ACCEPTED · Report, resources and release.** The Assistant accepted the offline release and reader evidence at local scope (`msg_805f62c63b42`, relayed by PC). BLOCKED: Console totals, T7 settlement, timer executor (PC); docs/reports/tremor/OWNER_DECISION_M10_release_and_T7.md:1
   - **Accepted files:** `runs/tremor-chat-intake.f0VZwV`, with `OWNER.md` prefix 3d744345, `EVIDENCE.sha256` prefix 6590b891 and `FRONTEND.sha256` prefix 6800c876.
   - **Recorded:** in `docs/reports/workplan-ep/Execution-plan-20261123.md`, local commit `d897860`.
   - **Blocker owners:**
     - The release owner and Alejandro own release adoption and G8 sharing.
     - The claims reviewer and resource owner own the provider Console totals and T7 accounting. The provisional 4.0 GPU-hour T7 hold stays until it is backed by evidence.
-- [ ] **Goal registry BLOCKED.** The chat goal is null and the registry reports `paused`. **Blocker owners:** PC 7ce2c340 and the Assistant `codex_c125641a`.
+- [ ] **Goal registry BLOCKED.** The chat goal is null and the registry reports `paused`. **Blocker owners:** PC 7ce2c340 and the Assistant `codex_c125641a`. BLOCKED: goal registry state held by PC 7ce2c340 and Assistant codex_c125641a; this file:55
 - [ ] **Cross-cutting, OPEN, this chat.**
   - Keep the evidence boundaries and one-writer ownership.
   - Commit only verified local work.
@@ -136,27 +136,27 @@ Acceptance: 1/10 (M1). Repository HEAD is recorded in each checkpoint. All commi
   - e11df9d: rows 155, 158, 159, 162, 165 and 169 ACCEPT.
   - 83e4870: row 157 ACCEPT (episode design only).
 - [x] **Row 157: ACCEPTED** on bench re-check at `83e4870` (`runs/x42-bench-recheck-83e4870.4P3pJg/VERDICT.md`, sha256 `48834c15…`), for the episode design only. Behaviour is not established, because the agents are scripted.
-- [ ] **Row 167:** INCOMPLETE. Custody binding (custodian), L5 admission (Alejandro), then the reveal review. Requirements: `docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`.
-- [ ] **Three quiet-machine runs:** packet `OWNER_DECISION_X42_quiet_host_window.md` (`9a3897d`). The dry preflight passes. Needs PC's window after the integration freeze, with the packet predicates confirmed.
+- [ ] **Row 167:** INCOMPLETE. Custody binding (custodian), L5 admission (Alejandro), then the reveal review. Requirements: `docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md`. BLOCKED: custodian binding then L5 admission (Assistant, Alejandro); docs/reports/tremor/X42_ROW167_L5_CUSTODY_REQUIREMENTS.md:1
+- [ ] **Three quiet-machine runs:** packet `OWNER_DECISION_X42_quiet_host_window.md` (`9a3897d`). The dry preflight passes. Needs PC's window after the integration freeze, with the packet predicates confirmed. BLOCKED: PC window and host reviewer; docs/reports/tremor/OWNER_DECISION_X42_quiet_host_window.md:1
 - [x] **Row 169: ACCEPTED at `f62cfe1`** (decided under owner delegation 2026-11-24T05:35Z, `88b19c1`: per-module Opus verdicts on the exact candidate bytes plus the bench interrogate pass). The per-module round found real defects in five modules (sgv, quarantine, monsel, vreplay, lease), fixed over five rounds. All nine are ACCEPT at `f62cfe1`, and the bench re-check `runs/x42-bench-recheck-f62cfe1.CgLSTo/VERDICT.md` (`6ada3cf4…`) confirms rows 155, 157, 158, 159, 162, 165 and 169 ACCEPT, with row 167 INCOMPLETE. **New candidate of record: `f62cfe1`** (tree `cdaee764…`, 623 files). Container suites: package 912 OK, lab 929 OK. The dry preflight passes, with roster 912 `caf3dc41…` and 929 `d5082bb1…`. `83e4870` is superseded. The quiet-window packet is re-targeted and needs a fresh nomination and yes from PC.
 
 ### Other milestones (owner-decision packets in `docs/reports/tremor/`)
-- [ ] **M2 and M7, D8:** conditional ceilings (Pilot 4 USD 0.25, EP-1 USD 5.00). No Pilot 4 launcher exists yet. **The pinned price sheet lapses at 2026-11-24 00:00 UTC** (`spend.py:45,186-188`; checked 21:56 UTC). A fresh window needs a named refetch, the new digest, a continuity review against the `ep1` parent ledger, a checked window and a re-run of D8-e (D8 packet, P4 lapse status). M7's protocol and allocation are open.
+- [ ] **M2 and M7, D8:** conditional ceilings (Pilot 4 USD 0.25, EP-1 USD 5.00). No Pilot 4 launcher exists yet. **The pinned price sheet lapses at 2026-11-24 00:00 UTC** (`spend.py:45,186-188`; checked 21:56 UTC). A fresh window needs a named refetch, the new digest, a continuity review against the `ep1` parent ledger, a checked window and a re-run of D8-e (D8 packet, P4 lapse status). M7's protocol and allocation are open. BLOCKED: paid-call yes for D8 refetch (Alejandro); docs/reports/tremor/OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md:1
 - [x] **M4 L2/L3/L4 scope APPROVED and frozen (documentary):** owner decision `msg_e96a060964d0`; `prereg/R2-L2-L3-L4-scope.md` (sha256 `9008847b…`) and the register `docs/reports/prereg-freezes.md` (`d4b1f91`). No run authority. Basis: recommended options drafted with one-line yeses (`docs/reports/tremor/OWNER_DECISION_M4_L2_L3_L4_and_M8_prereqs.md`):
   - L2: planted notes only under D1; the arising form and prediction E are out of this freeze. If E is ever approved, it uses the 5% bound.
   - L3: primary C under the D1 toy-monitor conditions; B is the fallback if C is declined before any outcome.
   - L4-D: the arising-shortcut setting is out of this freeze.
 
   A yes also ratifies D1 for those lines, because D1 was the orchestrator's disclosed decision (`ep-approvals.md:163-166`). Owner: Alejandro.
-- [ ] **M8 SmolLM3 smoke:** five preconditions in the sources (three operator prerequisites, plus ledger placement and the one-use admission, which the yes covers):
+- [ ] **M8 SmolLM3 smoke:** five preconditions in the sources (three operator prerequisites, plus ledger placement and the one-use admission, which the yes covers): BLOCKED: operator storage paths, runner reviewer, 0.1 GPU-h yes; this file:116
   - memory: the last readback was 54.46 GiB against the 70 GiB gate, or a separately reviewed envelope;
   - storage custody: the canonical paths are not yet named;
   - one adopted launcher: the patched `--opening-balance` source would need re-pinning.
 
   Owners: resource owner, storage operator, runner reviewer; Alejandro for the 0.1 GPU-hour spend.
-- [ ] **M3 R3, M5, M6, M9:** not admissible today (protected-admissions packet).
+- [ ] **M3 R3, M5, M6, M9:** not admissible today (protected-admissions packet). BLOCKED: named one-use admissions (Alejandro); docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md:1
 - [x] **M10 local release adoption** (`a833e17`).
-- [ ] **M10 remainder:** Console totals, T7 settlement, timer disposition (named executor).
+- [ ] **M10 remainder:** Console totals, T7 settlement, timer disposition (named executor). BLOCKED: Console totals, T7, timer executor (PC); docs/reports/tremor/OWNER_DECISION_M10_release_and_T7.md:1
 
 ### Limits
 No push, PR, spend, install, deletion, quiet-host run, paid call or N2 access without the applicable exact admission.
