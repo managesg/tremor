@@ -36,8 +36,8 @@ full-verification arm, with its 95% cluster-bootstrap interval (P:179, P:184-185
 
 Prediction C in the proposal is a conjunction. Its two other clauses (random verification needs at
 least 80%; measured R beats the three cheap orderings, P:379) are registered here as key secondary
-contrasts, Holm-corrected with the other secondaries (P:236-237; RR:45). Whether "supported" for C
-requires all three clauses is OPEN (L2-O2).
+contrasts, read as an intersection-union test with no multiplicity adjustment (P:236-237; RR:45;
+DECISION_LOG 2026-11-25). "Supported" for C requires all three clauses (CLOSED, L2-O2).
 
 Out of this protocol: the arising form and prediction E (SC:14-16). Predictions A, B and D are not
 primary (P:375-381); the scope record is silent on whether they stay as registered secondaries
@@ -62,7 +62,7 @@ measuring R is charged to the targeted arm (P:193-194).
 | Trigger-only control | P:371; RR:19 |
 
 RR:19 does not list the unprotected store or the Nakayashiki rule. This draft keeps both, because
-R is taken from the unprotected arm (P:376-377). Confirmation is OPEN (L2-O4).
+R is taken from the unprotected arm (P:376-377). Both arms are kept (CLOSED, L2-O4).
 
 ## 4. Data and planted inputs
 
@@ -120,11 +120,11 @@ Per chain and rerun, from the Board log only (P:162):
 5. **Primary.** Average the reruns within each chain, then take the paired difference between the
    targeted arm at the registered share and full verification.
 
-**Definition of R is OPEN (L2-O1).** The proposal defines R as the mean number of first-generation
+**Definition of R is CLOSED (L2-O1): first-generation offspring.** The proposal defines R as the mean number of first-generation
 offspring per planted note (P:386) and RR:19 asks for an audited first-generation R calculation.
 That is `readouts.first_generation_offspring` (`readouts.py:74-102`). But
 `quarantine.verification_order` ranks by `reproduction_number(notes, [nid])[0]`
-(`quarantine.py:83`), which is `(adopters - roots)/adopters`, a descendant share
+(`quarantine.py:83` at `f62cfe1`; aligned in `fc41783`), which is `(adopters - roots)/adopters`, a descendant share
 (`readouts.py:55-71`). The two can order notes differently. `first_generation_offspring` also
 refuses ambiguous parentage (`readouts.py:99-100`), and the harness must still supply eligible
 transmission events (W:161).
@@ -156,7 +156,7 @@ successful dose, are OPEN (L2-O9; RR:19).
   inconclusive (P:964-965; RR:44-45).
 - **Economic stop.** The batch ends at 6 GPU-hours or USD 15 hosted, whichever comes first, and
   reports what it has (RR:19; P:938-939).
-- **Statistical stop.** OPEN (L2-O11). RR:50 requires it. Draft default: fixed n, no interim look
+- **Statistical stop.** CLOSED (L2-O11). RR:50 requires it. Fixed n, no interim look
   at arm outcomes.
 - **Two-failure pivot.** A line whose pilot shows a floor or ceiling twice is closed with that
   result (W:228).
@@ -167,7 +167,7 @@ successful dose, are OPEN (L2-O9; RR:19).
    RR:43).
 2. **Primary.** 95% interval of the targeted-minus-full adoption difference against the 3-point
    margin (P:378, P:184-185).
-3. **Key secondaries, Holm-corrected** (P:236-237; RR:45): random verification's required share
+3. **The other two clauses of C, no Holm family** (P:236-237; RR:45; L2-O2, L2-O3): random verification's required share
    against 80% (P:379); measured R against each of the three cheap orderings (P:379, P:391-392).
 4. **Null comparison.** `nulls.reed_frost(population, immune, seeds, q)` returns the exact
    final-size distribution of a well-mixed chain in which immune members never become infected
@@ -176,7 +176,7 @@ successful dose, are OPEN (L2-O9; RR:19).
    number of checks. The observed targeted-over-random advantage is reported next to that null. If
    scripted agents reproduce the observed curve, the result is a property of the loop, not of
    language models, and is reported as such (P:172-174). The mapping of population, seeds and q to
-   the experiment is OPEN (L2-O12).
+   the experiment is CLOSED (L2-O12).
 5. Report the dispersion of R, because a few high-offspring notes are what targeting exploits
    (P:386-387).
 6. Report `susceptibility.cascade_depth` (`susceptibility.py:35-51`) as a descriptive readout

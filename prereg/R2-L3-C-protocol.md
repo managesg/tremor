@@ -37,8 +37,8 @@ P:184-185). The proposal expects that ratio to be at most one half (P:461).
 
 Prediction C is a conjunction. This draft registers the two per-view clauses (at least 30 points,
 at most 10) as a manipulation check that selection pressure exists, and "beats conservative
-aggregation" as a key secondary contrast, Holm-corrected (P:236-237; RR:45). Whether "supported"
-requires all clauses is OPEN (L3-O2).
+aggregation" as a key secondary contrast, read as an intersection-union conjunct with no multiplicity adjustment (P:236-237; RR:45;
+DECISION_LOG 2026-11-25). "Supported" requires all clauses (CLOSED, L3-O2).
 
 Prediction A is secondary (P:457-458). Prediction B is secondary unless section 16 makes it
 primary.
@@ -60,7 +60,7 @@ is charged to the arms that use it (P:193-194).
 | All views; Koran's accuracy-plus-low-correlation rule; Jha's split; majority-vote panel | P:452-455 |
 
 RR:20 does not name the last row; "the registered selection rules" may cover part of it. The final
-arm list is OPEN (L3-O4).
+arm list is CLOSED (L3-O4, section 3 table).
 
 Views of one team log: actions only; reasoning visible; summary of summaries; board differences;
 counts only (P:448-449). The ensemble size k is OPEN (L3-O5).
@@ -149,7 +149,7 @@ proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
   RR:44-45).
 - **Economic stop.** The batch ends at 4 GPU-hours or USD 24 hosted, whichever comes first, and
   reports what it has (RR:20; P:938-939).
-- **Statistical stop.** OPEN (L3-O11). RR:50 requires it. Draft default: fixed n, no interim look
+- **Statistical stop.** CLOSED (L3-O11). RR:50 requires it. Fixed n, no interim look
   at arm outcomes.
 - **Two-failure pivot.** A line whose pilot shows a floor or ceiling twice is closed with that
   result (W:228).
@@ -162,14 +162,15 @@ proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
 3. **Primary.** 95% interval of loss(rotating) / loss(fixed) against one half (P:461, P:184-185).
    If loss(fixed) has an interval that includes zero the ratio is undefined and the primary is
    reported as not testable; the handling rule is part of L3-O10.
-4. **Key secondaries, Holm-corrected** (P:236-237; RR:45): rotation against conservative
-   aggregation; rotation against one random view per decision (P:468-469).
+4. **Key secondaries** (P:236-237; RR:45): rotation against conservative
+   aggregation is a conjunct of C (intersection-union, no adjustment); rotation against one random view
+   per decision (P:468-469) is the only other secondary, so a Holm family of size one applies: no adjustment.
 5. **Null comparison.** `nulls.correlated_monitors(m, p, c)` returns the exact probability that all
    m views miss, the pairwise joint miss and phi under a common-cause model (`nulls.py:134-146`,
    `:8-9`). Null ensemble catch is 1 minus `all_miss`. The views in this null are exchangeable and
    nothing adapts to a selector, so the null predicts no difference between rotating and fixed
    views. The observed loss ratio is reported next to that null, with p and c fitted on the
-   calibration set; the fitting rule is OPEN (L3-O12). If scripted monitors reproduce the observed
+   calibration set; the fitting rule is CLOSED (L3-O12, two-moment fit). If scripted monitors reproduce the observed
    curve, the result is a property of the loop and is reported as such (P:172-174).
 6. Report the joint miss table and paired discordance (RR:20), Kish n_eff with the phi spread
    (P:195-198), and the tetrachoric correlation beside phi (P:432-433).
@@ -315,7 +316,7 @@ Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided u
 
 Method rules only; no number is set. The freeze confirms or replaces each. Source for D1 and D2: `docs/reports/tremor/DECISION_LOG.md`, "2026-11-25: M4 rule-type OPEN items closed".
 
-- **D1, L3-O2 (CLOSED).** "Supported" requires every clause of C: the loss ratio at or below one half, the manipulation check, and rotation beating conservative aggregation. This is an intersection-union test, each clause reported separately, no multiplicity adjustment. The clause "beats conservative aggregation" is therefore a conjunct as well as a key secondary; section 9 step 4's Holm correction applies to the secondary reporting, and whether it also governs the conjunct is for the freeze to confirm. Source: P:459-462 ("and"); DECISION_LOG 2026-11-24 OD4 table row "L2-C and L3-C conjunctions".
+- **D1, L3-O2 (CLOSED).** "Supported" requires every clause of C: the loss ratio at or below one half, the manipulation check, and rotation beating conservative aggregation. This is an intersection-union test, each clause reported separately, no multiplicity adjustment. The clause "beats conservative aggregation" is therefore a conjunct as well as a key secondary; no Holm correction governs the conjunct (DECISION_LOG 2026-11-25: intersection-union, no multiplicity adjustment); section 9 step 4 is updated to match (line author under OD4, 2026-11-25; the freeze confirms or replaces it). Source: P:459-462 ("and"); DECISION_LOG 2026-11-24 OD4 table row "L2-C and L3-C conjunctions".
 - **D2, L3-O11 (CLOSED).** Fixed n, one analysis, no interim look at arm outcomes (section 8 draft default adopted). Source: DECISION_LOG 2026-11-25 row "L2-O11, L3-O11, L4-O11"; the proposal gives no sequential design. The size n stays OPEN under L3-O10.
 - **D3, L3-O4 (CLOSED).** The arm list is the section 3 table in full: RR:20's arms plus the P:452-455 baselines (all views, Koran rule, Jha split, majority-vote panel), all at equal monitor calls (P:451-452). Only the rotating-versus-fixed ratio is primary; the key secondaries stay as in section 9 step 4 and the other arms are descriptive, with no test. Source: P:451-455 lists them as baselines "at equal monitor calls"; RR:20 requires "the registered selection rules". The independent reviewer (L3-O16) checks the list.
 - **D4, L3-O12 (CLOSED).** Fit `correlated_monitors(m=k, p, c)` by matching two moments of the selected ensemble S on the calibration failure set: q is the mean per-view miss rate and j the mean pairwise joint miss over the k(k-1)/2 pairs. Then 1-c = (1-q)^2 / (1 + j - 2q) and p = (q-c)/(1-c), the closed form of the model at `nulls.py:8-9` (checked on one exact case). If 1 + j - 2q is 0 or j < q^2 (negative phi), c would leave [0,1]: report "null not fitted" and give no null comparison. No calibration or assessment data is touched by the rule itself.
