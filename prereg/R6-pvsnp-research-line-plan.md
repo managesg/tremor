@@ -70,7 +70,7 @@ Audit letters: R = relativization, N = natural proofs, A = algebrization. **Rule
 
 ### B2. Algebraic complexity and GCT
 
-- **Translation.** VP vs VNP (Valiant 1979) **[classical]**: is the determinantal complexity of $\mathrm{perm}_n$ polynomial. Model: arithmetic circuits over a named field; parameter: matrix dimension. An algebraic analogue; VP ≠ VNP does not imply $\mathsf{P}\ne\mathsf{NP}$.
+- **Translation.** VP vs VNP (Valiant 1979) **[classical]**: can $\mathrm{perm}_n$ (and the Hamiltonian cycle polynomial) be computed by arithmetic circuits of size polynomial in $n$. Model: arithmetic circuits over a named field; parameter: matrix dimension. (Corrected 2026-11-26 after the Opus review of the VP vs VNP paper review: determinantal complexity of $\mathrm{perm}_n$ is the separate VDET/VBP versus VNP question, a different and weaker-looking statement because the determinant is in VP, classical, citation to be verified.) An algebraic analogue; VP ≠ VNP does not imply $\mathsf{P}\ne\mathsf{NP}$.
 - **Strongest known.** $\mathrm{dc}(\mathrm{perm}_n)\ge n^2/2$ (Mignon, Ressayre) **[ctv]**; occurrence obstructions cannot give superpolynomial bounds (Bürgisser, Ikenmeyer, Panova) **[ctv]**.
 - **Audit.** R and A are defined for Boolean oracle classes; N has an algebraic analogue **[ctv]**. Not auditable like for like → not selected.
 - **Sub-problem.** Exact dimensions of partial-derivative spans of $\det_n$ and $\mathrm{perm}_n$, $n\le 4$.

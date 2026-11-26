@@ -4,7 +4,7 @@ Written offline 2026-11-26. No network, model, GPU or key. This file asserts not
 
 Sources: the owner's briefing (`docs/reports/tremor/PVSNP_BRIEFING_OWNER_TEXT.md` (the owner text, copied verbatim from the session scratchpad on 2026-11-26), dated "Late 2026", header says its 2025-2026 claims are not independently verified). `PL` = `prereg/R6-pvsnp-research-line-plan.md`. `PR` = `prereg/R6-protocol-draft.md`.
 
-Status values: **FB** = "from briefing, unverified" (every 2025-2026 claim). **CL** = "classical, citation to be verified".
+Status values: **FB** = "from briefing, unverified" (every 2025-2026 claim). **CL** = "classical, citation to be verified". **PS** = "primary source retrieved, proof not verified by us" (no proof step of ours may rest on it).
 
 **Standing rule for every row:** no proof step, lemma, score or gate in R6 rests on this claim (PL:12, PL:58, PL:337, PR:228). If the claim is retracted or false, nothing in R6 changes.
 
@@ -18,7 +18,7 @@ Status values: **FB** = "from briefing, unverified" (every 2025-2026 claim). **C
 | 6 | The ETH claims are under human review by Impagliazzo, Paturi and Williams | Opening paragraph | not used | FB | Public statements by those three, or a journal or venue record |
 | 7 | A crossover of 2^{420} to 2^{8000} clause thresholds in the October 2026 preprints | "Asymptotic vs. Practical Implications" | PL:129 (illustration for scenario row 2) | FB | The preprints' stated constants, read directly |
 | 8 | William Hoza's November 2026 report that NL = UL | Opening paragraph; prompt Part A.2 ("NL vs. UL") | PL:55 | FB | The author's preprint or an ECCC/arXiv record; expert commentary |
-| 9 | Late-November 2026 unreviewed claims on algebraic VP != VNP | Opening paragraph | PL:56 | FB | The claimants' preprints and any review record; a statement of what is claimed and by whom |
+| 9 | Late-November 2026 unreviewed claims on algebraic VP != VNP | Opening paragraph | PL:56 | PS (primary source retrieved 2026-11-26: the paper text by 'Claude (Anthropic)', PDF sha256 prefix 882f5eef, anthropics/formal-math commit 11b6c7e; proof NOT verified by us; Lean repository, OpenAI paper and the independent audit not retrieved; see docs/reports/tremor/VPVNP_CLAIM_REVIEW_20261126.md) | The claimants' preprints and any review record; a statement of what is claimed and by whom |
 | 10 | Cook-Mertz tree evaluation (listed with the space-time trade-offs; no year given) | Prompt Part A.2 | PL:52 (tagged `[briefing, unverified]`) | FB (the briefing places it in the 2025-2026 frontier but gives no date) | The authors' paper and its proceedings entry |
 | 11 | Relativization barrier: Baker, Gill, Solovay (1975) | Barrier table; prompt section 2 | PL:44 (tagged `[classical]`) | CL | The original paper (SIAM J. Comput.) and a standard textbook treatment |
 | 12 | Natural Proofs barrier: Razborov, Rudich (1997) | Barrier table | PL:45 | CL | The original paper (JCSS) and a standard textbook treatment |
