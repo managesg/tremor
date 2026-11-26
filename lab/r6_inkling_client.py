@@ -282,8 +282,8 @@ class InklingClient:
         finally:
             timer.cancel()
             conn.close()
-        if time.monotonic() > deadline:
-            raise CallFailed("per-call timeout")
+        # no post-loop deadline check: the loop exits only on a complete body, EOF (watchdog cut, caught below as
+        # truncated or malformed), the size cap, or the in-loop deadline; a body fully read is valid data.
         if r.length:  # Content-Length promised more bytes than arrived
             raise CallFailed("truncated")
         try:
