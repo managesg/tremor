@@ -50,6 +50,10 @@ class Pilot4ClearanceTest(test_ep1.Base):
             pilot_clearance.main([str(out), str(ledger)])
         self.assertEqual(cm.exception.code, 2)
 
+    def test_description_names_both_batches(self):
+        self.assertIn("Pilot 3 or Pilot 4", pilot_clearance.__doc__)
+        self.assertIn("--batch", pilot_clearance.__doc__)
+
 
 if __name__ == "__main__":
     unittest.main()

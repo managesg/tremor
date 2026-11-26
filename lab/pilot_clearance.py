@@ -1,4 +1,4 @@
-"""Replay the historical Pilot 3 clearance from saved local records."""
+"""Replay a Pilot 3 or Pilot 4 clearance (select with --batch) from saved local records."""
 import argparse
 import hashlib
 import json
