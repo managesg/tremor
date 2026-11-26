@@ -18,7 +18,7 @@ import shutil
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -26,11 +26,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT / "tests")]
 import fakeclaude  # noqa: E402
 from murmuration import __main__ as cli  # noqa: E402
-from murmuration import ep1, spend  # noqa: E402
+from murmuration import ep1, formal_alloc, spend  # noqa: E402
+from murmuration.trapbench import alloc, alloc2  # noqa: E402
 
 DUMMY_KEY = "sk-ant-DUMMY-loopback-continuity-0000"  # never a real key
 OLD = ROOT / "docs" / "reports" / "price-sheet.json"
-NEW = ROOT / "runs" / "d8-price-refetch.20261126T0050Z" / "price-sheet.json"
+_RUNS_SHEET = ROOT / "runs" / "d8-price-refetch.20261126T0050Z" / "price-sheet.json"  # git-ignored
+NEW = _RUNS_SHEET if _RUNS_SHEET.is_file() else ROOT / "docs" / "reports" / "tremor" / "price-sheet-20261126.json"  # tracked byte copy
 OLD_SHA = "16b204c23aa5ce3b169e44a3b2608ee39e3aa8da14b6b1838d8cb15a3356984f"
 NEW_SHA = "2edb8b5ca979694eefe720d0fb3f0bf2a33cda73966b5c26f856392342a7a0f2"
 REAL_LEDGERS = ROOT / "runs" / "spend"
@@ -44,7 +46,20 @@ class _Clock(datetime):
         return CLOCK if tz is None else CLOCK.astimezone(tz)
 
 
+def _lean_stub(ts, log):  # stand-in for the unbuilt Lean scorer (as test_pilot4_rehearsal): a clean checkout has none
+    s = dict(alloc.score(log, ts), **alloc2.score(log, ts))
+    return {"status": "OK", "score": {k: v for k, v in s.items() if k in formal_alloc.FIELDS}}
+
+
+def _need_real_ledgers():
+    """One helper: tests that read the real, git-ignored runs/spend ledgers skip (never silently pass) when absent."""
+    if not (REAL_LEDGERS / "canary.jsonl").is_file():
+        raise unittest.SkipTest("real ledgers absent: unverified here, run in the lane checkout")
+
+
 def _digests():
+    if not REAL_LEDGERS.is_dir():
+        return {}
     return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(REAL_LEDGERS.glob("*.jsonl"))}
 
 
@@ -56,10 +71,15 @@ def _http400(path, headers, body, n):
     return 400, {"type": "error", "error": {"type": "invalid_request_error", "message": "fake: stop after the first reservation"}}
 
 
-class ContinuityCliTests(unittest.TestCase):
+class _CliBase(unittest.TestCase):
+    """Shared harness: a throwaway ledger dir, a loopback fake that answers 400 at the first reservation, the CLI main."""
+
     @classmethod
     def setUpClass(cls):
         cls.real_before = _digests()
+
+    def fill_ledger(self):
+        raise NotImplementedError
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -67,13 +87,11 @@ class ContinuityCliTests(unittest.TestCase):
         t = Path(self.tmp.name)
         self.ldir = t / "ledger"
         self.ldir.mkdir()
-        for f in REAL_LEDGERS.glob("*.jsonl"):
-            if f.name != "ep1.jsonl":  # a real ep1 ledger (after the real run) must not make the test refuse
-                shutil.copyfile(f, self.ldir / f.name)
+        self.t = t
+        self.fill_ledger()
         sha = hashlib.sha256((ROOT / "practices" / "A.md").read_bytes()).hexdigest()
         self.review = t / "review.md"
         self.review.write_text(f"Reviewed by someone other than the author.\nreviewed_sha256: {sha}\n")
-        self.t = t
         self.canary_before = _lines(self.ldir / "canary.jsonl")
         self.srv, self.url, self.seen = fakeclaude.start(_http400)
         self.addCleanup(self.srv.server_close)
@@ -89,7 +107,7 @@ class ContinuityCliTests(unittest.TestCase):
         if predecessor is not None:
             argv += ["--predecessor-price-sheet", str(predecessor)]
         buf, self.err = io.StringIO(), io.StringIO()
-        with mock.patch.dict(os.environ, {ep1.KEY_ENV: DUMMY_KEY}), mock.patch.object(spend, "datetime", _Clock), \
+        with mock.patch.dict(os.environ, {ep1.KEY_ENV: DUMMY_KEY}), mock.patch.object(spend, "datetime", _Clock), mock.patch.object(ep1, "_lean", _lean_stub), \
                 mock.patch.object(spend, "PILOT_LEDGER_DIR", str(self.t / "pilot-real")), \
                 contextlib.redirect_stdout(buf), contextlib.redirect_stderr(self.err):
             rc = cli.main(argv)
@@ -118,6 +136,17 @@ class ContinuityCliTests(unittest.TestCase):
         p = self.t / name
         p.write_text(json.dumps(d))
         return p
+
+
+
+class ContinuityCliTests(_CliBase):
+    """Real-ledger source proof: a COPY of runs/spend with the old-sheet pins, the real old and new sheets."""
+
+    def fill_ledger(self):
+        _need_real_ledgers()
+        for f in REAL_LEDGERS.glob("*.jsonl"):
+            if f.name != "ep1.jsonl":  # a real ep1 ledger (after the real run) must not make the test refuse
+                shutil.copyfile(f, self.ldir / f.name)
 
     def test_pins(self):
         self.assertEqual(hashlib.sha256(OLD.read_bytes()).hexdigest(), OLD_SHA)
@@ -170,6 +199,51 @@ class ContinuityCliTests(unittest.TestCase):
         rc, out = self.run_cli(NEW, NEW)  # a valid sheet, but not the one the batch pinned
         self.assert_refused_up_front(rc, out)
         rc, out = self.run_cli(NEW, self.t / "missing.json", out="out2")  # unreadable predecessor: refused up front too
+        self.assert_refused_up_front(rc, out)
+
+
+class SyntheticContinuityTests(_CliBase):
+    """Synthetic-ledger source proof (runs on a clean checkout): a canary and an ep1 batch_open pinned to a fake old sheet,
+    written by the real spend.Ledger API, then the CLI on a fake new sheet (same rates, newer `fetched`)."""
+
+    def fill_ledger(self):
+        data = json.loads(NEW.read_text())
+        self.old, self.new = self.t / "old-sheet.json", self.t / "new-sheet.json"
+        self.old.write_text(json.dumps(dict(data, fetched="2026-11-20")))
+        self.new.write_text(json.dumps(dict(data, fetched="2026-11-26")))
+        old = spend.PriceSheet.load(self.old, today=date(2026, 11, 21))
+        led = spend.Ledger(str(self.ldir / "canary.jsonl"), old, batch="canary")
+        led.reserve("canary:0", "claude-haiku-5-5", 1000, 300, canary_input_tokens=1000)
+        led.charge("canary:0", "claude-haiku-5-5", {"input_tokens": 1000, "output_tokens": 4}, returned_model="claude-haiku-5-5")
+        led.settle("complete")
+        self.old_sha = old.sha256
+
+    def test_synthetic_setup_pins_the_old_sheet(self):
+        opens = {e["batch"]: e["price_sheet"]["sha256"] for e in _lines(self.ldir / "canary.jsonl") if e["kind"] == "batch_open"}
+        self.assertEqual(opens, {"canary": self.old_sha, "ep1": self.old_sha})
+
+    def test_forgotten_flag_is_refused_up_front_and_does_not_stop_the_batch(self):
+        rc, out = self.run_cli(self.new)
+        self.assert_refused_up_front(rc, out)
+        self.assertIn("no predecessor price sheet given", self.err.getvalue())
+        rc, out = self.run_cli(self.new, self.old)  # the right invocation afterwards still opens the batch
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(len(self.continuity()), 1)
+
+    def test_correct_predecessor_writes_one_continuity_line_and_a_second_run_adds_none(self):
+        rc, out = self.run_cli(self.new, self.old)
+        self.assertEqual(rc, 0, out)
+        c = self.continuity()
+        self.assertEqual([(f, e["batch"], e["old_sha256"], e["new_fetched"]) for f, e in c],
+                         [("canary.jsonl", "ep1", self.old_sha, "2026-11-26")])
+        self.assertEqual(len(self.seen), 1)
+        rc2, out2 = self.run_cli(self.new, self.old, out="out2")
+        self.assertEqual((rc2, len(self.continuity())), (2, 1), out2)
+
+    def test_one_rate_off_predecessor_is_refused(self):
+        rc, out = self.run_cli(self.mutated_sheet(self.new, "new-one-rate.json"), self.old)
+        self.assert_refused_up_front(rc, out)
+        rc, out = self.run_cli(self.new, self.mutated_sheet(self.old, "old-one-rate.json"), out="out2")
         self.assert_refused_up_front(rc, out)
 
 

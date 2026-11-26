@@ -24,7 +24,8 @@ from murmuration import ep1, formal_alloc, spend  # noqa: E402
 from murmuration.trapbench import alloc, alloc2  # noqa: E402
 
 DUMMY_KEY = "sk-ant-DUMMY-loopback-rehearsal-0000"  # never a real key
-SHEET = ROOT / "runs" / "d8-price-refetch.20261126T0050Z" / "price-sheet.json"
+_RUNS_SHEET = ROOT / "runs" / "d8-price-refetch.20261126T0050Z" / "price-sheet.json"  # git-ignored
+SHEET = _RUNS_SHEET if _RUNS_SHEET.is_file() else ROOT / "docs" / "reports" / "tremor" / "price-sheet-20261126.json"  # tracked byte copy
 SHEET_SHA256 = "2edb8b5ca979694eefe720d0fb3f0bf2a33cda73966b5c26f856392342a7a0f2"
 
 
@@ -70,11 +71,18 @@ def rehearse(tmp, copy_real_ledgers=False):
     return res
 
 
+def _need_real_ledgers():
+    """One helper: the tests that read the real, git-ignored runs/spend ledgers skip (never silently pass) when they are absent."""
+    if not (ROOT / "runs" / "spend" / "canary.jsonl").is_file():
+        raise unittest.SkipTest("real ledgers absent: unverified here, run in the lane checkout")
+
+
 class Pilot4RehearsalTests(unittest.TestCase):
     def test_sheet_pin(self):
         self.assertEqual(hashlib.sha256(SHEET.read_bytes()).hexdigest(), SHEET_SHA256)
 
     def test_pilot4_opens_on_the_real_canary_lineage_with_the_new_sheet(self):
+        _need_real_ledgers()
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp, True)
         r = rehearse(tmp, copy_real_ledgers=True)
