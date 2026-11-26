@@ -118,13 +118,14 @@ B0′ and B1′ size H2 only; the H1, H3, H5, RT and DA arms are sized from B1�
 
 **Why P0 is not harmless** (PL:265): any call evicts another lane's cached prompt (about 33.7k tokens), and an idle check races with other clients.
 
-**Prerequisites. All are required, in this order.**
-1. This protocol frozen, with a freeze record for batch `r6-p0` and `admit` passed by G (section 14).
+**Prerequisites. All are required, in this order (reordered 2026-11-26 after the freeze-packet review: `admit` is one-use per batch id, so it runs LAST, immediately before the first request, never before the notice and the quiet window are confirmed; a slipped window must not burn `r6-p0`).**
+1. This protocol frozen, with a freeze record for batch `r6-p0` and `check` (the dry run, which claims nothing) passed by G (section 14). The one-use `admit` is step 7.
 2. Written notice **before** and **after** the window, to: the PC coordinator, who runs the OmniRoute fallback hop; the Spark service owner; and every known direct user of `:8011`. A routing window does not stop direct clients.
 3. A quiet window. It means taking the Spark hop out of OmniRoute routing, which AGENTS.md reserves to the owner. So the **owner** agrees it with the PC coordinator.
 4. The service owner is named in the PC placement.
 5. Identity, read-only on the Spark **before the freeze** (D12; R6-O9), so `model_snapshot` holds it at `admit` (no request to the service): Q8_K_XL and mmproj sha256, runtime build, server pid and start time, sha256 of `/proc/<pid>/exe`, inode of the GGUF mapped in `/proc/<pid>/maps`.
 6. The F1 generator is built and reviewed (R6-O5), because P0's prompts are F1 whatever the pilot family.
+7. Only now, with the window confirmed and the notice sent: `admit` for `r6-p0` (one-use), then the first request within the admission window. The same order holds for `r6-b0`. Status of the code named in this protocol at 2026-11-26: `lab/r6_holm.py` (8e828f1), `lab/r6_inkling_client.py` (9486e3c), `lab/r6_stage_a.py` (R3 accepted), `lab/r6_scorecard.py`, `lab/r6_predicates.py` and the M1 solvers are built and reviewed; the F1 generator, the F4 checker and the P0 driver are not committed.
 
 **Steps** (PL:274-276):
 - Read-only: record the server's reported model, context and slot count, and confirm the endpoint names against the resident build. Re-check the pid, start time, exe hash and GGUF inode against the freeze. **Any mismatch stops P0 before the first call.**
