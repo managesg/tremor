@@ -1272,16 +1272,83 @@ class SheetContinuityTests(unittest.TestCase):
         with self.assertRaises(spend.SpendError):  # nor does the honest sheet get past it
             self.new_ledger().reserve("b", M, 100, 100)
 
-    def test_forged_line_in_another_file_that_has_its_own_open_is_ignored_by_totals(self):
+    def test_forged_line_in_another_file_that_has_its_own_open_is_refused_by_totals(self):
         self.pinned()
+        pin = self.pin_of()
         led = self.new_ledger(predecessor=None)
-        other = os.path.join(self.d, "other.jsonl")  # a second file opening ep1 on the old pin, then forging a move
-        with open(other, "w") as f:
+        with open(os.path.join(self.d, "other.jsonl"), "w") as f:  # a second file opening ep1 on the same pin, then forging a move
+            f.write(json.dumps({"kind": "batch_open", "batch": "ep1", "price_sheet": {"sha256": pin}}) + "\n")
+        self.forge("other.jsonl", {"batch": "ep1", "old_sha256": pin, "new_sha256": led.sheet.sha256})
+        with self.assertRaisesRegex(spend.SpendError, "two files"):
+            led.totals()
+        with self.assertRaises(spend.SpendError):
+            led.reserve("x", M, 100, 100)
+    def plant_open(self, name, sha, continuity_to=None):
+        with open(os.path.join(self.d, name), "w") as f:
+            f.write(json.dumps({"kind": "batch_open", "batch": "ep1", "price_sheet": {"sha256": sha}}) + "\n")
+        if continuity_to:
+            self.forge(name, {"batch": "ep1", "old_sha256": sha, "new_sha256": continuity_to})
+    def test_forged_open_in_another_file_cannot_win_by_sort_order(self):
+        for real, fake in (("z.jsonl", "a.jsonl"), ("a.jsonl", "z.jsonl")):  # forged file sorts before, then after
+            for cont in (False, True):
+                with self.subTest(real=real, continuity=cont):
+                    for f in os.listdir(self.d):
+                        if f.endswith(".jsonl"):
+                            os.rename(os.path.join(self.d, f), os.path.join(self.d, f + ".old"))  # keep, never delete
+                    self.pinned(name=real)
+                    cheap = self.new_ledger(self.cheap(), name=real, predecessor=None)
+                    self.plant_open(fake, cheap.sheet.sha256, continuity_to="b" * 64 if cont else None)
+                    before = open(os.path.join(self.d, real), "rb").read()
+                    with self.assertRaises(spend.SpendError):
+                        cheap.reserve("forged-" + real, M, 100, 100)
+                    with self.assertRaises(spend.SpendError):  # the honest sheet is refused too: the directory is corrupt
+                        self.new_ledger(name=real).reserve("honest-" + real, M, 100, 100)
+                    self.assertEqual(open(os.path.join(self.d, real), "rb").read(), before)
+                    os.rename(os.path.join(self.d, fake), os.path.join(self.d, fake + ".used" + str(cont) + real))
+    def test_a_second_open_with_the_same_digest_in_another_file_is_refused_too(self):
+        led = self.pinned(name="z.jsonl")
+        self.plant_open("a.jsonl", self.pin_of_file("z.jsonl"))
+        with self.assertRaisesRegex(spend.SpendError, "two files"):
+            led.totals()
+    def pin_of_file(self, name):
+        return spend.Ledger(os.path.join(self.d, name), spend.PriceSheet.load(os.path.join(self.d, "old.json"), allow_expired=True),
+                            batch="ep1")._lines()[0]["price_sheet"]["sha256"]
+    def test_two_same_digest_opens_in_one_file_are_corrupt(self):
+        led = self.pinned()
+        with open(led.path, "a") as f:
             f.write(json.dumps({"kind": "batch_open", "batch": "ep1", "price_sheet": {"sha256": self.pin_of()}}) + "\n")
-        self.forge("other.jsonl", {"batch": "ep1", "old_sha256": self.pin_of(), "new_sha256": led.sheet.sha256})
-        self.assertEqual(led.totals()["opens"]["ep1"], self.pin_of())  # the first file's pin stands
-        self.assertRefused(led, "no predecessor")
-
+        with self.assertRaisesRegex(spend.SpendError, "second batch_open"):
+            led.totals()
+    def test_batch_report_refuses_a_cross_file_duplicate_open_instead_of_showing_the_first_digest(self):
+        led = self.pinned(name="z.jsonl")
+        self.assertEqual(spend.batch_report(self.d, "ep1")["price_sheet_sha256"], self.pin_of_file("z.jsonl"))
+        self.plant_open("a.jsonl", "f" * 64)
+        with self.assertRaisesRegex(spend.SpendError, "two files"):
+            spend.batch_report(self.d, "ep1")
+        self.plant_open("a.jsonl", self.pin_of_file("z.jsonl"))  # the same digest is refused as well
+        with self.assertRaisesRegex(spend.SpendError, "two files"):
+            spend.batch_report(self.d, "ep1")
+    def test_malformed_ledger_json_is_a_spend_error_not_a_crash(self):
+        bad = ['{"kind": "batch_open", "batch": ["ep1"]}', '{"kind": "batch_open", "batch": "ep1", "price_sheet": ["x"]}',
+               '{"kind": "reserve", "id": ["a"], "worst_usd": 1}', "[" * 200000, '{"kind": "x", "a": ' + "[" * 200000]
+        led = self.pinned(name="l.jsonl")
+        for line in bad:
+            with self.subTest(line=line[:40]):
+                path = os.path.join(self.d, "bad.jsonl")
+                with open(path, "w") as f:
+                    f.write(line + "\n")
+                before = open(led.path, "rb").read()
+                for call in (lambda: led.totals(), lambda: led.reserve("n", M, 100, 100), lambda: spend.batch_report(self.d, "ep1")):
+                    with self.assertRaises(spend.SpendError):
+                        call()
+                self.assertEqual(open(led.path, "rb").read(), before)
+                os.rename(path, path + ".used")
+    def test_two_batch_opens_in_one_file_are_corrupt(self):
+        led = self.pinned()
+        with open(led.path, "a") as f:
+            f.write(json.dumps({"kind": "batch_open", "batch": "ep1", "price_sheet": {"sha256": "c" * 64}}) + "\n")
+        with self.assertRaisesRegex(spend.SpendError, "second batch_open"):
+            led.totals()
     def test_continuity_line_before_its_batch_open_is_corrupt(self):
         self.pinned()
         self.forge("other.jsonl", {"batch": "ep1", "old_sha256": "a" * 64, "new_sha256": "b" * 64})

@@ -326,9 +326,10 @@ class Ledger:
                     continue
                 try:
                     e = json.loads(x, parse_constant=_refuse_constant)
-                except ValueError as err:
+                except (ValueError, RecursionError) as err:  # deeply nested JSON is a corrupt line, not a crash
                     raise SpendError(f"corrupt ledger line in {os.path.basename(path)}: stopping") from err
-                if not isinstance(e, dict) or "kind" not in e:
+                if (not isinstance(e, dict) or "kind" not in e or not isinstance(e.get("batch"), (str, type(None)))
+                        or not isinstance(e.get("id"), (str, type(None))) or not isinstance(e.get("price_sheet"), (dict, type(None)))):
                     raise SpendError(f"corrupt ledger entry in {os.path.basename(path)}: stopping")
                 out.append(e)
         return out
@@ -374,7 +375,9 @@ class Ledger:
             elif e["kind"] == "overspent":
                 over = True
             elif e["kind"] == "batch_open":
-                opens.setdefault(e.get("batch"), (e.get("price_sheet") or {}).get("sha256"))
+                if e.get("batch") in opens:  # the real ledgers hold exactly one batch_open per batch: a second is forged or corrupt
+                    raise SpendError("corrupt ledger: a second batch_open for the same batch: stopping")
+                opens[e.get("batch")] = (e.get("price_sheet") or {}).get("sha256")
             elif e["kind"] == "sheet_continuity":
                 # valid only AFTER this same file's batch_open of that batch and only from the digest pinned at that point
                 # (so a line in any other file, before the open, or branching from an old digest is corrupt, never followed)
@@ -439,8 +442,9 @@ class Ledger:
                 for k in a:
                     b[k] += a[k]
             for n, sha in x["opens"].items():
-                if n not in opens:  # the first file's batch_open is the pin's source; continuity is read from that file only
-                    opens[n], open_files[n] = sha, f
+                if n in opens:  # fail closed: the real ledgers never open a batch in two files (checked on a copy of runs/spend)
+                    raise SpendError(f"corrupt ledger: batch {n!r} has a batch_open in two files: stopping")
+                opens[n], open_files[n] = sha, f  # continuity is read from the file that holds the one batch_open
         for o in others:
             stops += o["stops"]
         own["batches"], own["opens"], own["stops"], own["open_files"] = bt, opens, stops, open_files
@@ -664,6 +668,12 @@ def batch_report(ledger_dir, batch):
         raise SpendError(f"unknown batch {batch!r}")
     sums = [Ledger._sum(Ledger._read(f)) for f in Ledger._files_in(ledger_dir)]
     stops = [x for m in sums for x in m["stops"]]
+    pins = {}
+    for m in sums:
+        for n, sha in m["opens"].items():
+            if n in pins:  # same fail-closed rule as totals(): a batch is opened in exactly one file
+                raise SpendError(f"corrupt ledger: batch {n!r} has a batch_open in two files: stopping")
+            pins[n] = sha
     lin = _lineage(batch, BATCH_SPECS)
     tot = dict.fromkeys(("usd", "calls", "tokens", "input", "output", "cache_read", "cache_creation", "unmetered_worst"), 0)
     for m in sums:
@@ -690,4 +700,4 @@ def batch_report(ledger_dir, batch):
     return {"batch": batch, "calls": tot["calls"], "usd": tot["usd"], "tokens": tot["tokens"],
             "tokens_by_class": {k: tot[k] for k in ("input", "output", "cache_read", "cache_creation", "unmetered_worst")},
             "stop_reason": reason, "remaining": rem, "caps": dict(BATCH_SPECS[batch]),
-            "price_sheet_sha256": next((m["opens"][batch] for m in sums if batch in m["opens"]), None)}
+            "price_sheet_sha256": pins.get(batch)}

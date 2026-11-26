@@ -1067,6 +1067,32 @@ class CliTests(Base):
                 self.assertIn("price sheet refused", err)
                 self.assertEqual((self._snap(ldir), seen), (before, []))
                 self.assertFalse(os.path.exists(os.path.join(self.d, "canary-bad", "canary.json")))
+    def test_a_forged_batch_open_in_another_ledger_file_is_refused_with_exit_2_and_nothing_written(self):
+        for kind in ("pilot4", "run"):
+            ledger_kind = "ep1" if kind == "run" else kind
+            with self.subTest(kind=kind):
+                ldir, url, seen = self._world(ledger_kind)
+                forged = {"kind": "batch_open", "batch": ledger_kind, "price_sheet": {"sha256": "f" * 64}}
+                with open(os.path.join(ldir, "a-forged.jsonl"), "w", encoding="utf-8") as f:  # sorts before the real file
+                    f.write(json.dumps(forged) + "\n")
+                before = self._snap(ldir)
+                rc, out, err = self._cli_err(kind, ldir, url, os.path.join(self.d, "ps.json"), tag="forged")
+                self.assertEqual(rc, 2, out)
+                self.assertIn("two files", out)
+                self.assertEqual((self._snap(ldir), seen), (before, []))
+    def test_a_malformed_ledger_line_is_refused_with_exit_2_and_nothing_written(self):
+        for name, line in (("list batch", '{"kind": "batch_open", "batch": ["pilot4"]}'), ("list sheet", '{"kind": "batch_open", "batch": "pilot4", "price_sheet": [1]}'),
+                           ("deep", "[" * 200000)):
+            with self.subTest(name):
+                ldir, url, seen = self._world("pilot4", name[:3] + name[-2:])
+                spend.Ledger(os.path.join(ldir, "pilot4.jsonl"), self.sheet, batch="pilot4")  # directory exists
+                with open(os.path.join(ldir, "a-bad.jsonl"), "w", encoding="utf-8") as f:
+                    f.write(line + "\n")
+                before = self._snap(ldir)
+                rc, out, err = self._cli_err("pilot4", ldir, url, os.path.join(self.d, "ps.json"), tag="mal")
+                self.assertEqual(rc, 2, out)
+                self.assertIn("corrupt ledger", out)
+                self.assertEqual((self._snap(ldir), seen), (before, []))
     def test_ledger_dir_alone_is_refused(self):
         rc, text = self.run_cli(["ep1", "run", "--out-dir", os.path.join(self.d, "z"), "--i-have-owner-confirm",
                                  "--ledger-dir", self.ldir], {ep1.KEY_ENV: KEY})

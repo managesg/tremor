@@ -17,6 +17,7 @@ Run everything from the repo root `/home/adelmar/SeaBridgeAI/murmuration`.
 2. **Spend limits.** Owner USD 10 total cap (shared; `HARD_CAP_USD`, `spend.py:46`). The driver and `lab/tremor_spend_total.py` count only the ledgers in `runs/spend`; any other spend on this key or account must be added by hand before launch. Pilot 4 cap USD 0.25, 260 calls, 598,000
    tokens, one batch (`spend.py:69`). Prior recorded spend USD 0.0413027, so after a full batch the total stays near USD 0.19 at
    worst-case reservation (260 x 0.00055 = 0.143).
+2b. **Ledger folder.** `runs/spend` must hold only the real ledgers: any other regular file there (for example a backup copy such as `canary.jsonl.bak`) makes every batch refuse as ledger-corrupt until it is moved out.
 3. **Price sheet.** `runs/d8-price-refetch.20261126T0050Z/price-sheet.json`, sha256
    `2edb8b5ca979694eefe720d0fb3f0bf2a33cda73966b5c26f856392342a7a0f2`, fetched 2026-11-26, valid through 2026-11-29. It must be
    passed with `--price-sheet`: the driver's default sheet (`docs/reports/price-sheet.json`, fetched 2026-11-20) is refused as
