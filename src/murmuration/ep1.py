@@ -38,6 +38,7 @@ import json
 import os
 import random
 import re
+import sys
 import tempfile
 
 from . import analysis, backend_claude as bc, cardcheck, formal_alloc, manifest, practice as practicemod, spend, team_claude as tc
@@ -554,6 +555,8 @@ def run_batch(kind, client, ledger, schedule_seed, outdir, dry_run=False, *, n_s
     freeze = _check_freeze() if kind == "ep1" and not dry_run else None
     with ledger.exclusive_batch():
         _check_open(ledger, kind)
+        ledger.check_sheet()  # a sheet refusal before any reservation writes nothing: the batch stays openable
+        ledger.sheet.prices(MODEL, CANARY_BYTES)  # no price or a null rate for MODEL refuses here, not inside the canary's catch-all
         if kind == "canary":
             return _canary(client, ledger, outdir, dry_run)
         _preflight(REVIEW_FILE if review is None else review)
@@ -785,6 +788,8 @@ def cli(a):
             cl = bc.ClaudeClient(key, led)
         out = run_batch(kind, cl, led, a.schedule_seed, a.out_dir, dry_run=bool(a.base_url), review=a.review)
     except (spend.SpendError, bc.EpisodeVoided, bc.EpisodeCapExceeded) as e:
+        if isinstance(e, spend.PriceSheetRefused):
+            print(f"price sheet refused: {e}" + (f" [{e.reason}]" if getattr(e, "reason", None) else ""), file=sys.stderr)
         raise ValueError(f"refused: {type(e).__name__}: {e}" + (f" [{e.reason}]" if getattr(e, "reason", None) else "")) from None
     print(json.dumps(out, sort_keys=True, indent=1, default=str))
     return 0

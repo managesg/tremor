@@ -506,6 +506,15 @@ class Ledger:
         err.reason = why
         raise err
 
+    def check_sheet(self):
+        """Read-only twin of reserve's sheet checks, run BEFORE any reservation: the sheet's age and, for every already-open
+        batch of this lineage pinned to another digest, the sheet_continuity proof. Raises PriceSheetRefused, writes nothing."""
+        self.sheet.check_age()
+        t = self.totals()
+        for n in _lineage(self.batch, BATCH_SPECS):
+            if n in t["opens"] and t["opens"][n] != self.sheet.sha256:
+                self._continuity(n, t["opens"][n], self.sheet.sha256)
+
     def estimate(self, model, usage):
         """USD for one response's usage block. Thinking tokens are billed inside output_tokens."""
         usage = clean_usage(usage)

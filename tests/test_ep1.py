@@ -979,6 +979,94 @@ class CliTests(Base):
         ns = cli.build_parser().parse_args(["ep1", "run", "--out-dir", "x"])
         self.assertIsNone(ns.predecessor_price_sheet)
 
+    def _sheet_variant(self, name, days=0, rate=0.0):
+        from datetime import date, timedelta
+        with open(os.path.join(self.d, "ps.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        data["fetched"] = (date.fromisoformat(data["fetched"]) - timedelta(days=days)).isoformat()
+        m = data["models"][ep1.MODEL]
+        m["output"] = m["output"] + rate
+        path = os.path.join(self.d, name)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        return path
+    def _world(self, kind, tag=""):
+        """A loopback ledger dir with the canary complete and `kind` already open, both pinned to ps.json."""
+        ldir = os.path.join(self.d, "L-" + kind + tag)
+        srv, url, seen = fakeclaude.start(lambda p, h, b, n: (400, {"type": "error", "error": {"type": "invalid_request_error", "message": "fake"}}))
+        self.srvs.append(srv)
+        if kind != "canary":
+            srv2, url2, _ = fakeclaude.start(ep1.worst_case_responder)
+            self.srvs.append(srv2)
+            led = spend.Ledger(os.path.join(ldir, "canary.jsonl"), self.sheet, batch="canary")
+            ep1.run_batch("canary", bc.ClaudeClient(KEY, led, url2, allow_host="127.0.0.1"), led, 0, os.path.join(self.d, "c-" + kind), True)
+        if kind != "ep1" and not tag:  # a tagged world is fresh: nothing open yet. ep1 is opened by the canary; a canary run is gated by its parent ep1 (the canary has one call only)
+            b = "ep1" if kind == "canary" else kind
+            spend.Ledger(os.path.join(ldir, b + ".jsonl"), self.sheet, batch=b).reserve("pre", ep1.MODEL, 100, 100)
+        return ldir, url, seen
+    @staticmethod
+    def _snap(ldir):
+        return {f: open(os.path.join(ldir, f), "rb").read() for f in sorted(os.listdir(ldir) if os.path.isdir(ldir) else []) if f.endswith(".jsonl")}
+    def _cli_err(self, kind, ldir, url, sheet, predecessor=None, tag="o"):
+        argv = ["ep1", {"ep1": "run"}.get(kind, kind), "--i-have-owner-confirm", "--base-url", url, "--ledger-dir", ldir,
+                "--price-sheet", sheet, "--review", self.review, "--out-dir", os.path.join(self.d, f"{kind}-{tag}")]
+        if predecessor:
+            argv += ["--predecessor-price-sheet", predecessor]
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.dict(os.environ, {ep1.KEY_ENV: KEY}), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = cli.main(argv)
+        self.assertNotIn(KEY, out.getvalue() + err.getvalue())
+        return rc, out.getvalue(), err.getvalue()
+    def test_a_sheet_refusal_before_any_reservation_writes_nothing_and_the_right_invocation_still_opens_the_batch(self):
+        for kind in ("canary", "pilot", "pilot2", "pilot3", "pilot4", "run"):
+            ledger_kind = "ep1" if kind == "run" else kind
+            with self.subTest(kind=kind):
+                ldir, url, seen = self._world(ledger_kind)
+                new = self._sheet_variant(f"new-{kind}.json", days=1)  # same rates, other digest: needs the predecessor proof
+                before = self._snap(ldir)
+                cases = {  # name -> (price sheet, predecessor, text the refusal must show)
+                    "forgotten flag": (new, None, "no predecessor"),
+                    "wrong predecessor path": (new, os.path.join(self.d, "nope.json"), "unreadable"),
+                    "predecessor not the pinned sheet": (new, self._sheet_variant(f"p-{kind}.json", days=2, rate=0.01), "not the sheet this batch pinned"),
+                    "current sheet differs by a rate": (self._sheet_variant(f"r-{kind}.json", days=1, rate=0.01),
+                                                        os.path.join(self.d, "ps.json"), "differ beyond"),
+                    "expired sheet": (self._sheet_variant(f"e-{kind}.json", days=30), os.path.join(self.d, "ps.json"), "days old"),
+                    "wrong sheet path": (os.path.join(self.d, "nope.json"), None, "unreadable"),
+                }
+                for name, (sheet, pred, want) in cases.items():
+                    rc, out, err = self._cli_err(kind, ldir, url, sheet, pred, tag=name[:6])
+                    self.assertEqual(rc, 2, (name, out))
+                    self.assertIn(want, err, name)
+                    self.assertEqual(self._snap(ldir), before, name)  # byte-identical: no batch_stop, no reserve, no continuity
+                    self.assertEqual(seen, [], name)
+                rc, out, err = self._cli_err(kind, ldir, url, new, os.path.join(self.d, "ps.json"), tag="ok")
+                self.assertEqual(rc, 0, out)
+                self.assertNotIn("price sheet refused", err)  # the batch was never stopped: the correct call opens it
+                self.assertEqual(len(seen), 1)  # first reservation reached the fake, which answered a mid-run HTTP 400
+                lines = [e for f in self._snap(ldir).values() for e in map(json.loads, f.decode().splitlines())]
+                self.assertEqual([e["batch"] for e in lines if e["kind"] == "sheet_continuity"], ["ep1" if kind == "canary" else ledger_kind])
+                stop = [e["reason"] for e in lines if e["kind"] == "batch_stop" and e["batch"] == ledger_kind]
+                self.assertEqual(len(stop), 1)
+                self.assertTrue(stop[0].startswith("stopped:"))
+                if kind != "canary":
+                    self.assertEqual(stop, ["stopped:http400"])  # a refusal after a call keeps today's stop semantics
+    def test_canary_refuses_a_sheet_without_a_usable_price_and_writes_nothing(self):
+        for name, edit in (("missing model", lambda m, d: m.pop(ep1.MODEL)),
+                           ("null rate", lambda m, d: m[ep1.MODEL].__setitem__("output", None))):
+            with self.subTest(name):
+                ldir, url, seen = self._world("canary", name[:4])
+                with open(os.path.join(self.d, "ps.json"), encoding="utf-8") as f:
+                    data = json.load(f)
+                edit(data["models"], data)
+                bad = os.path.join(self.d, "bad.json")
+                with open(bad, "w", encoding="utf-8") as f:
+                    json.dump(data, f)
+                before = self._snap(ldir)
+                rc, out, err = self._cli_err("canary", ldir, url, bad, tag="bad")
+                self.assertEqual(rc, 2, out)
+                self.assertIn("price sheet refused", err)
+                self.assertEqual((self._snap(ldir), seen), (before, []))
+                self.assertFalse(os.path.exists(os.path.join(self.d, "canary-bad", "canary.json")))
     def test_ledger_dir_alone_is_refused(self):
         rc, text = self.run_cli(["ep1", "run", "--out-dir", os.path.join(self.d, "z"), "--i-have-owner-confirm",
                                  "--ledger-dir", self.ldir], {ep1.KEY_ENV: KEY})

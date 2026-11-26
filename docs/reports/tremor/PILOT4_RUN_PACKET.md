@@ -69,6 +69,8 @@ default `docs/reports/card-A-review.md` is used) or `--predecessor-price-sheet`.
 `ba4f68ad0128073f8d338c16afd5adbdbbb68b06bfa249afe08e2bfc56cc5365` (30 episode ids prefix `p4`, 240 call ids). The command prints one
 JSON object (`final`) when it ends; exit 0 means the driver ended normally (`reason` may still be `stopped:<why>` or `inconclusive`: read it).
 
+**Exit 2 is not a stop (added after the 2026-11-26 review, commit of the pre-reservation sheet check).** Exit 2 with `price sheet refused:` on stderr and `{"error": ...}` on stdout means a sheet or flag problem was caught BEFORE any reservation: nothing was written to `runs/spend` and the batch is still openable. Fix the flag or the sheet path, move `runs/ep1-live/pilot4-stdout.txt` aside (it must not exist at launch), and run once more. An exit 0 with `stopped:*`, or any HTTP 400, is final.
+
 ## 3. Stop rules (the driver enforces them; the operator never overrides)
 
 - **HTTP 400 on the first call (or any call): the batch stops at once, is never re-run.** This is the request-shape failure; record it,

@@ -1334,5 +1334,29 @@ class SheetContinuityTests(unittest.TestCase):
             self.new_ledger(batch="canary", name="canary.jsonl", predecessor=None).reserve("d", M, 100, 100)
 
 
+    def test_check_sheet_is_read_only_and_refuses_like_reserve(self):
+        self.pinned()
+        path = os.path.join(self.d, "l.jsonl")
+        before = open(path, "rb").read()
+        with self.assertRaises(spend.PriceSheetRefused) as cm:
+            self.new_ledger(predecessor=None).check_sheet()
+        self.assertRegex(cm.exception.reason, "no predecessor")
+        with self.assertRaises(spend.PriceSheetRefused) as cm:
+            self.new_ledger(data=self.cheap()).check_sheet()
+        self.assertRegex(cm.exception.reason, "differ beyond")
+        led = self.new_ledger()
+        led.sheet.today = self.today + timedelta(days=30)  # the sheet aged out since it was loaded
+        with self.assertRaisesRegex(spend.PriceSheetRefused, "days old"):
+            led.check_sheet()
+        self.new_ledger().check_sheet()  # the right predecessor passes and still writes nothing
+        self.assertEqual(open(path, "rb").read(), before)
+        self.assertEqual(self.conts(), [])
+        self.new_ledger().reserve("a", M, 100, 100)  # the real reserve then writes the one continuity line
+        self.assertEqual(len(self.conts()), 1)
+        self.new_ledger(predecessor=None).check_sheet()  # now pinned to the new digest: nothing to prove
+    def test_check_sheet_on_a_fresh_or_unbatched_ledger_passes_and_writes_nothing(self):
+        led = self.new_ledger(predecessor=None, name="fresh.jsonl")
+        led.check_sheet()
+        self.assertFalse(os.path.exists(os.path.join(self.d, "fresh.jsonl")))
 if __name__ == "__main__":
     unittest.main()
