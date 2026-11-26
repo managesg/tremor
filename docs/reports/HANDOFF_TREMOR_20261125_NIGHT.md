@@ -26,3 +26,15 @@
 **Still blocked, with owner:** paid calls need `MURMURATION_EP1_KEY` (key holder) and a readable D8 price table (curl denied; web-fetch returned fragments); custodian N2 (row 167); operator places SmolLM3-3B weights; trainer price for M5; M6 placement; PC freeze for X42 windows and M10; M7 author spend figure and custodian; M4 numbers, splits and the unreleased pilot. Running paid total USD 0.00.
 
 **Next authorized action:** none runnable offline except re-reviews. When an input arrives, run that line; the admission gate, harnesses and Pilot 4 driver are ready. Residual harness gaps: the L3 conservative arm stays unregistered (L3-O18); record key names in the gate must be confirmed against the first real freeze record.
+
+## Update 2026-11-26 about 05:45Z (HEAD 80d9bbc, plus uncommitted R6 M1 solvers under review)
+
+**Owner approvals recorded (verbatim):** "Tell the agents they have my full approval for their requirements and they can make decisions on my behalf." and "Yes approve it all and tell them to make decisions on my behalf" (record: `~/assistant-notes/OWNER_APPROVAL_20261126.md`). Paid calls up to USD 10 total for TREMOR (running total USD 0.00, no call made). Admissions M4, M5, M6, M9, M3 R3 approved but every run still lacks named-person inputs (`docs/reports/tremor/ADMISSION_RECORD_20261125.md`).
+
+**Done since the last note (local commits, each independently reviewed):** EP-1 price-sheet continuity path `e696b16`; D8 sheet rebuilt, window checked `c816b81`; Pilot 4 run packet, spend-total script `9467956`; freeze skeleton `19ce7b9`, freeze field register `f09f47b`; milestone gap matrix `45c660b`; owner-scope decisions `0390247`; M7 decisions `7c626ae`; R5 plan `c050d42`, R5 harness `d0c67d7` (65 tests; pinned for R6); GPU readiness check `9a74aef`; R6 P vs NP plan `9fc1eba` (pin `9cc20fe`); R6 lemma sandbox `caf0643`, `5108519`; R6 scorecard `fa03232`, `28610e1`.
+
+**In flight:** R6 W1 `lab/r6_pvsnp_tasks.py` (19 tests) and W2 `lab/r6_m1_enum.py` (15 tests) are independent M1 solvers; both computed 4/14/222 classes, parity-4 formula 16 and max 4-input circuit 7; an Opus agreement review over all 65536 four-input functions is running; nothing committed until it reports.
+
+**Next:** commit M1 solvers after the review; R6 Stage A through the pinned harness; R6 protocol draft and a stub-only HTTP client for the Inkling service (live: `Inkling-2-Mini-UD-Q8_K_XL.gguf`, `100.91.57.48:8011`, ctx 131072, parallel 1, shared with other lanes); no probe of that service without a freeze record, `admit`, PC notice to the fallback-hop owner and a quiet window.
+
+**Still blocked, with owner:** `MURMURATION_EP1_KEY` (key holder; Pilot 4 and EP-1 window closes 2026-11-28T23:59:59Z); custodian N2; SmolLM3 weights (operator); trainer price; PC freeze, M10 and quiet window; M7 spend figure and custodian; billing ledger. Hard rules and Safety gates unchanged; nothing pushed.
