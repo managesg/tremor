@@ -156,6 +156,21 @@ class SkeletonTests(unittest.TestCase):
         self.assertEqual(m["inherited_pins"], s.NOT_FOUND)
         self.assertNotIn("section 15", " ".join(m.values()))
 
+    def commit_proto(self, text):
+        (self.root / "proto.md").write_text(text)
+        self.git("add", "."); self.git("commit", "-qm", "proto")
+
+    def test_missing_reads_the_pinned_commit_not_head(self):
+        self.commit_proto("## 5. What the freeze record must contain\n3. Model snapshot\n")
+        rec = self.sk()
+        self.commit_proto("## 7. What the freeze record must contain\n9. Model snapshot\n")
+        self.assertEqual(dict(s.missing(rec, str(self.root)))["model_snapshot"], "section 5 item 3")
+
+    def test_refs_take_the_freeze_section_and_its_first_match(self):
+        r = s._refs("## 2. Other\n1. Model snapshot early\n"
+                    "## 5. What the freeze record must contain\n3. Model snapshot a\n4. Model snapshot b\n")
+        self.assertEqual(r["model_snapshot"], "section 5 item 3")
+
     def test_hosted_note_on_every_hosted_limit(self):
         m = self.real("R2-L3-C-protocol.md")
         for k in ("hosted_usd_plan", "hosted_usd_stop"):

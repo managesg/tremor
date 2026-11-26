@@ -133,6 +133,14 @@ class SealedTests(unittest.TestCase):
                          ["held/other.json"])
         self.refused(s.verify, self.m, str(self.root), "../x")
 
+    def test_manifest_name_in_subfolder_is_still_extra(self):
+        (self.root / "held" / "m.json").write_text(json.dumps(self.m))
+        (self.root / "held" / "sub").mkdir()
+        (self.root / "held" / "sub" / "m.json").write_bytes(b"planted")
+        r = s.verify(self.m, str(self.root), manifest_path="held/m.json")
+        self.assertEqual(r["extra"], ["held/sub/m.json"])
+        self.assertFalse(r["ok"])
+
     def test_missing_root_dir_reports_files_missing(self):
         for n in ("a.json", "b.csv"):
             os.unlink(self.root / "held" / n)
