@@ -34,12 +34,22 @@ Readings (each is a decision the protocol states, or the narrowest reading of it
   sha256(f"{tag}:{seed}:{t}") with tag "errors" or "shuffle". Consecutive seeds or nights therefore do not
   give shifted copies of the same random stream, and the error and shuffle draws are independent. The
   planted errors use the same mixed seed in every arm of a chain.
-- Placebo: texts are permuted among the night's episodes with random.Random(that mixed seed). A permutation
-  can be the identity (always so below two episodes, and by chance otherwise); every night whose dream ran
-  with shuffled texts equal to the originals is listed in the run's `unshuffled`. A night whose dream was
-  skipped for budget is not listed; it is in `withheld_nights`.
+- Placebo (line-author ruling under OD4, after review): the old placebo swapped texts between episodes while
+  each episode kept its own source, so every swapped note was false against its source by construction and
+  the line-level kill could never fire. The placebo now shuffles WITHIN each episode (the order of its
+  "\n"-separated lines) with random.Random(that mixed seed), carrying id and source along: source and
+  content set stay consistent and only order is destroyed. An episode with fewer than two lines, or whose
+  shuffled order equals the original, is listed in the run's `unshuffled` as [night, episode id] (only for
+  nights whose dream ran; a night skipped for budget is in `withheld_nights`).
+- Binding cap (OD4 ruling): once arms spend to the shared cap, realized tokens are about equal and the C2
+  ratio says nothing. Every run and every score reports `cap_hit` (unused_tokens <= 0); `token_ratio` returns
+  None (undefined, not zero) when the reference arm (gated write) hit the cap, and compare_arms reports
+  `cap_hit` per arm for the chain.
+- Use counts (OD4 ruling): a note or raw episode is used by each task of the night whose source is ANY of
+  its sources. The night's tasks and new episodes are counted when they arrive (before retention), so a new
+  note does not start at 0. Retention keeps the most used; ties go to the later arrival (first-seen order,
+  list order within a night), never to id sorting.
 - A chain belongs to the setting it starts at (D6, section 16 step 3): `setting_of`.
-- Use count of a note or raw episode = tasks so far whose source it names; retention is by use (vreplay.retain).
 """
 from fractions import Fraction
 import hashlib
@@ -109,10 +119,16 @@ def cost_per_pass(tokens, task_counts):
     return Fraction(tokens, task_counts["passed"])
 
 
-def token_ratio(replay_tokens, reference_tokens):
-    """C2: realized tokens of verified replay over the reference arm, the gated write (D1). None if 0."""
+def token_ratio(replay_tokens, reference_tokens, *, reference_unused):
+    """C2: realized tokens of verified replay over the reference arm, the gated write (D1). None (undefined)
+    if the reference tokens are 0 or the reference hit the shared cap (reference_unused <= 0): realized
+    tokens are then set by the cap, not by the arm."""
     _int(replay_tokens, "replay_tokens")
     _int(reference_tokens, "reference_tokens")
+    if isinstance(reference_unused, bool) or not isinstance(reference_unused, int):
+        raise ValueError("reference_unused must be an integer")
+    if reference_unused <= 0:
+        return None
     return Fraction(replay_tokens, reference_tokens) if reference_tokens else None
 
 
@@ -168,33 +184,52 @@ class _State:
         return out
 
 
-def _uses(uses, items, tasks):
+def _arrive(order, items):
+    for it in items:
+        order.setdefault(it["id"], len(order))
+
+
+def _uses(uses, items, tasks, counted):
+    """Add the night's tasks as uses of each item (once per night) for every source the item names."""
     sources = [t["source"] for t in tasks]
-    for it in {i["id"]: i for i in items}.values():
-        uses[it["id"]] = uses.get(it["id"], 0) + sum(it["sources"][0] == s for s in sources)
+    for it in items:
+        if it["id"] not in counted:
+            counted.add(it["id"])
+            uses[it["id"]] = uses.get(it["id"], 0) + sum(s in it["sources"] for s in sources)
 
 
-def _cap_store(store, uses, store_size):
-    keep = set(vreplay.retain([n["id"] for n in store], uses, store_size))
-    return [n for n in store if n["id"] in keep]
+def _retain(items, uses, order, size):
+    """The `size` most used items, ties to the later arrival; kept in their list order."""
+    ids = [i["id"] for i in items]
+    if len(set(ids)) != len(ids):
+        raise ValueError("note ids must not repeat")
+    keep = set(sorted(ids, key=lambda i: (-uses.get(i, 0), -order[i]))[:size])
+    return [i for i in items if i["id"] in keep]
 
 
 def _night_seed(seed, night, tag):
     return int.from_bytes(hashlib.sha256(f"{tag}:{seed}:{night}".encode()).digest()[:8], "big")
 
 
-def _shuffle_texts(episodes, seed):
+def _shuffle_lines(episodes, seed):
+    """Placebo: shuffle the lines inside each episode; id and source stay. Returns (episodes, unmoved ids)."""
     rng = random.Random(seed)
-    texts = [e["text"] for e in episodes]
-    rng.shuffle(texts)
-    return [{**e, "text": t} for e, t in zip(episodes, texts)]
+    out, unmoved = [], []
+    for e in episodes:
+        lines = e["text"].split("\n")
+        new = lines[:]
+        rng.shuffle(new)
+        if len(lines) < 2 or new == lines:
+            unmoved.append(e["id"])
+        out.append({**e, "text": "\n".join(new)})
+    return out, unmoved
 
 
 def run_arm(arm, chain, *, model, check, tokenizer, render, cap, nights, store_size, error_rate, corrupt,
             rung0, readings, check_tokens, reading_tokens, search_attempts, seed, shuffle_seed):
     """One arm on one chain at equal token cap. Returns the execution record (no truth involved):
     {"arm", "chain", "start_rung", "rungs", "ledger", "tokens", "unused_tokens",
-    "withheld_tasks", "withheld_searches", "withheld_nights", "nights": [{"submissions",
+    "withheld_tasks", "withheld_searches", "withheld_nights", "cap_hit", "nights": [{"submissions",
     "resident", "tasks"}], "unshuffled"}. `rungs` is the rung after each night (the controller runs in "replay" only)."""
     if arm not in ARMS:
         raise ValueError(f"arm must be one of {ARMS}")
@@ -211,7 +246,7 @@ def run_arm(arm, chain, *, model, check, tokenizer, render, cap, nights, store_s
         raise ValueError("chain must hold exactly `nights` nights")
 
     st = _State(cap, tokenizer)
-    store, raw, history, uses = [], [], [], {}
+    store, raw, history, uses, order = [], [], [], {}, {}
     rung, last = rung0, (None, None)
     rungs, rows, unshuffled = [], [], []
     for t, day in enumerate(chain["nights"]):
@@ -237,7 +272,9 @@ def run_arm(arm, chain, *, model, check, tokenizer, render, cap, nights, store_s
                     st.withheld_tasks += 1
                     continue
                 subs[task["id"]] = st.call(model, "work", prompt, render)
-        _uses(uses, store + raw, tasks)
+        counted = set()
+        _arrive(order, store + raw + episodes)
+        _uses(uses, store + raw + episodes, tasks, counted)
         # Night consolidation.
         if arm == "raw_history":
             history = history + episodes
@@ -247,20 +284,19 @@ def run_arm(arm, chain, *, model, check, tokenizer, render, cap, nights, store_s
             if st.total() + check_tokens * len(episodes) <= cap:
                 for _ in episodes:
                     st.spend("check", check_tokens)
-                store = _cap_store(store + vreplay.gate(episodes, check), uses, store_size)
+                store = store + vreplay.gate(episodes, check)
             else:
                 st.withheld_nights += 1
         else:  # replay, plain_dream, placebo_dream
-            new = episodes
+            new, unmoved = episodes, []
             if arm == "placebo_dream":
-                new = _shuffle_texts(episodes, _night_seed(shuffle_seed, t, "shuffle"))
+                new, unmoved = _shuffle_lines(episodes, _night_seed(shuffle_seed, t, "shuffle"))
             batch = vreplay.replay_batch(raw if arm == "replay" else store, new)
             prompt = f"rung={rung}\n{render(batch)}"
             if not st.fits(prompt):
                 st.withheld_nights += 1
             else:
-                if arm == "placebo_dream" and [e["text"] for e in new] == [e["text"] for e in episodes]:
-                    unshuffled.append(t)  # the dream ran on the original order
+                unshuffled.extend([t, i] for i in unmoved)  # the dream ran on the original order of these
                 claims = st.call(model, "dream", prompt, render)
                 if arm == "replay":
                     # Whole-gate reservation: no partially checked night is kept.
@@ -268,8 +304,7 @@ def run_arm(arm, chain, *, model, check, tokenizer, render, cap, nights, store_s
                         for _ in claims:
                             st.spend("check", check_tokens)
                         store = vreplay.gate(claims, check)
-                        keep = set(vreplay.retain([x["id"] for x in batch], uses, store_size))
-                        raw = [e for e in batch if e["id"] in keep]
+                        raw = _retain(batch, uses, order, store_size)
                         now = readings(t, store)
                         st.spend("reading", reading_tokens)
                         rung, last = vreplay.next_strength(rung, last, now), now
@@ -277,12 +312,16 @@ def run_arm(arm, chain, *, model, check, tokenizer, render, cap, nights, store_s
                         st.withheld_nights += 1
                 else:
                     store = claims
-                store = _cap_store(store, uses, store_size)
+        if arm not in ("raw_history", "no_memory", "search"):
+            _arrive(order, store)
+            _uses(uses, store, tasks, counted)
+            store = _retain(store, uses, order, store_size)
         rungs.append(rung)
         rows.append({"submissions": subs, "resident": [dict(n) for n in store],
                      "tasks": [(task["id"], task["source"]) for task in tasks]})
     return {"arm": arm, "chain": chain["id"], "start_rung": rung0, "rungs": rungs, "ledger": st.ledger,
             "tokens": st.total(), "cap": cap, "unused_tokens": cap - st.total(),
+            "cap_hit": cap - st.total() <= 0,
             "withheld_tasks": st.withheld_tasks, "withheld_searches": st.withheld_searches,
             "withheld_nights": st.withheld_nights, "nights": rows,
             "unshuffled": unshuffled}
@@ -306,7 +345,7 @@ def score_run(run, truth_by_night, tokenizer):
     tokens = realized_tokens(run["ledger"], tokenizer)
     final = run["nights"][-1]["resident"]
     return {"arm": run["arm"], "setting": setting_of(run), "rungs": run["rungs"], "tokens": tokens,
-            "task_counts": counts, "false_share": false_share(final, truth_by_night[-1]),
+            "cap_hit": run["cap"] - tokens <= 0, "task_counts": counts, "false_share": false_share(final, truth_by_night[-1]),
             "cost_per_pass": cost_per_pass(tokens, counts)}
 
 
@@ -317,6 +356,8 @@ def compare_arms(runs, truth_by_night, tokenizer):
         raise ValueError("runs must hold exactly the seven arms")
     out = {arm: score_run(runs[arm], truth_by_night, tokenizer) for arm in ARMS}
     r, s = out["replay"]["cost_per_pass"], out["search"]["cost_per_pass"]
-    out["c2"] = token_ratio(out["replay"]["tokens"], out["gated_write"]["tokens"])
+    out["cap_hit"] = {arm: out[arm]["cap_hit"] for arm in ARMS}
+    out["c2"] = token_ratio(out["replay"]["tokens"], out["gated_write"]["tokens"],
+                            reference_unused=0 if out["gated_write"]["cap_hit"] else 1)
     out["c3"] = None if r is None or s is None else r < s
     return out

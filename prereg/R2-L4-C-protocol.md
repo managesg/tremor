@@ -17,29 +17,29 @@ text says OPEN and section 14 names the decision and its owner.
 | Key | File | State when read |
 |---|---|---|
 | SC | `prereg/R2-L2-L3-L4-scope.md` | committed (`d4b1f91`); sha256 `9008847b…` |
-| RR | `docs/reports/workplan-ep/R2-R4-protocol-readiness.md` | **untracked**; sha256 `1352e8941da7e699f81153461a46ba1cf717fb41aa55260ebf771e49087b5db6` |
-| P | `docs/PROPOSAL-RESIDENCY-V3.md` | committed text at HEAD `1dabf53` (`git show HEAD:`). The working tree has uncommitted edits, one of them at P:585-586; line numbers here are the committed ones |
+| RR | `docs/reports/workplan-ep/R2-R4-protocol-readiness.md` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)**; sha256 `1352e8941da7e699f81153461a46ba1cf717fb41aa55260ebf771e49087b5db6` |
+| P | `docs/PROPOSAL-RESIDENCY-V3.md` | committed text at the proposal commit `1dabf53`, pinned by that hash in the freeze record (section 15, item 2a) because P line numbers move (`git show 1dabf53:`). The working tree has uncommitted edits, one of them at P:585-586; line numbers here are the committed ones |
 | W | `docs/WORKPLAN-RESIDENCY-V3.md` | committed; working tree identical |
 | AP | `docs/reports/ep-approvals.md` | working tree, with uncommitted edits; D1 at AP:166, D3 at AP:168 |
 | ADM | `docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md` | as read |
 | DL | `docs/reports/tremor/DECISION_LOG.md` | committed; "parked owner-yes items decided under OD4" at DL:193-207 |
-| LC | `docs/reports/workplan-ep/L4-C-matched-scripted-comparison.md` | **untracked**; sha256 `f24b66b8155e28ff47bcf43bee2a2298036edaac5d900dde832154f1023adf19` |
-| LA | `docs/reports/workplan-ep/L4-adaptive-replay-scripted.md` | **untracked**; sha256 `f907e6361f0e65b08301390bdf1dc212861b49eafbc02d1fbc6b74b07729697b` |
-| LM | `docs/reports/workplan-ep/L4-measured-compression.md` | **untracked**; sha256 `6950dcd0e42c52b1c7510a9b18c87751a58bcd707bca01879e3ded5f5a1c8fd3` |
-| LB | `docs/reports/workplan-ep/L4-B-recovery-observation-contract.md` | **untracked** |
-| LL | `docs/reports/workplan-ep/L4-L8-adapter-lineage.md` | **untracked** |
+| LC | `docs/reports/workplan-ep/L4-C-matched-scripted-comparison.md` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)**; sha256 `f24b66b8155e28ff47bcf43bee2a2298036edaac5d900dde832154f1023adf19` |
+| LA | `docs/reports/workplan-ep/L4-adaptive-replay-scripted.md` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)**; sha256 `f907e6361f0e65b08301390bdf1dc212861b49eafbc02d1fbc6b74b07729697b` |
+| LM | `docs/reports/workplan-ep/L4-measured-compression.md` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)**; sha256 `6950dcd0e42c52b1c7510a9b18c87751a58bcd707bca01879e3ded5f5a1c8fd3` |
+| LB | `docs/reports/workplan-ep/L4-B-recovery-observation-contract.md` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)** |
+| LL | `docs/reports/workplan-ep/L4-L8-adapter-lineage.md` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)** |
 | code | `src/murmuration/{vreplay,nulls,susceptibility,readouts}.py` | committed at HEAD `1dabf53`; working tree identical for these four files |
-| lab | `lab/l4c_scripted_{comparison,scoring,ledger,verify}.py`, `lab/l4_adaptive_replay_policy.py`, `lab/l4_measured_compression.py` | **untracked** development fixtures |
+| lab | `lab/l4c_scripted_{comparison,scoring,ledger,verify}.py`, `lab/l4_adaptive_replay_policy.py`, `lab/l4_measured_compression.py` | **untracked when read; superseded: tracked by `f791802`/`c0daf55` (L4-O17, D-section)** development fixtures |
 
-## 2. Hypothesis and the single primary endpoint
+## 2. Hypothesis and the primary conjunction
 
 **Hypothesis (prediction C, primary).** Verified replay keeps the false share below 0.05 at the two
 strongest settings, at no more than 1.5 times the tokens, and beats equal-token search in tokens
 per passing task (P:536-538; RR:21; W:50-51).
 
-**Single primary endpoint.** The share of false notes in the always-loaded layer under verified
-replay (P:530-531, P:536), read at each of the two strongest settings. It is the first conjunct of
-one primary contrast (P:179).
+**Primary conjunction.** The lead quantity is the share of false notes in the always-loaded layer
+under verified replay (P:530-531, P:536), read at each of the two strongest settings (C1a, C1b).
+The primary is one conjunction of six conjuncts: C1a, C1b, and C2 and C3 at each setting (D2).
 
 **The primary is a conjunction, decided by an intersection-union test.** Every conjunct must hold,
 each at the stated level with no multiplicity adjustment, and each is reported separately
@@ -51,9 +51,10 @@ each at the stated level with no multiplicity adjustment, and each is reported s
 | C2 | Verified replay uses no more than 1.5 times the tokens of the reference | P:537; RR:21 |
 | C3 | Verified replay beats equal-token search in tokens per passing task | P:537-538; RR:21 |
 
-The reference in C2 is OPEN (L4-O1). Whether C2 and C3 are read once or at each setting is OPEN
-(L4-O3). The DL row names L2-C and L3-C; its application to L4-C here follows the same owner
-delegation and needs its own DL entry before the freeze (L4-O18).
+The reference in C2 is the evaluator-gated write (D1, supersedes L4-O1; the owner confirms D1 at
+the freeze, see the flag under D1). C2 and C3 are read at each setting (D2, supersedes L4-O3). The
+DL row named L2-C and L3-C; the DL entry applying it to L4-C by name exists (`f791802`, `c0daf55`;
+supersedes the DL half of L4-O18). The section 16 lock line stays OPEN.
 
 **Secondaries.** L4-B and L4-E are retained (SC:27) and are secondary, Holm-corrected
 (P:236-237; RR:45). Each needs its own protocol; this file freezes neither. L4-B: recovery time
@@ -61,7 +62,7 @@ just below the boundary is at least twice its value two settings lower (P:533-53
 ratio's upper bound is below 1.25 and supported if its lower bound is above 1.5 (P:564). L4-E: the
 adapter transfers at least 10 points better than context and a planted wrong fact takes at least
 twice as many nights to correct (P:540-542; RR:65-67). L4-D is out of scope (SC:26). Prediction A
-is not retained by SC:27; its status in this batch is OPEN (L4-O4).
+is not retained by SC:27; it is not a conjunct and takes no Holm slot (D3, supersedes L4-O4).
 
 ## 3. Arms and matched comparators
 
@@ -74,7 +75,7 @@ the arm that uses it (P:193-194; P:517-518).
 | The same tokens spent on search or retries (reference for C3) | P:518; RR:21 |
 | Evaluator-gated write with no consolidation (reference for the second kill) | P:519-520; RR:21; W:44 |
 | Plain model dream | P:518; RR:21 |
-| Placebo dream: notes from shuffled transcripts | P:518-519; RR:21 |
+| Placebo dream: notes from episodes whose lines or turns are shuffled within each episode, source carried along (D7) | P:518-519; RR:21 |
 | Raw history in context with no store | P:520; RR:21; W:44 |
 | No memory | P:520; RR:21 |
 
@@ -82,7 +83,15 @@ Excluded: the learned consolidator (Auto-Dreamer), because it needs training (P:
 adapter arm E is a separate local arm (RR:21) under its own gate (AP:168; W:219).
 
 The scripted fixture covers three of these arms only: `ARMS = ("replay", "write_only", "search")`
-(`lab/l4c_scripted_comparison.py:15`). A native harness for all seven is OPEN (L4-O9).
+(`lab/l4c_scripted_comparison.py:15`). The offline harness for all seven is built (`d11b32c`,
+`lab/l4c_harness.py`; L4-O9); the native launcher is L4-O17. The harness placebo still swaps texts
+between episodes and must be aligned to D7, which is code work.
+
+**Placebo (D7, OD4 ruling 2026-11-25).** The earlier between-episodes swap made every placebo note
+false by construction, because a note carried another episode's text under its own source, so the
+manipulation check could not separate a model dream from a placebo. The placebo now shuffles the
+order of the lines or turns within each episode and keeps the source on each note. Notes stay about
+the right source and wrong in content only as far as order destroys it.
 
 ## 4. Data and planted inputs
 
@@ -131,7 +140,8 @@ Benign planted notes only, under D1 (AP:166; W:214). The arising-shortcut settin
    re-check returns True, and a crashing check keeps nothing (`:35-47`); `replay_batch(retained,
    new)` puts every retained raw episode before the new ones (`:50-52`); `next_strength(rung, last,
    now)` lowers the rung by one when recovery time or R rose and never raises it (`:55-64`);
-   `retain(note_ids, uses, capacity)` keeps the most-used notes, ties by note id (`:67-82`).
+   `retain(note_ids, uses, capacity)` keeps the most-used notes, ties by note id (`:67-82`). In a full
+   store the harness rule of D9 decides new notes: arrivals count as uses and ties go by recency.
 2. **Controller readings.** Recovery time and R each night (P:516) come from
    `susceptibility.recovery_time` and `susceptibility.reproduction_number`
    (`susceptibility.py:12-14`; `readouts.py:128-135`, `:55-71`). A missing reading is passed as
@@ -141,7 +151,10 @@ Benign planted notes only, under D1 (AP:166; W:214). The arising-shortcut settin
    for its source (`lab/l4c_scripted_scoring.py:58-61`; `lab/l4c_scripted_comparison.py:139`). An
    empty store or a note with missing truth leaves the share undefined, not zero (LC:38-41).
 4. **Token ratio (C2).** Total tokens of the verified-replay arm divided by total tokens of the
-   reference arm, on the same chains. Reference and token meter: OPEN (L4-O1, L4-O2).
+   reference arm, on the same chains. Reference: the evaluator-gated write (D1). Token meter: OPEN
+   (L4-O2). Under a binding cap both arms spend to the cap and the realized ratio is about 1, so the
+   cap rule of D8 applies: cap hits are reported per arm and chain, and C2 is UNDEFINED, not
+   passed, when the reference arm hit the cap.
 5. **Tokens per passing task (C3).** Tokens spent divided by tasks passed, per arm; undefined when
    no task passes or a submitted answer has no label (LC:37-41;
    `lab/l4c_scripted_comparison.py:116-120`, `:141`).
@@ -150,7 +163,8 @@ Benign planted notes only, under D1 (AP:166; W:214). The arising-shortcut settin
 Gaps. The fixture counts abstract operation units, eight per night per arm (LC:5), and whitespace
 words (LA:51-53), not model tokens; scientific token parity and the reference for the 1.5 times
 rule are named there as separate gates (LC:43-46). `vreplay` has no token meter, no false-share
-function and no harness around the night loop. These need code and tests before a freeze (L4-O9).
+function and no harness around the night loop. The offline harness (`d11b32c`) now supplies the meter, `false_share` and `cost_per_pass`; the
+native launcher is L4-O17 (supersedes the code half of this gap).
 
 ## 7. Minimum effect and margin
 
@@ -178,9 +192,10 @@ Thresholds are proposals; the pre-registration fixes them after the variance pil
   conjunct, which outcomes this batch can reach; an out-of-reach kill is reported as inconclusive
   (P:964-965; RR:44-45).
 - **Economic stop.** The text arms end at 12 GPU-hours or USD 40 hosted, whichever comes first,
-  and report what they have (RR:21; P:584; P:938-939).
-- **Statistical stop.** OPEN (L4-O11). RR:50 requires it. Draft default: fixed n, no interim look
-  at arm outcomes.
+  and report what they have (RR:21; P:584; P:938-939). A batch truncated by the economic stop is
+  inconclusive, unless chains were dispatched in a pre-randomized, balanced order (balanced across
+  settings and arms, order fixed in the seed map before dispatch).
+- **Statistical stop.** Fixed n, no interim look at arm outcomes (D4, supersedes L4-O11; RR:50).
 - **Two-failure pivot.** A line whose pilot shows a floor or ceiling twice is closed with that
   result (W:228).
 
@@ -190,9 +205,11 @@ Thresholds are proposals; the pre-registration fixes them after the variance pil
 2. **Manipulation check.** The plain model dream against the placebo dream at each of the two
    settings (P:560-561), and the plain dream's false share against prediction A's 0.25 (P:531). If
    no unprotected arm has a false share at or above 0.05, C1 is trivially true and is reported as
-   not informative. Whether that blocks "supported" is OPEN (L4-O12).
+   not informative. It blocks "supported" (D5, supersedes L4-O12).
 3. **Primary.** The 95% interval (P:184-185) of each conjunct, computed separately: C1a and C1b
-   against 0.05; C2 against 1.5; C3 as the paired contrast with equal-token search. Combined by the
+   against 0.05; C2 against 1.5; C3 as the paired contrast with equal-token search. The C3 decision
+   uses the paired cluster-bootstrap interval of that contrast over chains, never a count of chain
+   wins. Combined by the
    rule in section 16.
 4. **Kill contrasts** (P:566-567): verified replay against equal-token search in tokens per
    passing task; verified replay against the evaluator-gated write.
@@ -203,7 +220,7 @@ Thresholds are proposals; the pre-registration fixes them after the variance pil
    `nulls.recovery_nights(x0, keep, tol)` gives the first night a planted share with no new errors
    is at or below tol, None if it never is, and refuses answers too large to settle exactly
    (`nulls.py:94-131`). The observed false share and the controller's recovery readings are
-   reported next to that null; the rule for fitting keep, add and tol is OPEN (L4-O13). If scripted
+   reported next to that null; keep and add are fitted on calibration chains only; the loss and tol are OPEN (L4-O13, part decision). If scripted
    agents reproduce the curve, the result is a property of the loop and is reported as such
    (P:172-174).
 7. Report, per arm and setting: the measured compression ratio, the nightly rung sequence of the
@@ -223,7 +240,7 @@ By where the 95% interval falls (P:184-185):
 
 The proposal's kill list for C does not cover a false share whose interval lies above 0.05. This
 draft reports that case as "not supported, C1 refuted at setting s". Whether it is also a kill is
-OPEN (L4-O8).
+This is not a kill (part decision of L4-O8; the kill list is closed at two criteria).
 
 ## 11. Pre-run sanity checks
 
@@ -245,7 +262,11 @@ OPEN (L4-O8).
 ## 12. Threats to validity
 
 - **Equal caps are not equal tokens.** The same caps permit different realized operation counts
-  (LC:43).
+  (LC:43). Under a binding cap both arms spend to it and the realized-token ratio is about 1 (D8).
+- **The rung is a prompt string.** The ladder rung has no mechanical effect; it is only text in the
+  consolidation prompt. What a setting does therefore depends on how the model reads it, so the
+  calibration of measured compression per setting is model-specific and must be redone for any
+  other model snapshot.
 - **Stale-note trade.** In the fixture, verified replay withdrew a stale note and left the query
   unanswered, while search retrieved the current source (LC:21-25). A low false share can be bought
   with unanswered work, which only C3 exposes.
@@ -283,23 +304,23 @@ text arms (W:214); the split between C, B and any A work is OPEN (L4-O14).
 
 | ID | Decision still needed | Owner |
 |---|---|---|
-| L4-O1 | **CLOSED(decision, D1 below)** The token reference for C2: which arm's tokens the 1.5 times bound is measured against. Candidates in the proposal's baseline list (P:517-520): plain model dream, evaluator-gated write, no memory, equal-token search. The baselines are stated "at equal total tokens" (P:517-518), which a 1.5 times allowance against any of them contradicts | Line author proposes; owner approves at freeze |
+| L4-O1 | **CLOSED(decision, D1 below; owner confirms D1 at the freeze)** The token reference for C2: which arm's tokens the 1.5 times bound is measured against. Candidates in the proposal's baseline list (P:517-520): plain model dream, evaluator-gated write, no memory, equal-token search. The baselines are stated "at equal total tokens" (P:517-518), which a 1.5 times allowance against any of them contradicts | Line author proposes; owner approves at freeze |
 | L4-O2 | The token meter: tokenizer, rendering policy, which calls count (day work, consolidation pass, scripted re-checks, controller readings), and the charge for measurement (P:193-194; LM:36-38) | Line author; independent reviewer |
 | L4-O3 | **CLOSED(decision, D2 below)** Whether C2 and C3 are read once across both settings or at each setting (section 16, step 5) | Line author proposes; owner approves at freeze |
 | L4-O4 | **CLOSED(decision, D3 below)** Status of prediction A in this batch. SC:27 does not retain it, yet B's boundary (P:535) and C's manipulation check use the ladder sweep | Owner |
 | L4-O5 | The compression index: tokens or bytes, orientation (`after / before`, LM:4, means a smaller value is stronger), tie rule, and the calibration protocol that ranks settings (RR:21; LM:36-38) | Line author; custodian holds the calibration chains |
-| L4-O6 | Daily error rate, nights per chain, store size, and the planted note inventory | Line author |
+| L4-O6 | Daily error rate, nights per chain, store size, and the planted note inventory. Store size and the shared token cap are fixed on calibration chains before any run (D8); both are OPEN numbers, not set here | Line author |
 | L4-O7 | Calibration and assessment split IDs; seed map | Custodian |
 | L4-O8 | Margins: minimum advantage for C3; numeric meaning of "ties" and "matches" in the two kills and the measure on which the gated write "matches"; whether C1 refuted is a kill; whether a kill at one setting suffices | Line author proposes; owner approves at freeze |
-| L4-O9 | **Offline harness BUILT 2026-11-25** (`lab/l4c_harness.py`, 50 tests, independent review ACCEPT, 25 of 25 mutants killed); the native launcher is L4-O17. Author readings the freeze must confirm: placebo = texts shuffled between sources within a night; "retained by use" = tasks so far that name the source; comparator arms also keep notes by use; `store_size` also caps retained raw episodes. Original text: Native harness and tests: night loop around `vreplay`, all seven arms, token meter, false-share and cost-per-pass functions. New code moves the candidate tree hash | Line author; independent reviewer |
+| L4-O9 | **Offline harness BUILT 2026-11-25** (`d11b32c`, `lab/l4c_harness.py`, 50 tests, 25 of 25 mutants killed; the independent review ACCEPT is cited from the line author's report, and no matching record was found in `DECISION_LOG.md` at this reading, so the freeze needs that record added there); the native launcher is L4-O17. Author readings the freeze must confirm: placebo = SUPERSEDED by D7 (within-episode shuffle; the harness `_shuffle_texts` still swaps between episodes and needs aligning); "retained by use" = tasks so far that name the source; comparator arms also keep notes by use; `store_size` also caps retained raw episodes. Original text: Native harness and tests: night loop around `vreplay`, all seven arms, token meter, false-share and cost-per-pass functions. New code moves the candidate tree hash | Line author; independent reviewer |
 | L4-O10 | n per conjunct, pilot variance and ICC, reachable outcomes at the cap. Needs the approved pilot, which is not released (ADM:136) | Owner releases the pilot; line author computes; reviewer checks |
 | L4-O11 | **CLOSED(decision, D4 below)** Statistical stopping rule | Line author; owner approves |
 | L4-O12 | **CLOSED(decision, D5 below)** Whether a failed manipulation check blocks "supported" | Line author proposes; owner approves at freeze |
 | L4-O13 | Fitting rule for keep, add and tol in the `nulls` comparison | Line author |
 | L4-O14 | Split of the 12 GPU-hours and USD 40 between C, B and A work | Owner |
-| L4-O15 | **CLOSED(decision, D6 below)** Controller rule: `vreplay.next_strength` lowers when either reading rose (`vreplay.py:63-64`); the fixture lowers only when both rose (LA:12-14; `lab/l4_adaptive_replay_policy.py:132`). Also which R the controller reads (section 12) | Line author; independent reviewer |
+| L4-O15 | **CLOSED(decision, D6 below)** Controller rule: `vreplay.next_strength` lowers when either reading rose (`vreplay.py:63-64`); the lab fixture used to lower only when both rose (LA:12-14) and now uses `any(rises)` (`lab/l4_adaptive_replay_policy.py:131`, `1b30daf`), so LA's pinned note is stale. Also which R the controller reads (section 12) | Line author; independent reviewer |
 | L4-O16 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
-| L4-O17 | RR, LC, LA, LM and the `lab/l4*` modules are untracked. A freeze must pin a committed or closure-archived tree (ADM:27). No native launch entry point exists (ADM:26, ADM:91) | Owner approves the commit; integration owner makes it; line author builds the launcher |
+| L4-O17 | **Tracking half CLOSED** (`f791802`, `c0daf55`; native launcher and owner approval of the commit stay OPEN). Was: RR, LC, LA, LM and the `lab/l4*` modules are untracked. A freeze must pin a committed or closure-archived tree (ADM:27). No native launch entry point exists (ADM:26, ADM:91) | Owner approves the commit; integration owner makes it; line author builds the launcher |
 | L4-O18 | A DL entry that applies the intersection-union rule to L4-C by name (DL:205 names L2-C and L3-C), and the section 16 lock line | Orchestrator under OD4; owner for the lock |
 | L4-O19 | Independent review of this protocol (SC:39) | Independent reviewer |
 
@@ -308,9 +329,15 @@ text arms (W:214); the split between C, B and any A work is OPEN (L4-O14).
 Per RR:48-52 and SC:35-39:
 
 1. **Protocol sha256** of this file at the frozen commit.
-2. **Code tree hash at the candidate.** The git tree of HEAD `1dabf53` read today is
-   `3a9a1dc57b138aab80ab46c0e878fe06a1984387`; the record must recompute it and must name the final
-   candidate once L4-O9 or L4-O17 moves it. Also the config hash.
+2. **Code tree hash at the candidate.** The candidate is a commit at or after `c0daf55` (DECISION_LOG
+   2026-11-25), never `1dabf53`. The tree of `1dabf53` was `3a9a1dc57b138aab80ab46c0e878fe06a1984387`
+   when read on 2026-11-24 and is history only; the record recomputes the tree at the candidate and
+   names the final candidate once L4-O9 or L4-O17 moves it. Also the config hash.
+   2a. **Proposal commit.** `1dabf53` pinned as the commit of P, with the sha256 of
+   `git show 1dabf53:docs/PROPOSAL-RESIDENCY-V3.md`, because P line numbers move.
+   2b. **Steering inputs.** The code hash of each caller-supplied function that steers the run
+   (`readings`, `check`, `render`, `tokenizer`, `check_tokens`, `reading_tokens`) and their measured
+   charges, each pinned in the record.
 3. **Protected inputs**, each with path, sha256 and custodian: day and night trace chains, old and
    new stores with source IDs, measured compression ratios per setting, the ladder calibration,
    close-night truth labels, paired cost records, split IDs, seed map (RR:21).
@@ -347,13 +374,13 @@ be passed on behalf of another, and no setting on behalf of the other.
 3. **What "at a setting" means under adaptive strength.** The controller can lower the rung during
    a chain (`vreplay.py:11-13`). Draft default: a chain belongs to the setting it starts at, the
    false share is read on that chain whatever rung it ends at, and the nightly rung sequence is
-   reported. Confirming or replacing this default is part of L4-O15.
+   reported. Confirmed by D6 (L4-O15).
 4. **C1 at both settings.** C1a and C1b are tested separately, each by its own 95% interval
    against 0.05 (P:184-185; P:536). No pooling, no averaging across the two settings, no choosing
    the better one.
 5. **C2 and C3.** Draft default: each is tested at each of the two settings, giving six conjuncts,
    which is the strictest reading of P:536-538. Reading them once on the pooled pair is the
-   alternative. OPEN (L4-O3).
+   alternative. Decided: each at each setting (D2, supersedes L4-O3).
 6. **Undefined is not passed.** A conjunct whose value is undefined (empty store, no passing task,
    missing label; LC:37-41) does not hold. Missing is not zero.
 7. **Outcome.**
@@ -374,7 +401,7 @@ be passed on behalf of another, and no setting on behalf of the other.
 Source: `docs/reports/tremor/DECISION_LOG.md`, "L4 strength-lowering rule" (`f33164d`).
 - **Rule for lowering strength (L4-O15):** one rung down when either recovery time or R rises. This matches the accepted `vreplay` module (`vreplay.py:63`). `lab/l4_adaptive_replay_policy.py` now follows it (`1b30daf`).
 - **Conjunction rule:** the joint decision across the two settings requires every conjunct (an intersection-union test, each reported).
-- **Still OPEN:** every other item in section 14, including the token reference (L4-O1), the token meter (L4-O2) and the freeze record.
+- **Still OPEN (as of 2026-11-24):** every other item in section 14. Superseded since: the token reference (L4-O1, D1). The token meter (L4-O2) and the freeze record stay OPEN.
 
 ## Decisions since drafting (2026-11-25, line author under OD4)
 
@@ -388,6 +415,11 @@ Method, scope and rule-type decisions only, each taken from a cited source line.
 | D4 | L4-O11, statistical stop | Fixed n, no interim look at arm outcomes, one analysis. The economic stop of section 8 is unchanged. n itself stays OPEN (L4-O10). | `DECISION_LOG.md` 2026-11-25 (L4-O11 row); P:180-185 gives no sequential design |
 | D5 | L4-O12, failed manipulation check | A failed or uninformative manipulation check (section 9 step 2) blocks "supported". The result is reported as inconclusive with the failed check named, unless the line-level kill of section 10 applies. No new outcome label. | `DECISION_LOG.md` 2026-11-25 (L4-O12 row); P:560-561 |
 | D6 | L4-O15, controller | Lowering: one rung down when either reading rises, as already decided above. R is the first-generation reading (mean first-generation offspring per planted note), as the proposal defines it and as the fixture meter uses. `readouts.reproduction_number` returns the descendant share (section 12); aligning it, or supplying a first-generation reading to the controller, is code work under L4-O9 and moves the candidate tree hash. A chain belongs to the setting it starts at (section 16 step 3 default is confirmed); the rung sequence is reported. | P:386; P:516; DL:206 (L2 R definition, `quarantine.py` aligned in `fc41783`); LA:22; `vreplay.py:63` |
+| D7 | Placebo arm (OD4 ruling 2026-11-25) | Shuffle within each episode (order of its lines or turns), source carried along. Replaces the between-episodes swap, which made the placebo notes false by construction. Section 3 and L4-O9 updated; the harness needs aligning. | Review finding 1; P:518-519 |
+| D8 | C2 under a binding cap (OD4 ruling 2026-11-25) | The shared token cap and `store_size` are fixed on calibration chains before any run; both are OPEN numbers and none is invented here. Cap hits are reported per arm and chain. C2 is UNDEFINED, not a pass, when the reference arm hit the cap, because both arms then spend to the cap and the ratio is about 1. | Review finding 2; LC:43; P:517-518 |
+| D9 | New notes in a full store (OD4 ruling 2026-11-25) | New episodes and the night's tasks count as uses on arrival; ties are broken by recency; every source of a multi-source note is counted. | Review finding 3; `vreplay.py:67-82` |
+
+**D1 flag for the owner.** D1 reads "equal total tokens" (P:517-518) as a shared cap and lets realized tokens differ under it. That reading is the line author's, not the proposal's. The owner confirms or replaces it at the freeze, and D8 shows why it matters: under a binding cap C2 carries no information.
 
 Part decisions (the item stays OPEN):
 
@@ -397,4 +429,24 @@ Part decisions (the item stays OPEN):
 - **L4-O13.** `keep` and `add` are fitted on the calibration chains only, never on assessment chains (section 5), against the exact `nulls.iterated_map` curve. Still OPEN: the fitting loss and `tol` (the repo gives no tolerance for the recovery reading, `nulls.py:14-16`).
 - **L4-O17 and L4-O18.** The tracking half of L4-O17 and the decision-log half of L4-O18 are closed by `DECISION_LOG.md` 2026-11-25 (`f791802`, `c0daf55`): a freeze must pin a commit at or after `c0daf55`, and the intersection-union rule applies to L4-C by name (C1a, C1b, C2, C3 at both settings, each reported, no multiplicity adjustment). Still OPEN: the owner's approval of the commit, the native launcher, and the section 16 lock line (owner or custodian, not settled).
 
-Still OPEN, with the missing source: L4-O6 (daily error rate, nights per chain, store size, note inventory: no value in P or the repo; P:531 gives six nights for A only), L4-O7 (split IDs and seed map: custodian), L4-O9 (code and tests: build work, not a decision), L4-O10 (n, variance, ICC: the approved pilot is unreleased, ADM:136), L4-O14 (split of 12 GPU-hours and USD 40: owner spend), L4-O16 (tiers, snapshots, team size: owner), L4-O19 (independent review).
+Still OPEN, with the missing source: L4-O6 (daily error rate, nights per chain, store size, shared cap, note inventory: no value in P or the repo; P:531 gives six nights for A only), L4-O7 (split IDs and seed map: custodian), L4-O9 (code and tests: build work, not a decision), L4-O10 (n, variance, ICC: the approved pilot is unreleased, ADM:136), L4-O14 (split of 12 GPU-hours and USD 40: owner spend), L4-O16 (tiers, snapshots, team size: owner), L4-O19 (independent review).
+
+## Review fixes 2026-11-25
+
+Independent review of this protocol; each finding and where it changed. No number or threshold was invented; unset values stay OPEN.
+
+| # | Finding | Change |
+|---|---|---|
+| 1 | Placebo swap made notes false by construction | Section 3 arm row and placebo paragraph; D7; L4-O9 row marks the old placebo reading superseded |
+| 2 | C2 about 1 under a binding cap | D8; section 6 step 4; section 12; L4-O6 row. Cap and `store_size` fixed on calibration chains (OPEN numbers); cap hits reported; C2 undefined when the reference hit the cap |
+| 3 | New notes in a full store | D9; section 6 step 1 |
+| 4 | Stale OPEN or untracked passages | Source key (all untracked rows), section 2 (reference, C2/C3 reading, DL entry, prediction A), section 3 harness line, section 6 gaps and step 4, section 8 stat stop, section 9 steps 2 and 6, section 10 C1 refuted, section 16 steps 3 and 5, L4-O1, O9, O15, O17 rows, 2026-11-24 "Still OPEN" line, section 15.2 (candidate at or after `c0daf55`, not `1dabf53`) |
+| 5 | Lab policy cite | L4-O15 row: now `any(rises)` at `lab/l4_adaptive_replay_policy.py:131` (`1b30daf`); LA:12-14 stale |
+| 6 | Steering inputs | Section 15 item 2b: code hashes of `readings`, `check`, `render`, `tokenizer`, `check_tokens`, `reading_tokens`, plus measured charges |
+| 7 | Rung is a prompt string | Section 12 new bullet |
+| 8 | Truncated batch | Section 8 economic stop: inconclusive unless dispatched in a pre-randomized balanced order |
+| 9 | Pin proposal commit | Source key P row; section 15 item 2a |
+| 10 | C3 decision method | Section 9 step 3: paired cluster-bootstrap interval, not chain wins |
+| 11 | Heading | Renamed "primary conjunction" (six conjuncts), section 2 heading and lead paragraph |
+| 12 | L4-O9 evidence | Row cites `d11b32c`; no independent-review record was found in `DECISION_LOG.md`, so the row says so and the freeze needs one |
+| 13 | D1 flag | Flag paragraph after the D table; L4-O1 row; section 2 |

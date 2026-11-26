@@ -100,10 +100,17 @@ class Scoring(unittest.TestCase):
             h.cost_per_pass(True, c)
 
     def test_token_ratio(self):
-        self.assertEqual(h.token_ratio(21, 14), Fraction(3, 2))
-        self.assertIsNone(h.token_ratio(5, 0))
+        self.assertEqual(h.token_ratio(21, 14, reference_unused=5), Fraction(3, 2))
+        self.assertIsNone(h.token_ratio(5, 0, reference_unused=5))
         with self.assertRaises(ValueError):
-            h.token_ratio(-1, 4)
+            h.token_ratio(-1, 4, reference_unused=5)
+        with self.assertRaises(TypeError):
+            h.token_ratio(21, 14)
+
+    def test_token_ratio_is_undefined_when_the_reference_hit_the_cap(self):
+        for unused in (0, -3):  # at the cap, or overshot by a completion
+            self.assertIsNone(h.token_ratio(21, 14, reference_unused=unused))
+        self.assertEqual(h.token_ratio(21, 14, reference_unused=1), Fraction(3, 2))
 
 
 class Arms(unittest.TestCase):
@@ -148,17 +155,11 @@ class Arms(unittest.TestCase):
         self.assertEqual(s["plain_dream"]["false_share"], Fraction(1))  # ungated dream keeps the errors
         self.assertEqual(s["placebo_dream"]["false_share"], Fraction(1))
 
-    def test_placebo_shuffles_transcripts(self):
+    def test_placebo_on_single_line_episodes_changes_nothing(self):
         r = self.runs(seed=0)
         texts = lambda arm: [(n["sources"][0], n["text"]) for n in r[arm]["nights"][0]["resident"]]
-        plain, placebo = texts("plain_dream"), texts("placebo_dream")
-        self.assertCountEqual([t for _, t in plain], [t for _, t in placebo])  # same texts ...
-        self.assertEqual([s for s, _ in plain], [s for s, _ in placebo])       # ... on the same sources
-        eps = CHAIN["nights"][0]["episodes"]
-        swapped = h._shuffle_texts(eps, 0)
-        self.assertEqual(sorted(e["text"] for e in swapped), sorted(e["text"] for e in eps))
-        self.assertTrue(any(s != e for s, e in zip(
-            [h._shuffle_texts(eps, k)[0]["text"] for k in range(10)], [eps[0]["text"]] * 10)))  # it does move text
+        self.assertEqual(texts("plain_dream"), texts("placebo_dream"))
+        self.assertEqual(r["placebo_dream"]["unshuffled"], [[0, "e1"], [0, "e2"]])
 
     def test_same_errors_for_every_arm(self):
         r = self.runs(error_rate=0.5, seed=4)
@@ -180,6 +181,7 @@ class Arms(unittest.TestCase):
         self.assertEqual(s["replay"]["task_counts"]["passed"], 1)   # night 0 had no memory, night 1 answered
         self.assertEqual(s["search"]["task_counts"]["passed"], 2)
         self.assertEqual(s["c2"], Fraction(42, 16))
+        self.assertEqual(s["cap_hit"], dict.fromkeys(h.ARMS, False))
         self.assertEqual(s["search"]["cost_per_pass"], Fraction(10))
         self.assertEqual(s["replay"]["cost_per_pass"], Fraction(42))
         self.assertIs(s["c3"], False)
@@ -338,12 +340,26 @@ def dreams(run):
     return [e["prompt"].split("\n") for e in run["ledger"] if e["kind"] == "dream"]
 
 
+def _json_dream(kind, prompt):  # a faithful rewrite of the JSON-rendered batch
+    if kind == "dream":
+        return [{**c, "id": "n-" + c["id"]} for c in json.loads(prompt.split("\n", 1)[1])]
+    return None
+
+
+JSON = dict(model=_json_dream, render=json.dumps)
+
+
+def shown(run):
+    """The batch each night's dream was shown (JSON render), as lists of episodes."""
+    return [json.loads(e["prompt"].split("\n", 1)[1]) for e in run["ledger"] if e["kind"] == "dream"]
+
+
 def synthetic(arm, tokens, passed):
     """A settled run with a known charge and `passed` correct answers, for boundary checks on the scorer."""
     subs = {f"t{i}": WORLD["a"] for i in range(passed)}
     tasks = [(f"t{i}", "a") for i in range(2)]
     return {"arm": arm, "start_rung": 0, "rungs": [0], "tokens": tokens, "cap": 99, "unused_tokens": 0, "withheld_tasks": 0, "withheld_searches": 0,
-            "withheld_nights": 0, "unshuffled": [],
+            "withheld_nights": 0, "unshuffled": [], "cap_hit": False,
             "ledger": [{"kind": "check", "tokens": tokens}],
             "nights": [{"submissions": {**dict.fromkeys(("t0", "t1")), **subs}, "resident": [], "tasks": tasks}]}
 
@@ -352,44 +368,55 @@ class Strict(unittest.TestCase):
     """Each test is written to fail on a named mutant of l4c_harness (checked by mutating a copy)."""
 
     def test_placebo_arm_shuffles_the_night_it_is_shown(self):  # M1
-        eps = lambda t: [{"id": f"q{t}{i}", "text": f"x{t}{i}", "sources": ["abc"[i % 3]]} for i in range(6)]
+        eps = lambda t: [{"id": f"q{t}{i}", "text": "\n".join(f"{i}l{j}" for j in range(4)), "sources": ["abc"[i % 3]]}
+                         for i in range(6)]
         chain = chain_of([(eps(t), []) for t in range(4)])
-        plain = h.run_arm("plain_dream", chain, **cfg(nights=4))
-        placebo = h.run_arm("placebo_dream", chain, **cfg(nights=4))
-        shown = lambda run: [x.split("|") for x in dreams(run)[0][1:]]
-        self.assertNotEqual(shown(placebo), shown(plain))
-        self.assertEqual([x[0] for x in shown(placebo)], [x[0] for x in shown(plain)])  # same ids and sources
-        self.assertEqual(sorted(x[2] for x in shown(placebo)), sorted(x[2] for x in shown(plain)))  # same texts
+        plain = h.run_arm("plain_dream", chain, **cfg(nights=4, **JSON))
+        placebo = h.run_arm("placebo_dream", chain, **cfg(nights=4, **JSON))
+        orig = {e["id"]: e for e in eps(0)}
+        a, b = shown(plain)[0], shown(placebo)[0]
+        self.assertEqual(a, list(orig.values()))
+        self.assertNotEqual(a, b)
+        for x in b:  # same id, same source, same set of lines: only the order is destroyed
+            self.assertEqual(x["sources"], orig[x["id"]]["sources"])
+            self.assertEqual(sorted(x["text"].split("\n")), sorted(orig[x["id"]]["text"].split("\n")))
+        self.assertTrue(any(x["text"] != orig[x["id"]]["text"] for x in b))
+
+    def test_placebo_keeps_each_note_to_its_own_episode_lines(self):  # M1, swapped texts
+        eps = [{"id": f"q{i}", "text": f"{i}a\n{i}b\n{i}c", "sources": [f"s{i}"]} for i in range(6)]
+        r = h.run_arm("placebo_dream", chain_of([(eps, [])]), **cfg(nights=1, **JSON))
+        for x in shown(r)[0]:  # each note still carries its own episode's lines, none of another's
+            own = next(e for e in eps if e["id"] == x["id"])
+            self.assertEqual(set(x["text"].split("\n")), set(own["text"].split("\n")))
 
     def test_placebo_seed_is_the_callers(self):  # M1, (c)
-        eps = [{"id": f"q{i}", "text": f"x{i}", "sources": ["a"]} for i in range(6)]
+        eps = [{"id": f"q{i}", "text": "\n".join(f"{i}l{j}" for j in range(5)), "sources": ["a"]} for i in range(6)]
         big = chain_of([(eps, [])] * 3)
-        seen = {tuple(dreams(h.run_arm("placebo_dream", big, **cfg(nights=3, shuffle_seed=k)))[0][1:])
+        seen = {json.dumps(shown(h.run_arm("placebo_dream", big, **cfg(nights=3, shuffle_seed=k, **JSON)))[0])
                 for k in range(5)}
         self.assertGreater(len(seen), 1)  # the argument, not a constant, drives the permutation
 
     def test_placebo_permutation_changes_from_night_to_night(self):  # mutant: shuffle_seed alone, no night
-        eps = [{"id": f"q{i}", "text": f"x{i}", "sources": ["a"]} for i in range(6)]
-        r = h.run_arm("placebo_dream", chain_of([(eps, [])] * 4), **cfg(nights=4, store_size=100))
-        new_part = [tuple(d[-6:]) for d in dreams(r)]  # the day's six episodes close each prompt
+        eps = [{"id": f"q{i}", "text": "\n".join(f"{i}l{j}" for j in range(5)), "sources": ["a"]} for i in range(6)]
+        r = h.run_arm("placebo_dream", chain_of([(eps, [])] * 4), **cfg(nights=4, store_size=100, **JSON))
+        new_part = [json.dumps(d[-6:]) for d in shown(r)]  # the day's six episodes close each batch
         self.assertGreater(len(set(new_part)), 1)
 
-    def test_unshuffled_lists_identity_nights_whose_dream_ran(self):
-        two = [{"id": "q0", "text": "x0", "sources": ["a"]}, {"id": "q1", "text": "x1", "sources": ["b"]}]
-        same = lambda k: [e["text"] for e in h._shuffle_texts(two, h._night_seed(k, 0, "shuffle"))] == ["x0", "x1"]
+    def test_unshuffled_lists_episodes_that_could_not_move(self):
+        a = {"id": "A", "text": "x\ny", "sources": ["a"]}
+        b = {"id": "B", "text": "z", "sources": ["b"]}
+        same = lambda k: h._shuffle_lines([a, b], h._night_seed(k, 0, "shuffle"))[0][0]["text"] == "x\ny"
         ident = next(k for k in range(100) if same(k))
         moved = next(k for k in range(100) if not same(k))
-        chain = chain_of([(two, []), ([{**two[0], "id": "q9"}], []), ([], [])])
-        r = h.run_arm("placebo_dream", chain, **cfg(nights=3, shuffle_seed=ident))
-        self.assertEqual(r["unshuffled"][0], 0)           # two episodes, identity permutation: reported
-        self.assertEqual(r["unshuffled"][-2:], [1, 2])    # one episode and none cannot be shuffled
-        r = h.run_arm("placebo_dream", chain, **cfg(nights=3, shuffle_seed=moved))
-        self.assertEqual(r["unshuffled"], [1, 2])         # night 0 really moved
-        self.assertEqual(h.run_arm("replay", chain, **cfg(nights=3))["unshuffled"], [])
-        # A skipped dream is not reported as unshuffled: cap 2 leaves no room for night 0's prompt (identity
-        # seed), so only night 1, whose two-token prompt fits, is listed; nights 0 and 2 are withheld.
-        r = h.run_arm("placebo_dream", chain, **cfg(nights=3, cap=2, shuffle_seed=ident))
-        self.assertEqual((r["unshuffled"], r["withheld_nights"]), ([1], 2))
+        chain = chain_of([([a, b], []), ([], [])])
+        r = h.run_arm("placebo_dream", chain, **cfg(nights=2, shuffle_seed=ident))
+        self.assertEqual(r["unshuffled"], [[0, "A"], [0, "B"]])  # identity order, and one line cannot move
+        r = h.run_arm("placebo_dream", chain, **cfg(nights=2, shuffle_seed=moved))
+        self.assertEqual(r["unshuffled"], [[0, "B"]])             # A really moved
+        self.assertEqual(h.run_arm("replay", chain, **cfg(nights=2))["unshuffled"], [])
+        # A skipped dream is not reported: cap 2 leaves no room for night 0's prompt.
+        r = h.run_arm("placebo_dream", chain, **cfg(nights=2, cap=2, shuffle_seed=ident))
+        self.assertEqual((r["unshuffled"], r["withheld_nights"]), ([], 1))
 
     def test_search_stops_at_first_answer(self):  # M2
         def answer_at(k):
@@ -439,10 +466,49 @@ class Strict(unittest.TestCase):
                           ([note("a1", "a"), note("a2", "b")], ["b"]), ([], [])])
         r = h.run_arm("replay", chain, **cfg(nights=3, store_size=2))
         d = dreams(r)
-        # Night 1 replays the raw episodes (not the n- notes) kept by night 0: ties at zero use go by id.
-        self.assertEqual(d[1], ["rung=2", "p1|a|a ok", "p2|b|b ok", "a1|a|a ok", "a2|b|b ok"])
-        # Night 1's task read source b, so p2 is used and outranks a2; a1 wins the id tie. Two kept, not four.
-        self.assertEqual(d[2], ["rung=2", "p2|b|b ok", "a1|a|a ok"])
+        # Night 0: no use anywhere, the later arrivals p2, p3 are kept (not p1, p2 by id).
+        # Night 1 replays those raw episodes (not the n- notes); its task read b, so p2 and a2 are used once
+        # and the later arrival a2 wins no tie against nothing: both are kept, p3 and a1 are dropped.
+        self.assertEqual(d[1], ["rung=2", "p2|b|b ok", "p3|c|c ok", "a1|a|a ok", "a2|b|b ok"])
+        self.assertEqual(d[2], ["rung=2", "p2|b|b ok", "a2|b|b ok"])
+
+    def test_full_store_ties_go_to_the_later_arrival_not_to_the_id(self):  # M15
+        # store_size 1: the old note's id sorts first, so only id order would keep it.
+        chain = chain_of([([note("a-old", "a")], []), ([note("z-new", "b")], [])])
+        r = h.run_arm("gated_write", chain, **cfg(nights=2, store_size=1))
+        self.assertEqual([n["id"] for n in r["nights"][0]["resident"]], ["a-old"])
+        self.assertEqual([n["id"] for n in r["nights"][1]["resident"]], ["z-new"])
+        chain = chain_of([([note("z-old", "a")], []), ([note("a-new", "b")], [])])  # and the reverse id order
+        r = h.run_arm("gated_write", chain, **cfg(nights=2, store_size=1))
+        self.assertEqual([n["id"] for n in r["nights"][1]["resident"]], ["a-new"])
+        self.assertEqual(h.run_arm("plain_dream", chain, **cfg(nights=2, store_size=1))["nights"][1]["resident"][0]["id"],
+                         "n-a-new")
+
+    def test_new_episodes_are_counted_as_used_when_they_arrive(self):  # M16
+        # Tonight's task reads b: the new b note has one use, the old a note none, whatever the ids say.
+        chain = chain_of([([note("a-old", "a")], []), ([note("z-new", "b")], ["b"])])
+        r = h.run_arm("gated_write", chain, **cfg(nights=2, store_size=1))
+        self.assertEqual([n["id"] for n in r["nights"][1]["resident"]], ["z-new"])
+        # An old used note still beats a newer unused one.
+        chain = chain_of([([note("z-old", "a")], ["a"]), ([note("a-new", "b")], [])])
+        r = h.run_arm("gated_write", chain, **cfg(nights=2, store_size=1))
+        self.assertEqual([n["id"] for n in r["nights"][1]["resident"]], ["z-old"])
+
+    def test_new_raw_episodes_are_counted_as_used_on_the_night_they_arrive(self):  # M16, replay
+        # Both arrive tonight; tonight's task reads b. Neither id order nor recency picks z-used.
+        chain = chain_of([([note("z-used", "b"), note("a-other", "a")], ["b"]), ([], [])])
+        r = h.run_arm("replay", chain, **cfg(nights=2, store_size=1))
+        self.assertEqual(dreams(r)[1], ["rung=2", "z-used|b|b ok"])
+
+    def test_every_source_of_a_multi_source_note_counts_as_a_use(self):  # M17
+        multi = {"id": "z-multi", "text": WORLD["a"], "sources": ["a", "b"]}
+        chain = chain_of([([multi, note("a-one", "a")], ["b"])])
+        r = h.run_arm("gated_write", chain, **cfg(nights=1, store_size=1))
+        self.assertEqual([n["id"] for n in r["nights"][0]["resident"]], ["z-multi"])
+        # The same note is used once per matching task, not once per source.
+        chain = chain_of([([multi, note("m2", "a")], ["a", "b"])])
+        r = h.run_arm("gated_write", chain, **cfg(nights=1, store_size=1))
+        self.assertEqual([n["id"] for n in r["nights"][0]["resident"]], ["z-multi"])
 
     def test_gated_write_accumulates_and_fits_exactly(self):  # M7 M11
         chain = chain_of([([note("g00", "a"), note("g01", "b")], []), ([note("g10", "c")], []),
@@ -492,6 +558,20 @@ class Strict(unittest.TestCase):
         r = h.run_arm("plain_dream", CHAIN, **cfg(cap=2))
         self.assertEqual((r["withheld_tasks"], r["withheld_nights"]), (1, 2))
         self.assertNotIn("withheld", r)
+
+    def test_c2_is_undefined_when_the_gated_write_hit_the_cap(self):  # M18
+        r = Arms().runs(cap=16)
+        self.assertEqual((r["gated_write"]["tokens"], r["gated_write"]["unused_tokens"]), (16, 0))
+        self.assertIs(r["gated_write"]["cap_hit"], True)
+        s = h.compare_arms(r, TRUTH, words)
+        self.assertIsNone(s["c2"])  # 16 over 16 would be a finite ratio set by the cap, not by the arm
+        self.assertIs(s["cap_hit"]["gated_write"], True)
+        self.assertIs(s["gated_write"]["cap_hit"], True)
+        free = h.compare_arms(Arms().runs(), TRUTH, words)
+        self.assertEqual(free["c2"], Fraction(42, 16))
+        runs = {a: synthetic(a, 10, 1) for a in h.ARMS}
+        runs["gated_write"] = {**synthetic("gated_write", 99, 1), "cap": 99}
+        self.assertIsNone(h.compare_arms(runs, [WORLD], words)["c2"])
 
     def test_total_is_a_running_sum(self):
         calls = []
