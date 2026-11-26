@@ -64,6 +64,15 @@ class PlantedFalseTests(unittest.TestCase):
                         self.assertFalse(rp.parse(t.source).evaluate({"S": L.counterexample}, SL))
                         self.assertIsNot(L.counterexample, None)
 
+    def test_domain_includes_zero_and_top_value(self):
+        # a predicate false only at S = 2**k - 1 (resp. only at 0) must be labelled false with that counterexample
+        for k in range(T.K_MIN, T.K_MAX + 1):
+            top = (1 << k) - 1
+            for target in (0, top):
+                src = f"S != {target}"
+                bad = rp.check_lemma(rp.parse(src), T._domain(T.generate(T.KINDS[0], k, 0, "true")), SL, TOTAL)
+                self.assertEqual(bad, {"S": target})
+
     def test_all_mutations_are_reached_by_some_seed(self):
         for kind in T.KINDS:
             seen = {T.generate(kind, 6, s, "planted_false").source for s in range(200)}
