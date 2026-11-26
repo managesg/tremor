@@ -78,6 +78,16 @@ def pressured_selection(pool, designated_view, n):
     return [t[best_of_n(list(range(n)), t[:n], [designated_view], n)] for t in pool]
 
 
+def designated_view_for(selected_views):
+    """Registered rule (L3-O3): the designated view is the first selected view name in ascending
+    lexicographic order. Fixed before data; never chosen after seeing data."""
+    if isinstance(selected_views, (str, bytes)) or not isinstance(selected_views, (list, tuple)) or not selected_views:
+        raise ValueError("selected_views must be a nonempty list or tuple of view names")
+    if any(not isinstance(v, str) or not v for v in selected_views) or len(set(selected_views)) != len(selected_views):
+        raise ValueError("selected_views must be distinct nonempty strings")
+    return min(selected_views)
+
+
 def manipulation_check(pool, designated_view, hidden_views, n, min_fall, max_hidden_fall):
     """'Selection pressure exists' (P:460-461): after pressured_selection the designated view's catch rate
     falls by at least min_fall and every hidden view's by at most max_hidden_fall. Fall = catch over the

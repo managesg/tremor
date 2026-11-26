@@ -43,12 +43,12 @@ verification needs at least 80%; measured R beats the three cheap orderings) are
 primary, not key secondary contrasts and not a Holm family. The primary holds only if every conjunct
 holds: an intersection-union test, each conjunct at its stated level and reported separately, no
 multiplicity adjustment (DL:205, DL:236). Holm correction (P:236-237, RR:45, W:182-185) applies to
-registered secondaries only, and this protocol registers none (L2-O3 is still OPEN for the owner).
+registered secondaries only, and this protocol registers none (L2-O3 decided 2026-11-26 by the line author under the owner approval).
 "Supported" for C requires all three clauses (CLOSED, L2-O2). Test forms: section 7.
 
 Out of this protocol: the arising form and prediction E (SC:14-16). Predictions A, B and D are not
 primary (P:375-381); the scope record is silent on whether they stay as registered secondaries
-(L2-O3, still OPEN).
+(L2-O3, decided 2026-11-26).
 
 ## 3. Arms and matched comparators
 
@@ -91,7 +91,7 @@ content (AP:166), ratified by the owner for L2's planted notes (SC:31).
   (LAB-cust:8-16). Custody lies with a custodian independent of the author (ADM:128).
 - **Store handling after a run.** P:981 says the toy store is deleted after the run. RR:39 says to
   preserve prior stores with provenance, and RR:51-52 requires replayable evidence. These conflict.
-  Still OPEN (L2-O6, owner's item, DL:239); the interim rule is preserve, never delete.
+  Decided 2026-11-26 by the line author under the owner approval (L2-O6): preserve, never delete.
 - No tenant or private data enters any test (P:987-988).
 
 ## 5. Splits and blinding
@@ -293,10 +293,10 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 |---|---|---|
 | L2-O1 | **CLOSED(decision)**, see Decisions 2026-11-25. Which R ranks the targeted arm: first-generation offspring (P:386) or the descendant share now in `quarantine.py:83`. A code change moves the candidate tree hash | Line author proposes; independent reviewer audits; owner approves the freeze |
 | L2-O2 | **CLOSED(decision)**, see Decisions 2026-11-25. Whether "supported" requires all three clauses of C or the equivalence clause alone | Line author proposes; owner approves at freeze |
-| L2-O3 | **Interim rule 2026-11-25, still OPEN (owner scope); not closed.** Whether A, B and D stay as registered secondaries, and the Holm family size with E out | Owner (scope); line author |
+| L2-O3 | **CLOSED(decision). Decided 2026-11-26 by the line author under the owner approval.** A, B and D stay OUT of this protocol's inference; the Holm family is empty. Reason: RR:19 names C alone as primary | Line author (decided) |
 | L2-O4 | **CLOSED(decision)**, see Decisions 2026-11-25. Final arm list: keep the unprotected store and the Nakayashiki rule, which RR:19 omits | Line author; independent reviewer |
 | L2-O5 | The five fraction values, the store size, and the exact bytes of the planted note, clean twin and trigger-only source | Line author writes; custodian seals |
-| L2-O6 | **Interim rule 2026-11-25, still OPEN (DECISION_LOG keeps it the owner's).** Delete the toy store after the run (P:981) or preserve it (RR:39, RR:51-52). Any deletion is the owner's to run | Owner |
+| L2-O6 | **CLOSED(decision). Decided 2026-11-26 by the line author under the owner approval.** The toy store is preserved with provenance (RR:39, RR:51-52); no agent deletes it. Deletion, if ever wanted, is an owner-run command prepared with scope and backup | Line author (decided) |
 | L2-O7 | Pilot, tuning and held-out chain IDs; seed map | Custodian |
 | L2-O8 | **Partly decided 2026-11-25, still OPEN for the denominator.** Adoption denominator and the eligible parent-offspring events | Line author; independent reviewer |
 | L2-O9 | **Partly decided 2026-11-25, still OPEN for the grid size and the search test.** Verification-share grid, one dose scale for the 50% and 80% clauses, and, if wanted, a test form for K1; the dose search itself is descriptive (section 7) | Line author |
@@ -359,8 +359,8 @@ Sources added: `docs/reports/tremor/DECISION_LOG.md`, "2026-11-25: M4 rule-type 
 
 ### Decided in structure, still OPEN
 
-- **L2-O3, A, B, D.** *Interim rule only; owner scope; the reviewer rejected closing it.* Proposed: they are out of this protocol's inference. Reasons: RR:19 names C alone as the primary contrast (SC does not itself exclude A, B or D); the warning replication and R in an unprotected store belong to the separate pilot slice (W:196); A needs a neutral-line arm and B a share sweep of its own, neither in section 3. They may be re-registered by a separate protocol. With the C clauses unadjusted (O2) and A, B, D, E out, no Holm family remains here. Holm (RR:45) applies only if a freeze re-registers a secondary. R's dispersion and the section 9 readouts stay descriptive (P:386-387).
-- **L2-O6, toy store.** *Interim rule only; DL:239 keeps the item the owner's.* Preserve it with provenance (RR:39; RR:51-52 replayable evidence). No agent deletes it; P:981's "deleted after the run" is not executed by this line. If the owner wants it deleted after the evidence is archived and hashed, the owner runs that, from a command prepared with scope and backup (AGENTS_SYSTEM.md Safety rule 1; DECISION_LOG interim rule).
+- **L2-O3, A, B, D.** *Decided 2026-11-26 by the line author under the owner approval (owner, relayed by the Assistant: "full approval for their requirements and they can make decisions on my behalf").* A, B and D stay OUT of this protocol's inference; they may be re-registered by a separate protocol; the Holm family is therefore empty. Reasons: RR:19 names C alone as the primary contrast (SC does not itself exclude A, B or D); the warning replication and R in an unprotected store belong to the separate pilot slice (W:196); A needs a neutral-line arm and B a share sweep of its own, neither in section 3. They may be re-registered by a separate protocol. With the C clauses unadjusted (O2) and A, B, D, E out, no Holm family remains here. Holm (RR:45) applies only if a freeze re-registers a secondary. R's dispersion and the section 9 readouts stay descriptive (P:386-387).
+- **L2-O6, toy store.** *Decided 2026-11-26 by the line author under the owner approval; reason: replayable evidence (RR:51-52) outweighs P:981's deletion, and deletion is gated.* Preserve it with provenance (RR:39; RR:51-52 replayable evidence). No agent deletes it; P:981's "deleted after the run" is not executed by this line. If the owner wants it deleted after the evidence is archived and hashed, the owner runs that, from a command prepared with scope and backup (AGENTS_SYSTEM.md Safety rule 1; DECISION_LOG interim rule).
 - **L2-O8.** *Decided:* an eligible parent-offspring event is a non-planted note on the Board log whose single parent is a planted note; a note naming a planted id with another parent is ambiguous, the calculation refuses (`readouts.py:99-100`), and the run is reported as refused, never as zero. The denominator is a fixed opportunity inventory, identical in every arm of a chain and pinned before dispatch (`l2c_detached_scoring.py:86-113`; LAB-share:6-8); an empty inventory leaves adoption undefined, not zero. *Missing source:* how section 6's adopter count (notes) maps onto that inventory (dispatch attempts). No document defines it, and W:161 says the harness must still supply the events.
 - **L2-O9.** *Decided:* one dose scale, share = checks spent / checks of full verification, on integer check counts (LAB-share:18-22). The 50% clause, the 80% clause and the 80%-of-random kill (P:377-379, P:390-391) all read on it. The grid step is at most 0.05 (P:388), so a grid at that step implies at least 20 checkable notes, which L2-O5 must confirm; no size is set here. The minimum successful dose is descriptive only and gets no test (section 7), so no multiplicity rule across grid points is needed. *Missing source:* the bound and single share for "random needs at least 80%", and a test form for K1 (L2-O19). Neither is in P or RR.
 - **L2-O13.** *Decided:* "every tier and task" (P:392) ranges over exactly the tiers and tasks the freeze registers, and the local tier is the reproducible floor (P:969; W:230). Its pin is Qwen3.5-4B revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` (ADM:47). *Missing source:* any hosted tier and snapshot, which are owner spend (RR:19, USD 9 plan, 15 stop); the task-family revision; the team size. P:341-342 gives 4 to 8 agents as a range.

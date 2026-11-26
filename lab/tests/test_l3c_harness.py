@@ -364,6 +364,15 @@ class Harness(unittest.TestCase):
         with self.assertRaises(ValueError):
             h.manipulation_check(bad, "P", ["h1"], 4, 0.3, 0.1)
 
+    def test_designated_view_for(self):
+        self.assertEqual(h.designated_view_for(["c", "a", "b"]), "a")
+        self.assertEqual(h.designated_view_for(("z", "B", "a")), "B")  # byte order: upper before lower
+        self.assertEqual(h.designated_view_for(["x"]), "x")
+        self.assertEqual(h.designated_view_for(["b", "a"]), h.designated_view_for(["a", "b"]))
+        for bad in ([], "abc", ["a", "a"], ["a", ""], ["a", 1], None, {"a", "b"}):
+            with self.assertRaises(ValueError):
+                h.designated_view_for(bad)
+
 
 if __name__ == "__main__":
     unittest.main()

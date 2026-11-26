@@ -51,8 +51,8 @@ each at the stated level with no multiplicity adjustment, and each is reported s
 | C2 | Verified replay uses no more than 1.5 times the tokens of the reference | P:537; RR:21 |
 | C3 | Verified replay beats equal-token search in tokens per passing task | P:537-538; RR:21 |
 
-The reference in C2 is the evaluator-gated write (D1, supersedes L4-O1; the owner confirms D1 at
-the freeze, see the flag under D1). C2 and C3 are read at each setting (D2, supersedes L4-O3). The
+The reference in C2 is the evaluator-gated write (D1, supersedes L4-O1; confirmed 2026-11-26 by the
+line author under the owner approval, see the note under D1). C2 and C3 are read at each setting (D2, supersedes L4-O3). The
 DL row named L2-C and L3-C; the DL entry applying it to L4-C by name exists (`f791802`, `c0daf55`;
 supersedes the DL half of L4-O18). The section 16 lock line stays OPEN.
 
@@ -304,7 +304,7 @@ text arms (W:214); the split between C, B and any A work is OPEN (L4-O14).
 
 | ID | Decision still needed | Owner |
 |---|---|---|
-| L4-O1 | **CLOSED(decision, D1 below; owner confirms D1 at the freeze)** The token reference for C2: which arm's tokens the 1.5 times bound is measured against. Candidates in the proposal's baseline list (P:517-520): plain model dream, evaluator-gated write, no memory, equal-token search. The baselines are stated "at equal total tokens" (P:517-518), which a 1.5 times allowance against any of them contradicts | Line author proposes; owner approves at freeze |
+| L4-O1 | **CLOSED(decision, D1 below; confirmed 2026-11-26 by the line author under the owner approval)** The token reference for C2: which arm's tokens the 1.5 times bound is measured against. Candidates in the proposal's baseline list (P:517-520): plain model dream, evaluator-gated write, no memory, equal-token search. The baselines are stated "at equal total tokens" (P:517-518), which a 1.5 times allowance against any of them contradicts | Line author (decided 2026-11-26) |
 | L4-O2 | The token meter: tokenizer, rendering policy, which calls count (day work, consolidation pass, scripted re-checks, controller readings), and the charge for measurement (P:193-194; LM:36-38) | Line author; independent reviewer |
 | L4-O3 | **CLOSED(decision, D2 below)** Whether C2 and C3 are read once across both settings or at each setting (section 16, step 5) | Line author proposes; owner approves at freeze |
 | L4-O4 | **CLOSED(decision, D3 below)** Status of prediction A in this batch. SC:27 does not retain it, yet B's boundary (P:535) and C's manipulation check use the ladder sweep | Owner |
@@ -419,7 +419,9 @@ Method, scope and rule-type decisions only, each taken from a cited source line.
 | D8 | C2 under a binding cap (OD4 ruling 2026-11-25) | The shared token cap and `store_size` are fixed on calibration chains before any run; both are OPEN numbers and none is invented here. Cap hits are reported per arm and chain. C2 is UNDEFINED, not a pass, when the reference arm hit the cap, because both arms then spend to the cap and the ratio is about 1. | Review finding 2; LC:43; P:517-518 |
 | D9 | New notes in a full store (OD4 ruling 2026-11-25) | New episodes and the night's tasks count as uses on arrival; ties are broken by recency; every source of a multi-source note is counted. | Review finding 3; `vreplay.py:67-82` |
 
-**D1 flag for the owner.** D1 reads "equal total tokens" (P:517-518) as a shared cap and lets realized tokens differ under it. That reading is the line author's, not the proposal's. The owner confirms or replaces it at the freeze, and D8 shows why it matters: under a binding cap C2 carries no information.
+**D1 confirmed 2026-11-26.** Decided 2026-11-26 by the line author under the owner approval (owner, relayed by the Assistant: "full approval for their requirements and they can make decisions on my behalf"). "Equal total tokens" (P:517-518) is read as a shared cap with C2 = realized tokens against the evaluator-gated write. Reason: it follows P:519-520 and LC:43 and is the only reading under which the cost ratio is defined; D8 shows that under a binding cap C2 carries no information, so that case is UNDEFINED.
+
+**Also decided 2026-11-26 by the line author under the owner approval.** D7 (placebo shuffles within each episode) and D9 (new notes count as uses on arrival, ties by recency, every source of a multi-source note counted; retained-by-use over all sources) are confirmed. Reasons: D7 keeps placebo notes true while breaking the dream's content (review finding 1); D9 follows `vreplay.py:67-82` and leaves no tie unspecified.
 
 Part decisions (the item stays OPEN):
 
