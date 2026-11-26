@@ -168,7 +168,11 @@ class InklingClient:
     def _remaining(self):
         return self._max_wall - (time.monotonic() - self._t0)
 
-    def _gate_call(self, est_prompt):
+    def remaining_wall_s(self):
+        """Wall budget left since the first call; None before the first call."""
+        return None if self._t0 is None else self._max_wall - (time.monotonic() - self._t0)
+
+    def _gate_call(self, est_prompt, max_tokens):
         if self._stopped:
             raise StopRule(self._stopped)
         if self._remote and not self._claimed:
@@ -177,9 +181,9 @@ class InklingClient:
             self._t0 = time.monotonic()
         if self._calls >= self._max_calls:
             self._stop("max_calls reached")
-        if self._remaining() <= 0:
+        if self._remaining() < self._timeout:  # fail closed: a call needs a full per-call timeout of budget
             self._stop("wall-time budget spent")
-        if self._tokens + est_prompt + self._max_tokens > self._max_total:
+        if self._tokens + est_prompt + max_tokens > self._max_total:
             self._stop("token budget cannot cover another call")
         if self._skips >= self._max_skips:
             self._stop("skip spike")
@@ -187,23 +191,27 @@ class InklingClient:
             self._stop("errors")
 
     # --- calls -------------------------------------------------------------------
-    def call(self, messages, *, seed=None):
+    def call(self, messages, *, seed=None, max_tokens=None):
         """One chat completion; returns {content, finish_reason, trace}. Raises CallFailed on a failed call (no retries)."""
         if not isinstance(messages, list) or not messages:
             raise ClientRefused("messages must be a non-empty list")
-        body = {"messages": messages, "max_tokens": self._max_tokens, "stream": False}
+        if max_tokens is None:
+            max_tokens = self._max_tokens
+        elif _posint(max_tokens, "max_tokens") > self._max_tokens:
+            raise ClientRefused("per-call max_tokens above the constructor cap")
+        body = {"messages": messages, "max_tokens": max_tokens, "stream": False}
         if seed is not None:
             body["seed"] = _posint(seed, "seed", zero=True)
         data = json.dumps(body).encode()
         # shortcut: one token per request byte is an upper bound, so a huge prompt cannot overshoot the budget
         with self._lock:
-            self._gate_call(len(data))
+            self._gate_call(len(data), max_tokens)
             return self._once(data)
 
     def _once(self, data):
         self._calls += 1
         start, t = time.monotonic(), self._now()
-        rec = {"utc": t.isoformat(), "wall_s": None, "prompt_tokens": None, "completion_tokens": None,
+        rec = {"utc": t.isoformat(), "wall_s": None, "prompt_tokens": None, "completion_tokens": None, "reasoning_tokens": None,
                "finish_reason": None, "queue_wait_s": None, "tokens_per_s": None, "status": None,
                "skip": False, "error": None}
         out = None
@@ -225,7 +233,8 @@ class InklingClient:
         self._skips += rec["skip"]
         self._tokens += rec["prompt_tokens"] + rec["completion_tokens"]
         self._emit(rec)
-        return {"content": out[0], "finish_reason": rec["finish_reason"], "trace": dict(rec)}
+        return {"content": out[0], "finish_reason": rec["finish_reason"],
+                "reasoning_tokens": rec["reasoning_tokens"], "trace": dict(rec)}
 
     def _request(self, data, start, rec):
         left = min(self._timeout, self._remaining())
@@ -291,7 +300,11 @@ class InklingClient:
         if not isinstance(content, str) or not isinstance(fin, str):
             raise CallFailed("malformed response")
         wall = time.monotonic() - start
-        rec.update(prompt_tokens=pt, completion_tokens=ct, finish_reason=fin)
+        rt = usage.get("completion_tokens_details")
+        rt = rt.get("reasoning_tokens") if isinstance(rt, dict) else None
+        if isinstance(rt, bool) or not isinstance(rt, int) or rt < 0:
+            rt = None  # never guessed or derived
+        rec.update(prompt_tokens=pt, completion_tokens=ct, reasoning_tokens=rt, finish_reason=fin)
         tm = d.get("timings")
         if isinstance(tm, dict):
             pm, gm = tm.get("prompt_ms"), tm.get("predicted_ms")

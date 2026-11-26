@@ -114,6 +114,46 @@ class CallTests(Base):
         self.assertEqual((b["max_tokens"], b["seed"], b["stream"]), (64, 3, False))
         self.assertEqual(c.stats()["total_tokens"], 15)
 
+    def test_per_call_max_tokens_on_one_client(self):
+        c = self.mk(max_tokens=300)
+        c.call(self.MSG, max_tokens=64)
+        c.call(self.MSG, max_tokens=300)
+        c.call(self.MSG)
+        self.assertEqual([json.loads(r["body"])["max_tokens"] for r in self.srv.seen], [64, 300, 300])
+        self.assertEqual(len(self.sink), 3)
+
+    def test_per_call_max_tokens_above_cap_or_invalid_refused(self):
+        c = self.mk(max_tokens=300)
+        for v in (301, 0, -1, True, 1.5, "64"):
+            with self.assertRaises(rc.ClientRefused, msg=v):
+                c.call(self.MSG, max_tokens=v)
+        self.assertEqual(self.srv.seen, [])
+        self.assertEqual(c.stats()["calls"], 0)
+
+    def test_token_precheck_uses_per_call_value(self):
+        c = self.mk(max_tokens=300, max_total_tokens=250)
+        with self.assertRaises(rc.StopRule):
+            c.call(self.MSG)  # 300 + prompt > 250
+        c = self.mk(max_tokens=300, max_total_tokens=250)
+        c.call(self.MSG, max_tokens=64)  # 64 + prompt fits
+
+    def test_reasoning_tokens(self):
+        def body(det):
+            d = json.loads(reply())
+            if det is not None:
+                d["usage"]["completion_tokens_details"] = det
+            return json.dumps(d).encode()
+        cases = [({"reasoning_tokens": 7}, 7), ({"reasoning_tokens": 0}, 0), (None, None), ({}, None),
+                 ({"reasoning_tokens": -1}, None), ({"reasoning_tokens": "3"}, None),
+                 ({"reasoning_tokens": 2.5}, None), ({"reasoning_tokens": True}, None),
+                 ({"reasoning_tokens": None}, None), ("x", None)]
+        for det, want in cases:
+            self.srv.body = body(det)
+            sink = []
+            out = self.mk(sink=sink).call(self.MSG)
+            self.assertEqual(out["reasoning_tokens"], want, det)
+            self.assertEqual(sink[0]["reasoning_tokens"], want, det)
+
     def test_queue_wait_is_wall_minus_server_times(self):
         self.srv.mode = "sleep"  # server holds the reply 0.6 s
         self.srv.body = reply(timings={"prompt_ms": 100, "predicted_ms": 100})
@@ -276,19 +316,34 @@ class StopTests(Base):
         self.assertEqual(len(self.srv.seen), 2)
 
     def test_wall_budget(self):
-        c = self.mk(max_wall_s=0.3)
+        c = self.mk(max_wall_s=0.5, timeout_s=0.3)
         c.call(self.MSG)
         time.sleep(0.35)
         with self.assertRaises(rc.StopRule):
             c.call(self.MSG)
 
-    def test_wall_budget_caps_per_call_timeout(self):
-        self.srv.mode = "sleep"
+    def test_wall_below_timeout_refused_before_first_call(self):
         c = self.mk(max_wall_s=0.2, timeout_s=30)
-        t = time.monotonic()
-        with self.assertRaises(rc.CallFailed):
+        with self.assertRaises(rc.StopRule):
             c.call(self.MSG)
-        self.assertLess(time.monotonic() - t, 0.55)
+        self.assertEqual(self.srv.seen, [])
+        self.assertEqual(self.sink, [])
+
+    def test_remaining_wall_s(self):
+        c = self.mk(max_wall_s=100, timeout_s=5)
+        self.assertIsNone(c.remaining_wall_s())
+        c.call(self.MSG)
+        r1 = c.remaining_wall_s()
+        self.assertTrue(98 < r1 < 100, r1)
+        time.sleep(0.1)
+        self.assertLess(c.remaining_wall_s(), r1)
+
+    def test_one_clock_across_per_call_caps(self):
+        c = self.mk(max_wall_s=0.6, timeout_s=0.3, max_tokens=300)
+        c.call(self.MSG, max_tokens=64)
+        time.sleep(0.4)
+        with self.assertRaises(rc.StopRule):
+            c.call(self.MSG, max_tokens=300)
 
     def test_token_budget(self):
         self.srv.body = reply(pt=40, ct=20)
