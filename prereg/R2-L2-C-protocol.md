@@ -291,8 +291,8 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 
 | ID | Decision still needed | Owner |
 |---|---|---|
-| L2-O1 | **CLOSED(decision)**, see Decisions 2026-11-25. Which R ranks the targeted arm: first-generation offspring (P:386) or the descendant share now in `quarantine.py:83`. A code change moves the candidate tree hash | Line author proposes; independent reviewer audits; owner approves the freeze |
-| L2-O2 | **CLOSED(decision)**, see Decisions 2026-11-25. Whether "supported" requires all three clauses of C or the equivalence clause alone | Line author proposes; owner approves at freeze |
+| L2-O1 | **CLOSED(decision)**, see Decisions 2026-11-25. Which R ranks the targeted arm: first-generation offspring (P:386) or the descendant share now in `quarantine.py:83`. A code change moves the candidate tree hash | Decided by the line author under the owner approval 2026-11-26; independent reviewer confirms at the freeze |
+| L2-O2 | **CLOSED(decision)**, see Decisions 2026-11-25. Whether "supported" requires all three clauses of C or the equivalence clause alone | Decided by the line author under the owner approval 2026-11-26; independent reviewer confirms at the freeze |
 | L2-O3 | **CLOSED(decision). Decided 2026-11-26 by the line author under the owner approval.** A, B and D stay OUT of this protocol's inference; the Holm family is empty. Reason: RR:19 names C alone as primary | Line author (decided) |
 | L2-O4 | **CLOSED(decision)**, see Decisions 2026-11-25. Final arm list: keep the unprotected store and the Nakayashiki rule, which RR:19 omits | Line author; independent reviewer |
 | L2-O5 | The five fraction values, the store size, and the exact bytes of the planted note, clean twin and trigger-only source | Line author writes; custodian seals |
@@ -301,7 +301,7 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 | L2-O8 | **Partly decided 2026-11-25, still OPEN for the denominator.** Adoption denominator and the eligible parent-offspring events | Line author; independent reviewer |
 | L2-O9 | **Partly decided 2026-11-25, still OPEN for the grid size and the search test.** Verification-share grid, one dose scale for the 50% and 80% clauses, and, if wanted, a test form for K1; the dose search itself is descriptive (section 7) | Line author |
 | L2-O10 | n, E and K for the equivalence contrast, pilot SD and ICC, and the reachable outcomes at the cap. Needs the approved variance pilot, which is not released (ADM:136) | Owner releases the pilot; line author computes; reviewer checks |
-| L2-O11 | **CLOSED(decision)**, see Decisions 2026-11-25. Statistical stopping rule | Line author; owner approves |
+| L2-O11 | **CLOSED(decision)**, see Decisions 2026-11-25. Statistical stopping rule | Decided by the line author under the owner approval 2026-11-26; independent reviewer confirms at the freeze |
 | L2-O12 | **CLOSED(decision)**, see Decisions 2026-11-25. Mapping of `reed_frost` parameters (population, seeds, q) to the experiment | Line author |
 | L2-O13 | **Partly decided 2026-11-25, still OPEN.** Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
 | L2-O14 | **Tracking half closed** (`f791802`, `c0daf55`, `8752d20`; DL:242, DL:243): the harness, tests, lab notes and RR are tracked. Still OPEN: a freeze must pin a commit at or after `c0daf55`, not `f62cfe1` (DL:242), and a committed or closure-archived tree (ADM:27). The owner's approval of the commit is not recorded | Owner approves the commit; integration owner makes it |

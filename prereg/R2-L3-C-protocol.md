@@ -315,7 +315,7 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 | L3-O8 | Harness and tests for best-of-16 selection, conservative aggregation and the loss ratio. New code moves the candidate tree hash | Line author; independent reviewer |
 | L3-O9 | Monitor operating point for C | Line author |
 | L3-O10 | K for the loss ratio, n, pilot discordance and ICC, the rule when the fixed arm's loss is near zero, and the reachable outcomes at the cap. Needs the approved pilot, which is not released (ADM:136) | Owner releases the pilot; line author computes; reviewer checks |
-| L3-O11 | **CLOSED(decision):** fixed n, one analysis, no interim look (D2) | Owner approves at freeze |
+| L3-O11 | **CLOSED(decision):** fixed n, one analysis, no interim look (D2) | Decided by the line author under the owner approval 2026-11-26; independent reviewer confirms at the freeze |
 | L3-O12 | **CLOSED(decision):** two-moment fit on the calibration set (D4) | Freeze confirms |
 | L3-O13 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
 | L3-O14 | RR and RC are tracked (`f791802`, `c0daf55`). A freeze must pin a commit at or after `c0daf55` (DL:242) and the harness at `4d264a5` (ADM:27) | Owner approves the commit; integration owner makes it |
