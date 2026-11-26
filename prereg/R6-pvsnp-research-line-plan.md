@@ -139,7 +139,7 @@ Tooling checked read-only on this host: `lean`, `lake`, `cadical`, `kissat`, `mi
 | 3. Conjecture and refutation | Lemmas submitted as executable predicates (below); a Red Team agent tries to refute each | lemma ledger | A surviving lemma later refuted by exhaustive check |
 | 4. Formal verification | Lean-style statements with a Definition Audit; kernel check once Lean is approved | statement pack | A second auditor shows an audited statement is vacuous |
 
-**Executable-predicate rule (Phase 3 and family F5).** A lemma is mechanical only if it arrives as a predicate in one fixed language: a Python function over a declared finite domain (all truth tables on $n\le 4$ inputs, or all CNFs of a declared shape), restricted to a whitelisted syntax (integer and bit operations, comparisons, bounded `range` loops, calls into our checker library), run under a step limit. **Out of scope:** statements over unbounded $n$, asymptotic statements, anything needing a judge. Those are recorded as `conjecture` and produce no pass row.
+**Executable-predicate rule (Phase 3 and family F5).** A lemma is mechanical only if it arrives as a predicate in one fixed language: a Python function over a declared finite domain (all truth tables on $n\le 4$ inputs, or all CNFs of a declared shape), restricted to a whitelisted syntax (integer and bit operations, comparisons, bounded `range` loops, calls into our checker library: NOT available in the first implementation (`lab/r6_predicates.py` offers `popcount`, `bit`, `abs`, `min`, `max` and aggregates plus an empty registry for named pure functions; circuit-size lemmas wait until the M1 tables are accepted and registered, per the Opus review of 2026-11-26), run under a step limit. **Out of scope:** statements over unbounded $n$, asymptotic statements, anything needing a judge. Those are recorded as `conjecture` and produce no pass row.
 
 **Trust boundary.** Running agent-submitted Python is a trust boundary. The whitelist parser and the step limit are one module, `lab/r6_predicates.py`, owned by worker W4 (step R2), with an escape test: predicates that try imports, attribute access, file or network use, or unbounded loops must be rejected before execution. No predicate runs outside it.
 
@@ -397,7 +397,7 @@ One object per candidate. `lab/r6_scorecard.py` validates it, recomputes `weight
   "performance_row": {"task": "", "family": "F1|F2|F3|F4|F5|F6", "n": 0, "rerun": 0, "agent": 0, "pass": 0, "conf": null},
   "resources": {"calls": 0, "input_tokens": 0, "output_tokens": 0, "wall_seconds": 0.0, "hosted_usd": 0.0},
   "verdict": "advance|revise|prune",
-  "reviewer": {"id": "", "independent": true, "notes": ""},
+  "reviewer": {"id": "", "independent": true, "notes": "", "overclaim_flag": "true|false"},
   "evidence_paths": []
 }
 ```
