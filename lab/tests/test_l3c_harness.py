@@ -27,7 +27,7 @@ def fixture():
     views = ["a", "b", "c", "d", "e"]
     pool = toy_pool(7, 40, 8, views)
     cal = {v: [int(x) for x in random.Random(i).choices([0, 1], k=30)] for i, v in enumerate(views)}
-    return h.compare_arms(pool, cal, 4, 8, 11)
+    return h.compare_arms(pool, cal, 4, 8, 11, monsel.select(cal, 4)[0])
 
 
 class Harness(unittest.TestCase):
@@ -60,13 +60,15 @@ class Harness(unittest.TestCase):
             self.assertEqual(sorted(h.visible_views(sel, True, s) + [hid]), sel)
 
     def test_arms_hand_computed(self):
-        r = h.compare_arms(TINY, CAL, 3, 3, 4)
+        r = h.compare_arms(TINY, CAL, 3, 3, 16, "a")  # seed 16 hides b for task 0 and a for task 1
         self.assertEqual(r["selected"], ["a", "b", "c"])  # a ties b at 1/2, name order; then b adds 1/2; then c
-        # before: 6 episodes, all-missed T0c2 and T1c1 -> 4/6. static and conservative end at 0 catch -> loss 2/3.
-        # rotating: task_seed("rotate", 4, t) hides b then a; picks T0c1 (caught by b), T1c1 (missed) -> 1/2; loss 2/3 - 1/2 = 1/6.
+        # designated view a. before: 6 episodes, all-missed T0c2 and T1c1 -> 4/6.
+        # static: pressured picks T0c1 (a misses; b catches), T1c1 (all miss) -> catch 1/2, loss 1/6.
+        # rotating: task_seed("rotate", 16, t) hides b then a. T0: a visible -> T0c1 (caught). T1: a hidden -> candidate 0
+        # T1c0 (caught by a, b) -> catch 1, loss -1/3. conservative: T0c2, T1c1 (flag-free) -> catch 0, loss 2/3.
         self.assertAlmostEqual(r["before"], 2 / 3)
-        self.assertAlmostEqual(r["static"], 2 / 3)
-        self.assertAlmostEqual(r["rotating"], 1 / 6)
+        self.assertAlmostEqual(r["static"], 1 / 6)
+        self.assertAlmostEqual(r["rotating"], -1 / 3)
         self.assertAlmostEqual(r["conservative"], 2 / 3)
 
     def test_greedy_not_top_k(self):
@@ -74,7 +76,9 @@ class Harness(unittest.TestCase):
         # greedy (monsel.select) takes a then c.
         cal = {"a": [0, 0, 1, 1], "b": [0, 0, 1, 1], "c": [1, 1, 0, 1]}
         pool = [[{"a": 1, "b": 1, "c": 1}, {"a": 0, "b": 0, "c": 0}]]
-        self.assertEqual(h.compare_arms(pool, cal, 2, 2, 0)["selected"], ["a", "c"])
+        self.assertEqual(h.compare_arms(pool, cal, 2, 2, 0, "a")["selected"], ["a", "c"])
+        with self.assertRaises(ValueError):  # b is in the rows but not selected
+            h.compare_arms(pool, cal, 2, 2, 0, "b")
 
     def test_rotation_seed_is_per_task(self):
         # Two views; candidate 0 is missed only by a, candidate 1 only by b. Hiding a makes the selector
@@ -95,9 +99,10 @@ class Harness(unittest.TestCase):
         s3 = next(x for x in range(200) if hid(x, 0) == "c" and hid(x, 1) != "c")
         task3 = [{"a": 1, "b": 1, "c": 0}, {"a": 1, "b": 1, "c": 1}]
         cal3 = {"a": [0, 1, 1], "b": [1, 0, 1], "c": [1, 1, 0]}
-        r = h.compare_arms([task3, task3], cal3, 3, 2, s3)
+        r = h.compare_arms([task3, task3], cal3, 3, 2, s3, "c")
         self.assertEqual(r["selected"], sel3)
-        # before 1/2; rotating: task 0 caught, task 1 not -> 1/2, loss 0. A constant seed would give -1/2.
+        # designated c. Task 0 hides c -> candidate 0 (caught); task 1 sees c -> c1 (all miss, uncaught): catch 1/2,
+        # before 1/2, loss 0. A constant seed would give -1/2 (always hidden) or 1/2 (never hidden).
         self.assertAlmostEqual(r["before"], 0.5)
         self.assertAlmostEqual(r["rotating"], 0.0)
 
@@ -145,16 +150,18 @@ class Harness(unittest.TestCase):
             lambda: h.visible_views(["a"], True, 0),
             lambda: h.visible_views(["a", "b"], True, None),
             lambda: h.visible_views(["a", "b"], 1, 0),
-            lambda: h.compare_arms([], CAL, 3, 3, 0),
-            lambda: h.compare_arms(TINY, CAL, 4, 3, 0),
-            lambda: h.compare_arms(TINY, CAL, 3, 4, 0),
-            lambda: h.compare_arms(TINY, CAL, 3, 3, "0"),
+            lambda: h.compare_arms([], CAL, 3, 3, 0, "a"),
+            lambda: h.compare_arms(TINY, CAL, 4, 3, 0, "a"),
+            lambda: h.compare_arms(TINY, CAL, 3, 4, 0, "a"),
+            lambda: h.compare_arms(TINY, CAL, 3, 3, "0", "a"),
+            lambda: h.compare_arms(TINY, CAL, 3, 3, 0, "zz"),  # not a selected view
+            lambda: h.null_loss_ratio(0.5, 0.2, 3, 4, 5, 3, 0, "v9"),
         ]
         bad += [
-            lambda: h.compare_arms(TINY, CAL, 1, 3, 0),  # k < 2
-            lambda: h.null_loss_ratio(0.5, 0.2, 1, 4, 5, 3, 0),
-            lambda: h.null_loss_ratio(1.5, 0.2, 3, 4, 5, 3, 0),
-            lambda: h.null_loss_ratio(0.5, 0.2, 3, 4, 5, 0, 0),
+            lambda: h.compare_arms(TINY, CAL, 1, 3, 0, "a"),  # k < 2
+            lambda: h.null_loss_ratio(0.5, 0.2, 1, 4, 5, 3, 0, "v0"),
+            lambda: h.null_loss_ratio(1.5, 0.2, 3, 4, 5, 3, 0, "v0"),
+            lambda: h.null_loss_ratio(0.5, 0.2, 3, 4, 5, 0, 0, "v0"),
             lambda: h.bootstrap_ratio([], 10, 0, 0.5, 0.9),
             lambda: h.bootstrap_ratio([{"rotating": 0.1, "static": 0.2}], 10, 0, 1.5, 0.9),
             lambda: h.bootstrap_ratio([{"rotating": 0.1, "static": 0.2}], 10, 0, 0.5, 1),
@@ -182,20 +189,15 @@ class Harness(unittest.TestCase):
     def test_k_below_two_rejected(self):
         for k in (0, 1, True):
             with self.assertRaises(ValueError):
-                h.compare_arms(TINY, CAL, k, 3, 0)
+                h.compare_arms(TINY, CAL, k, 3, 0, "a")
 
     def test_conservative_is_vacuous(self):
         self.assertIs(h.conservative_is_distinct(), False)
-        r = h.compare_arms(TINY, CAL, 3, 3, 4)
+        r = h.compare_arms(TINY, CAL, 3, 3, 4, "a")
         self.assertEqual(h.rotation_beats_conservative(r), "vacuous")
         self.assertEqual(h.rotation_beats_conservative({"rotating": 0.0, "conservative": 0.5}), "vacuous")
-        # the reason in the docstring: on 0/1 bits the arm equals the fixed arm on every pool
-        views = ["a", "b", "c", "d"]
-        for sd in range(25):
-            pool = toy_pool(sd, 12, 5, views)
-            cal = {v: [int(x) for x in random.Random(sd + i).choices([0, 1], k=20)] for i, v in enumerate(views)}
-            r = h.compare_arms(pool, cal, 3, 5, sd)
-            self.assertEqual(r["conservative"], r["static"])
+        # under single-view pressure the scripted arm no longer equals the fixed arm; it stays unregistered
+        self.assertNotEqual(r["conservative"], r["static"])
         self.assertIn("vacuous", h.rotation_beats_conservative.__doc__)
         self.assertIn("P:453-454", h.conservative_is_distinct.__doc__)
 
@@ -208,17 +210,17 @@ class Harness(unittest.TestCase):
         self.assertFalse(h.supported_against_null(0.5, 0.5, 0.5))
 
     def test_null_loss_ratio(self):
-        args = (0.5, 0.2, 3, 6, 20, 30, 9)
+        args = (0.5, 0.2, 3, 6, 20, 30, 9, "v0")
         r = h.null_loss_ratio(*args)
         self.assertEqual(r, h.null_loss_ratio(*args))              # deterministic
-        self.assertNotEqual(r, h.null_loss_ratio(*args[:-1], 10))  # seed matters
+        self.assertNotEqual(r, h.null_loss_ratio(*args[:-2], 10, "v0"))  # seed matters
         self.assertGreater(r, 0)
         self.assertLess(r, 1)  # no model effect, yet rotation loses less: the pressured null is below 1
         # c = 1: every candidate missed by every view, so no fixed loss: refuses rather than dividing
         with self.assertRaises(ValueError):
-            h.null_loss_ratio(0.5, 1, 3, 6, 20, 5, 0)
+            h.null_loss_ratio(0.5, 1, 3, 6, 20, 5, 0, "v0")
         with self.assertRaises(TypeError):
-            h.null_loss_ratio(0.5, 0.2, 3, 6, 20, 30)  # no default for the seed
+            h.null_loss_ratio(0.5, 0.2, 3, 6, 20, 30, 9)  # no default for the designated view
 
     def test_null_draw_matches_correlated_monitors(self):
         # the draw model is nulls.correlated_monitors': P(all miss) = c + (1 - c) p^m
@@ -227,9 +229,9 @@ class Harness(unittest.TestCase):
         want = float(nulls.correlated_monitors(3, Fraction(2, 5), Fraction(1, 4))["all_miss"])
         seen = []
         orig = h.compare_arms
-        h.compare_arms = lambda pool, cal, k, n, s: (seen.extend(c for t in pool for c in t), orig(pool, cal, k, n, s))[1]
+        h.compare_arms = lambda pool, cal, k, n, s, d: (seen.extend(c for t in pool for c in t), orig(pool, cal, k, n, s, d))[1]
         try:
-            h.null_loss_ratio(0.4, 0.25, 3, 8, 200, 3, 1)
+            h.null_loss_ratio(0.4, 0.25, 3, 8, 200, 3, 1, "v0")
         except ValueError:
             pass
         finally:
@@ -257,6 +259,110 @@ class Harness(unittest.TestCase):
         self.assertIsNone(h.bootstrap_ratio([{"rotating": 0.0, "static": 0.0}], 20, 1, 1.0, 0.9))
         with self.assertRaises(TypeError):
             h.bootstrap_ratio(pools, 10, 0)  # cap and level have no defaults
+
+    def test_static_arm_uses_pressured_selection(self):
+        views = ["a", "b", "c", "d"]
+        for sd in range(10):
+            pool = toy_pool(sd, 15, 5, views)
+            cal = {v: [int(x) for x in random.Random(sd + i).choices([0, 1], k=20)] for i, v in enumerate(views)}
+            d = monsel.select(cal, 3)[0]
+            r = h.compare_arms(pool, cal, 3, 5, sd, d)
+            picks = h.pressured_selection(pool, d, 5)
+            got = monsel.ensemble_catch({v: [p[v] for p in picks] for v in r["selected"]}, r["selected"])
+            self.assertAlmostEqual(r["static"], r["before"] - got)
+
+    def test_rotating_arm_designated_hidden_takes_candidate_zero(self):
+        sel = ["a", "b"]
+        cal = {"a": [0, 1], "b": [1, 0]}
+        pool = [[{"a": 0, "b": 0}, {"a": 1, "b": 1}]]  # c0 caught, c1 missed by both; before 1/2
+        hid = lambda x: monsel.hidden_view(sel, h.task_seed("rotate", x, 0))
+        s_hid = next(x for x in range(100) if hid(x) == "a")
+        s_vis = next(x for x in range(100) if hid(x) == "b")
+        r = h.compare_arms(pool, cal, 2, 2, s_hid, "a")
+        self.assertEqual(r["selected"], sel)
+        self.assertAlmostEqual(r["rotating"], -0.5)  # nothing to aim at: candidate 0, caught
+        self.assertAlmostEqual(r["static"], 0.5)     # pressured pick is c1, missed
+        self.assertAlmostEqual(h.compare_arms(pool, cal, 2, 2, s_vis, "a")["rotating"], 0.5)  # visible: pressured pick
+        with self.assertRaises(TypeError):
+            h.compare_arms(pool, cal, 2, 2, s_hid)
+
+    def test_null_passes_designated_view(self):
+        seen = []
+        orig = h.compare_arms
+        h.compare_arms = lambda pool, cal, k, n, s, d: (seen.append(d), orig(pool, cal, k, n, s, d))[1]
+        try:
+            h.null_loss_ratio(0.5, 0.2, 3, 6, 20, 3, 9, "v1")
+        finally:
+            h.compare_arms = orig
+        self.assertEqual(seen, ["v1"] * 3)
+
+    # Pressure form (L3-O3): selection against one designated view. Rows are (P, h1, h2); P is the pressured view.
+    PRESSURE = [
+        [(0, 1, 1), (1, 0, 0), (0, 0, 0), (0, 1, 1)],
+        [(0, 0, 0), (0, 1, 0), (1, 0, 1), (1, 1, 1)],
+        [(1, 0, 0), (1, 1, 0), (0, 0, 0), (0, 1, 1)],
+        [(0, 0, 0), (0, 1, 0), (0, 0, 1), (0, 1, 1)],
+    ]
+
+    @staticmethod
+    def _pool(extra=False):
+        # extra: add view h3 = a copy of P, so a hidden view that falls as far as P exists
+        return [[dict(zip(["P", "h1", "h2"] + (["h3"] if extra else []), r + ((r[0],) if extra else ())))
+                 for r in t] for t in Harness.PRESSURE]
+
+    def test_pressured_selection_hand_computed(self):
+        pool = self._pool()
+        picks = h.pressured_selection(pool, "P", 4)
+        self.assertEqual(picks, [pool[0][1], pool[1][2], pool[2][0], pool[3][0]])  # P missed; none -> candidate 0
+        # not the old summed-miss rule over all views, which picks T0c0, T1c3 here
+        old = [t[h.best_of_n(list(range(4)), t, ["P", "h1", "h2"], 4)] for t in pool]
+        self.assertNotEqual(picks, old)
+        self.assertEqual(old[0], pool[0][0])
+        # only the first n candidates are looked at
+        self.assertEqual(h.pressured_selection(pool, "P", 2), [pool[0][1], pool[1][0], pool[2][0], pool[3][0]])
+        with self.assertRaises(TypeError):
+            h.pressured_selection(pool, "P")
+        for bad in ("", None, 3):
+            with self.assertRaises(ValueError):
+                h.pressured_selection(pool, bad, 4)
+        with self.assertRaises(ValueError):
+            h.pressured_selection(pool, "nope", 4)
+        with self.assertRaises(ValueError):
+            h.pressured_selection(pool, "P", 5)
+
+    def test_manipulation_check_hand_computed(self):
+        pool = self._pool()
+        r = h.manipulation_check(pool, "P", ["h1", "h2"], 4, 0.4375, 0.1)
+        # P miss rate: pool 5/16, picks 3/4 -> catch falls 7/16; h1 8/16 -> 0, h2 7/16 -> 1/4
+        self.assertEqual(r["designated_fall"], 0.4375)
+        self.assertEqual(r["hidden_falls"], {"h1": -0.5, "h2": -0.1875})
+        self.assertTrue(r["passed"])  # fall exactly at min_fall passes
+        self.assertFalse(h.manipulation_check(pool, "P", ["h1"], 4, 0.4376, 0.1)["passed"])
+        # n=2: picks miss rate 1/2, pool (first two candidates) 3/8
+        self.assertEqual(h.manipulation_check(pool, "P", ["h1"], 2, 0.125, 0.1)["designated_fall"], 0.125)
+
+    def test_manipulation_check_hidden_view_clause(self):
+        pool = self._pool(extra=True)  # h3 copies P, so it falls by 7/16 too
+        r = h.manipulation_check(pool, "P", ["h3"], 4, 0.4375, 0.4375)
+        self.assertEqual(r["hidden_falls"], {"h3": 0.4375})
+        self.assertTrue(r["passed"])  # hidden fall exactly at the limit passes
+        self.assertFalse(h.manipulation_check(pool, "P", ["h3"], 4, 0.4375, 0.4)["passed"])
+        # one bad hidden view fails the check even when another is fine
+        self.assertFalse(h.manipulation_check(pool, "P", ["h2", "h3"], 4, 0.4375, 0.4)["passed"])
+
+    def test_manipulation_check_validation(self):
+        pool = self._pool()
+        with self.assertRaises(TypeError):
+            h.manipulation_check(pool, "P", ["h1"], 4, 0.3)  # no default for the hidden-view limit
+        for args in ((pool, "P", [], 4, 0.3, 0.1), (pool, "P", "h1", 4, 0.3, 0.1),
+                     (pool, "P", ["P"], 4, 0.3, 0.1), (pool, "P", ["zz"], 4, 0.3, 0.1),
+                     (pool, "P", ["h1"], 4, 1.5, 0.1), (pool, "P", ["h1"], 4, 0.3, -0.1)):
+            with self.assertRaises(ValueError):
+                h.manipulation_check(*args)
+        bad = [[dict(c) for c in t] for t in pool]
+        bad[1][2]["h1"] = 2
+        with self.assertRaises(ValueError):
+            h.manipulation_check(bad, "P", ["h1"], 4, 0.3, 0.1)
 
 
 if __name__ == "__main__":
