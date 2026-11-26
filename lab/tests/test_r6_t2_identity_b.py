@@ -639,5 +639,64 @@ class TestMutants(unittest.TestCase):
                 self.assertEqual(outcome, "killed", "mutant survived")
 
 
+def _plus_point(base, kind, m):
+    """base circuit + prod(1 - x_ij) ('zero') or + prod x_ij ('ones'); 0/1 value differs from base only there."""
+    gates = list(base)
+    out = len(gates) - 1
+    vs = [("x", i, j) for i in range(1, m + 1) for j in range(1, m + 1)]
+    if kind == "zero":
+        gates.append(("const", 1, None))
+        one = len(gates) - 1
+        factors = []
+        for v in vs:
+            gates.append(("sub", one, v))
+            factors.append(len(gates) - 1)
+    else:
+        factors = vs
+    acc = factors[0]
+    for f in factors[1:]:
+        gates.append(("mul", acc, f))
+        acc = len(gates) - 1
+    gates.append(("add", out, acc))
+    return tuple(gates)
+
+
+
+class TestBoundaryMatrices(unittest.TestCase):
+    """Kill survivors: all-zero / all-ones 0/1 matrices and coefficients >= p."""
+
+    def test_differ_only_at_zero_or_ones_matrix(self):
+        for m in (2, 3):
+            for p in (2, 3):
+                target = mod.perm_target(m, p)
+                base = mod._circuit_from_terms(target.terms(), m, p)
+                self.assertTrue(mod.agrees_on_01(base, target, m, p, 4096))
+                for kind in ("zero", "ones"):
+                    with self.subTest(m=m, p=p, kind=kind):
+                        circ = _plus_point(base, kind, m)
+                        self.assertFalse(mod.agrees_on_01(circ, target, m, p, 4096))
+                        self.assertFalse(mod.identical_as_polynomials(circ, target, m, p, 4096))
+
+    def test_target_coefficients_at_or_above_p_are_reduced(self):
+        class Raw:
+            def __init__(self, terms):
+                self._t = terms
+
+            def terms(self):
+                return self._t
+
+        for m in (2, 3):
+            for p in (2, 3):
+                target = mod.perm_target(m, p)
+                circ = mod._circuit_from_terms(target.terms(), m, p)
+                terms = [(e, c) for e, c in target.terms()]
+                terms[0] = (terms[0][0], p + 1)
+                terms.append(((1,) * (m * m), p))  # coefficient p == 0 mod p
+                raw = Raw(tuple(terms))
+                with self.subTest(m=m, p=p):
+                    self.assertTrue(mod.identical_as_polynomials(circ, raw, m, p, 4096))
+                    self.assertTrue(mod.agrees_on_01(circ, raw, m, p, 4096))
+
+
 if __name__ == "__main__":
     unittest.main()

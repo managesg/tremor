@@ -230,5 +230,42 @@ class PlantedAgreementTests(unittest.TestCase):
             self.check(4, p, kind, 0)
 
 
+def _plus_point(base, kind, m):
+    """base circuit + prod(1 - x_ij) ('zero') or + prod x_ij ('ones'); 0/1 value differs from base only there."""
+    gates = list(base)
+    out = len(gates) - 1
+    vs = [("x", i, j) for i in range(1, m + 1) for j in range(1, m + 1)]
+    if kind == "zero":
+        gates.append(("const", 1, None))
+        one = len(gates) - 1
+        factors = []
+        for v in vs:
+            gates.append(("sub", one, v))
+            factors.append(len(gates) - 1)
+    else:
+        factors = vs
+    acc = factors[0]
+    for f in factors[1:]:
+        gates.append(("mul", acc, f))
+        acc = len(gates) - 1
+    gates.append(("add", out, acc))
+    return tuple(gates)
+
+
+
+class BoundaryMatrixAgreementTests(unittest.TestCase):
+    def test_zero_and_ones_matrix_differences_agree(self):
+        for m, p in itertools.product((2, 3), (2, 3)):
+            tb = B.perm_target(m, p)
+            base_b = B._circuit_from_terms(tb.terms(), m, p)
+            self.assertEqual(both(b_to_a(base_b), base_b, "perm", m, p), ((True, True), (True, True)))
+            for kind in ("zero", "ones"):
+                cb = _plus_point(base_b, kind, m)
+                with self.subTest(m=m, p=p, kind=kind):
+                    self.assertEqual(
+                        both(b_to_a(cb), cb, "perm", m, p), ((False, False), (False, False))
+                    )
+
+
 if __name__ == "__main__":
     unittest.main()
