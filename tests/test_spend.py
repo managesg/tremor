@@ -1421,6 +1421,20 @@ class SheetContinuityTests(unittest.TestCase):
         self.new_ledger().reserve("a", M, 100, 100)  # the real reserve then writes the one continuity line
         self.assertEqual(len(self.conts()), 1)
         self.new_ledger(predecessor=None).check_sheet()  # now pinned to the new digest: nothing to prove
+    def test_check_sheet_checks_the_parent_batch_pin_of_a_child(self):
+        self.assertEqual(spend._lineage("canary", spend.BATCH_SPECS), ["canary", "ep1"])
+        self.pinned(batch="ep1", name="ep1.jsonl")  # only the parent is open, on the old sheet
+        with self.assertRaises(spend.PriceSheetRefused) as cm:
+            self.new_ledger(batch="canary", name="canary.jsonl", predecessor=None).check_sheet()
+        self.assertRegex(cm.exception.reason, "no predecessor")
+        self.new_ledger(batch="canary", name="canary.jsonl").check_sheet()  # the right predecessor passes
+    def test_check_sheet_sees_a_pin_opened_in_another_ledger_file(self):
+        self.pinned(batch="canary", name="canary.jsonl")  # opens canary AND its parent ep1, all in canary.jsonl
+        self.assertFalse(os.path.exists(os.path.join(self.d, "ep1.jsonl")))
+        with self.assertRaises(spend.PriceSheetRefused) as cm:
+            self.new_ledger(batch="ep1", name="ep1.jsonl", predecessor=None).check_sheet()
+        self.assertRegex(cm.exception.reason, "no predecessor")
+        self.new_ledger(batch="ep1", name="ep1.jsonl").check_sheet()
     def test_check_sheet_on_a_fresh_or_unbatched_ledger_passes_and_writes_nothing(self):
         led = self.new_ledger(predecessor=None, name="fresh.jsonl")
         led.check_sheet()
