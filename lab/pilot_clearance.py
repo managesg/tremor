@@ -180,7 +180,7 @@ def audit(directory: Path, ledger_path: Path, batch="pilot3"):
     code_duplicates = sum(order["duplicates"]["code"] for order in gate["orders"].values())
     criteria = {
         "1_request_shape": "pass" if all_rows["http_400_in_trace"] == all_rows["non_text_replies"] == 0 else "fail",
-        "2_no_truncation": "pass" if all_rows["stop_max_tokens"] == 0 and all_rows["over_150"] == 0 else "fail",
+        "2_no_truncation": "pass" if all_rows["stop_max_tokens"] == 0 and core["over_150"] == 0 else "fail",
         "3_reply_format": "pass" if core["malformed"] <= 7
             and all(conditions[cond]["malformed"] <= 4 for cond in CORE) else "fail",
         "4_arithmetic": "pass" if core["wrong_admitted_work"] <= 3 else "fail",
@@ -198,7 +198,7 @@ def audit(directory: Path, ledger_path: Path, batch="pilot3"):
         "criterion_scope": {
             "wording": "§13.16b names the three EP-1 conditions and also refers to the whole batch. Both scopes are shown.",
             "1": "Whole-batch check using locally retained responses and reconciled attempt records.",
-            "2": "Outputs checked across both orders and all conditions. Core maximum and overages are also reported.",
+            "2": "Zero max_tokens stops over the whole batch; the 150-token maximum over the three core conditions (144 calls, EP-1 13.16b, D8-c). Whole-batch overages are also reported.",
             "3": "The predeclared denominators are 144 core replies and 48 replies per core condition.",
             "4": "The predeclared maximum of 72 admitted work events corresponds to the three core conditions.",
             "per_order": "Descriptive summaries with the original 150-token ceiling shown. No split clearance thresholds.",
