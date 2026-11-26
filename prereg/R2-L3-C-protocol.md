@@ -22,9 +22,9 @@ text says OPEN and section 14 names the decision and its owner.
 | AP | `docs/reports/ep-approvals.md` | D1 at AP:166 |
 | ADM | `docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md` | as read |
 | RC | `docs/reports/workplan-ep/R1-readout-controls.md` | tracked (`c0daf55`) |
-| code | `src/murmuration/{monsel,susceptibility,nulls,readouts}.py` | candidate commit `f62cfe1`; working tree identical for these four files |
+| code | `src/murmuration/{monsel,susceptibility,nulls,readouts}.py` | the freeze pins a commit at or after `c0daf55` (DL:242), never `f62cfe1` |
 | DL | `docs/reports/tremor/DECISION_LOG.md` | tracked; DL:242 says a freeze pins a commit at or after `c0daf55`, not `f62cfe1` |
-| harness | `lab/l3c_harness.py` | commit `1dabf53`; `null_loss_ratio` is being added by another worker and is not yet here |
+| harness | `lab/l3c_harness.py` | commit `4d264a5` or later; `null_loss_ratio` is at `lab/l3c_harness.py:181` (commit `4d264a5`) |
 
 ## 2. Hypothesis and the single primary endpoint
 
@@ -59,7 +59,7 @@ is charged to the arms that use it (P:193-194).
 |---|---|
 | Rotating hidden view on the selected ensemble (technique) | P:445-448; RR:20 |
 | Fixed views on the same selected ensemble (reference for the primary) | RR:20 |
-| Conservative aggregation | P:453-454; RR:20. In the harness at `1dabf53` it equals the fixed arm, so a contrast against it is vacuous (section 9 step 4) |
+| Conservative aggregation | P:453-454; RR:20. In the harness at `4d264a5` it equals the fixed arm, so a contrast against it is vacuous (section 9 step 4) |
 | One randomly sampled view per decision | P:454; RR:20 |
 | Top k by individual catch rate | P:452; RR:20 |
 | Random k | P:452; RR:20 |
@@ -130,7 +130,7 @@ monitor operating point for C is not stated in the repo (L3-O9); the 5% false-po
 to prediction B (P:458-459).
 
 **Pressure form (OPEN, L3-O3).** The proposal states the pressure against one toy monitor (P:460),
-but the harness at `1dabf53` scores each candidate by its summed misses over the visible views, not
+but the harness at `4d264a5` scores each candidate by its summed misses over the visible views, not
 against one monitor. Which form is registered must be closed before the freeze. Until then the
 manipulation check (per-view change in catch rate under selection, section 9 step 2) cannot be
 computed, because "the selected-against monitor" is undefined.
@@ -184,11 +184,12 @@ proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
    If loss(fixed) has an interval that includes zero the ratio is undefined and the primary is
    reported as not testable; the handling rule is part of L3-O10.
 4. **Secondaries and multiplicity.** The Holm family is {prediction A, prediction B, rotation
-   against one random view per decision (P:468-469)}: three tests, Holm-adjusted (P:236-237). RR:45
+   against one random view per decision (P:468-469)}: three tests, Holm-adjusted (P:236-237). The Holm-adjusted test is the claim; the kill of
+   section 10 reads the unadjusted 95% interval as a stop rule only. RR:45
    is not cited for any "no adjustment" claim. **Conservative aggregation:** while the harness
    conservative arm equals the fixed arm, "rotation beats conservative aggregation" is vacuous and
    cannot be tested. At the freeze it is either (a) defined in the harness as a rule distinct from
-   P:453-454 and kept as an intersection-union conjunct of C, outside the Holm family, or (b)
+   the fixed arm (the aggregation rule named at P:453-454) and kept as an intersection-union conjunct of C, outside the Holm family, or (b)
    dropped from the conjunction with the reason recorded. The protocol accepts either; the choice
    and its reason are recorded at the freeze (L3-O18).
 5. **Null comparison.** `nulls.correlated_monitors(m, p, c)` returns the exact probability that all
@@ -197,8 +198,7 @@ proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
    nothing adapts to a selector, so the null predicts no difference between rotating and fixed
    views. The observed loss ratio is reported next to that null, with p and c fitted on the
    calibration set; the fitting rule is CLOSED (L3-O12, two-moment fit). **Pressured null ratio:**
-   the harness function `null_loss_ratio` (being added by another worker; named here, not
-   implemented here) runs the same comparison, including best-of-16 selection, on pools drawn from
+   the harness function `null_loss_ratio` (`lab/l3c_harness.py:181`, commit `4d264a5`) runs the same comparison, including best-of-16 selection, on pools drawn from
    the fitted (p, c), and returns the null loss ratio with its own 95% interval by the same
    bootstrap. If the observed interval is not below the null ratio, the result is a property of the
    selection loop and is reported as such (P:172-174) and as not supported. If the null is not
@@ -219,7 +219,9 @@ By where the 95% interval falls (P:184-185):
     between-view difference in degradation lies within 10 points;
   - rotation does no better than sampling one view per decision, or than conservative aggregation if
     that conjunct is kept, meaning the 95% interval of the paired difference in loss includes zero or
-    favours the comparator;
+    favours the comparator. For the rotation-against-one-random-view clause the kill reads this
+    unadjusted 95% interval as a stop rule only (a kill is not a claim of support); the claim is
+    the Holm-adjusted test of section 9 step 4;
   - weak local monitors catch under 20% at every setting, so there is nothing to degrade.
 - **Kill wins.** If a kill criterion and "supported" both apply, the kill wins and the result is
   reported as not supported.
@@ -291,20 +293,21 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 | L3-O11 | **CLOSED(decision):** fixed n, one analysis, no interim look (D2) | Owner approves at freeze |
 | L3-O12 | **CLOSED(decision):** two-moment fit on the calibration set (D4) | Freeze confirms |
 | L3-O13 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
-| L3-O14 | RR and RC are tracked (`f791802`, `c0daf55`). A freeze must pin a commit at or after `c0daf55` (DL:242) and the harness at `1dabf53` (ADM:27) | Owner approves the commit; integration owner makes it |
+| L3-O14 | RR and RC are tracked (`f791802`, `c0daf55`). A freeze must pin a commit at or after `c0daf55` (DL:242) and the harness at `4d264a5` (ADM:27) | Owner approves the commit; integration owner makes it |
 | L3-O15 | No native launch entry point exists for this batch (ADM:26, ADM:91) | Line author builds; owner admits |
 | L3-O16 | Independent review of this protocol (SC:39) | Independent reviewer |
 | L3-O17 | Bootstrap resample count B and the cap on the excluded share (loss(fixed) <= 0); no number is in the repo | Line author; reviewer checks |
-| L3-O18 | Conservative arm: define distinct from P:453-454 in the harness, or drop from the conjunction; record the reason | Line author; recorded at freeze |
+| L3-O18 | Conservative arm: define distinct from the fixed arm (the aggregation rule named at P:453-454) in the harness, or drop from the conjunction; record the reason | Line author; recorded at freeze |
 
 ## 15. What the freeze record must contain
 
 Per RR:48-52 and SC:35-39:
 
 1. **Protocol sha256** of this file at the frozen commit.
-2. **Code tree hash at the candidate.** The git tree of `f62cfe1` read today is
-   `cdaee7645ab06162e13040963a586342963d57a5`; the record must recompute it and must name the
-   final candidate if L3-O8 or L3-O14 moves it. Also the config hash.
+2. **Code tree hash at the candidate.** The freeze pins a commit at or after `c0daf55` (DL:242),
+   never `f62cfe1`, with the harness at commit `4d264a5` or later. The record recomputes the git
+   tree hash at the pinned commit (none is copied here) and names the final candidate if L3-O8 or
+   L3-O14 moves it. Also the config hash.
 3. **Protected inputs**, each with path, sha256 and custodian: view definitions, toy monitor and
    stand-in, calibration failure set, clean threshold set, clean and failure assessment sets, joint
    miss table pins, split IDs, seed map.
@@ -317,7 +320,7 @@ Per RR:48-52 and SC:35-39:
    (SC:39).
 8. The D1 basis (AP:166) and its ratification (SC:31).
 9. The null-ratio procedure (`null_loss_ratio`, its fitted (p, c) and pool draws), the bootstrap
-   code and seed derivation (section 9 step 1), and the harness commit (`1dabf53` or later).
+   code and seed derivation (section 9 step 1), and the harness commit (`4d264a5` or later).
 10. The owner lock line of section 16 and the custodian attestation that pools were sealed and
     unread at the lock time.
 11. The conservative-arm choice (L3-O18) and the pressure form (L3-O3).
@@ -386,5 +389,5 @@ Line author under OD4; the freeze confirms or replaces each. No number is set.
 | 6. Bootstrap | Method, B (OPEN L3-O17), sha256 `tag:seed:task` seed, exclusion of loss(fixed) <= 0 with count and cap (OPEN) (9.1). |
 | 7. Pressure form | Harness sums misses over visible views, not one monitor (P:460); form OPEN L3-O3; manipulation check not computable until closed (6, 7, 14). |
 | 8. "C, locked" | Now "recommended; owner lock pending (L3-O1)". |
-| 9. Minors | RR and RC tracked; freeze pins commit at or after `c0daf55` (DL:242), harness `1dabf53`; `readouts.pairwise_miss` (`readouts.py:105`); the rule stated in section 10 instead of a pointer to L3-O2; D4 needs k >= 2 (`nulls.py:136`). |
+| 9. Minors | RR and RC tracked; freeze pins commit at or after `c0daf55` (DL:242), harness `4d264a5`; `readouts.pairwise_miss` (`readouts.py:105`); the rule stated in section 10 instead of a pointer to L3-O2; D4 needs k >= 2 (`nulls.py:136`). |
 | 10. Freeze record | Added null-ratio procedure, bootstrap code and seed, harness commit, owner lock line, custodian attestation (15). |

@@ -234,6 +234,9 @@ By where the 95% interval falls (P:184-185), with the test forms of section 7:
   the 3-point margin at share 0.50), C2 and C3, each at its stated level (DL:205, DL:236).
 - **Killed** (P:390-393), any one of K1, K2, K3 of section 7. K1 has no registered test yet, so it
   cannot kill until the freeze gives one.
+- **Kill wins.** If a kill clause and "supported" both apply, the kill wins and the result is not
+  supported. A kill reads the interval by the test form of section 7 (an unadjusted 95% interval
+  is a stop rule only; a kill is not a claim of support), and the registered test is the claim.
 - **Inconclusive:** otherwise, including any outcome marked unreachable at freeze (P:964-965), a
   run stopped short of n (section 8), and any arm whose missing runs exceed the cap (L2-O17).
 
