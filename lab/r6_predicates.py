@@ -12,6 +12,8 @@ Extension point: parse(source, registry) accepts {name: (arity, func)} of named 
 with fixed arity (empty by default). Arguments are checked as ints and the result must be an int
 within MAX_BITS. Reserved for later whitelisting of M1 table lookups; circuit-size lemmas wait for
 that library, which does not exist yet.
+Registered functions MUST be pure and bounded-cost: each registered call costs ONE step whatever
+it computes, so their running time is the registrar's responsibility, not the step limit's.
 """
 import ast
 import re
@@ -309,6 +311,8 @@ def check_lemma(predicate, domain_iter, step_limit, total_steps):
 
     step_limit bounds one element; total_steps bounds the whole run (sum over elements).
     A refusal propagates with .env (failing element) and .steps (steps used before it)."""
+    if type(step_limit) is not int or not 0 <= step_limit <= MAX_STEPS:
+        _refuse("bad step limit")
     if type(total_steps) is not int or total_steps < 0:
         _refuse("bad total step budget")
     used = 0

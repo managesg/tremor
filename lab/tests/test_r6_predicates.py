@@ -315,6 +315,12 @@ class TotalBudgetTests(unittest.TestCase):
             with self.assertRaises(PredicateRefused):
                 check_lemma(p, [{"x": 1}], 100, bad)
 
+    def test_step_limit_type_validated(self):
+        p = parse("x >= 0")
+        for bad in (None, "5", 1.5, True, -1, rp.MAX_STEPS + 1):
+            with self.assertRaises(PredicateRefused, msg=repr(bad)):
+                check_lemma(p, [{"x": 1}], bad, 100)
+
     def test_exception_carries_env_and_steps(self):
         p = parse("x // y == 0")
         with self.assertRaises(PredicateRefused) as cm:
@@ -356,6 +362,12 @@ class RegistryTests(unittest.TestCase):
         p = parse("sq(x) == 0", {"sq": (1, lambda a: 1 / 0)})
         with self.assertRaises(PredicateRefused):
             p.evaluate({"x": 1}, BIG)
+
+    def test_registered_call_costs_one_step(self):
+        p = parse("sq(x) == 4", self.REG)
+        self.assertEqual(p.run({"x": 2}, BIG)[1], 4)  # Compare, Call, x, Constant: the call is one step
+        self.assertIn("bounded-cost", rp.__doc__)
+        self.assertIn("registrar", rp.__doc__)
 
     def test_bad_registry(self):
         for r in ({"__x": (1, abs)}, {"all": (1, abs)}, {"f": abs}, {"f": (1, 5)}, {"f": (-1, abs)},
