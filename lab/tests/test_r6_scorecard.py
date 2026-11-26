@@ -339,7 +339,13 @@ class G2to6(unittest.TestCase):
         c["statement"] = "fine"
         self.assertEqual(gate_of(c, "G3_overclaim", kw=("LEAN\u2011checked",)), "pass")
         c["statement"] = "a proof-of-concept of P vs NP"
-        self.assertEqual(gate_of(c, "G3_overclaim", pat=("proof\u2011of-concept",)), "fail")  # pattern side
+        for bad in ("[x\u2013z]", "\uff3bxz]", "proof\u2011of", "\uff50roof"):
+            with self.assertRaises(ValueError):
+                run(c, pat=(bad,))
+        self.assertEqual(gate_of(c, "G3_overclaim", pat=(r"proof\-of\-concept",)), "fail")  # escaped ASCII dash
+        self.assertEqual(gate_of(c, "G3_overclaim", pat=(r"[a-z]+\-of",)), "fail")
+        c["statement"] = "a proof\u2011of\u2011concept"  # text side is still normalised
+        self.assertEqual(gate_of(c, "G3_overclaim", pat=(r"proof\-of\-concept",)), "fail")
         c["statement"] = "x"
         c["claims"][0]["text"] = "lean-checked 2^{n/"
         self.assertEqual(gate_of(c, "G2_unverified_as_fact", kw=("Lean\u2011Checked",)), "fail")

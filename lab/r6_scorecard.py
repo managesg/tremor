@@ -237,7 +237,10 @@ def _check_lists(briefing_keywords, overclaim_patterns):
     for name, v in (("briefing_keywords", briefing_keywords), ("overclaim_patterns", overclaim_patterns)):
         if not isinstance(v, (list, tuple)) or not v or not all(_text(x) for x in v):
             raise ValueError(f"{name}: must be a non-empty list of non-empty strings")
-    return [re.compile(_nfkc(p), re.IGNORECASE) for p in overclaim_patterns]  # no casefold: it would turn \S into \s
+    for p in overclaim_patterns:
+        if _nfkc(p) != p:  # normalising a pattern can change its meaning, so refuse it (fail closed)
+            raise ValueError(f"overclaim_patterns: {p!r} changes under NFKC or dash mapping; write it in plain form")
+    return [re.compile(p, re.IGNORECASE) for p in overclaim_patterns]
 
 
 def gates(card, *, briefing_keywords, overclaim_patterns):
