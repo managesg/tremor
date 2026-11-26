@@ -18,8 +18,18 @@ Planted models (names as in the harness):
 - H5: hidden state per episode, failure rate f (1 +- spread) with probability 1/2; a failing candidate is flagged
   with probability 1 - a (a = false-clean rate). Planted S has the closed form `h5_planted_S`; a is checked with an
   exact Clopper-Pearson interval on the calibration split's failing candidates.
-- H1: not instantiated (plan Part II section 2: H1 stays with R5).
-Not done here: F1, F4, F6, RT.
+- RT (plan section 3): proposer a0 and responder a1 per lemma and arm. The proposer's label is the same in both arms
+  (keyed by lemma): a false lemma is accepted with probability A. The responder supplies a verified counterexample
+  with probability f_arm (treatment = Red Team role, control = solver); the label stands unless a counterexample
+  verifies. Planted difference in the share of false lemmas still accepted = A (f_control - f_treatment). Exact
+  within-lemma permutation null = exact McNemar (binomial on the discordant lemmas). Also reported: verified-refutation
+  recall and the unverified-counterexample rate on true lemmas, with Clopper-Pearson intervals.
+- F6 Definition Audit (plan section 4): auditors flag a defective pair with probability `detect` and a faithful pair with
+  probability `false_alarm`; a flag carries the exact span with probability `locate`, else a uniformly random span (the
+  null of exact-span scoring: chance 1 / (L (L + 1) / 2) for a text of length L). Rates with exact intervals, no test.
+Deferred, with the reason: H1 (plan Part II section 2 leaves it with R5; plan section R3 does not name it), F1 (SAT
+checker, not in the R3 row of plan section 7) and F4 (resolution checker "not built", protocol draft), so Stage A has
+no scripted agent for them. Not done: the Holm family over H3, H5, RT (a separate module in the protocol draft).
 """
 import hashlib
 import math
@@ -183,19 +193,26 @@ def oracle_f5(task, claim):
     """F5: the label matches the exhaustive run of the predicate over the declared domain; a 'false' label must carry a
     counterexample from that domain on which the predicate (re-run here) is False."""
     try:
-        w = task["width"]
-        pred = pr.parse(task["source"])
+        pr.parse(task["source"])
         if type(claim["label"]) is not bool or claim["label"] != task["truth"]:
             return 0
         if claim["label"]:
             return 1
-        env = claim["counterexample"]
-        if not isinstance(env, dict) or set(env) != {"x", "y"} or any(
-                type(env[k]) is not int or not 0 <= env[k] < (1 << w) for k in env):
-            return 0
-        return int(pred.run(env, task["step_limit"])[0] is False)
+        return int(counterexample_verifies(task, claim["counterexample"]))
     except (pr.PredicateRefused, TypeError, KeyError):
         return 0
+
+
+def counterexample_verifies(task, env):
+    """True iff env is a point of the declared domain on which the predicate (re-run here) is False."""
+    w = task["width"]
+    if not isinstance(env, dict) or set(env) != {"x", "y"} or any(
+            type(env[k]) is not int or not 0 <= env[k] < (1 << w) for k in env):
+        return False
+    try:
+        return pr.parse(task["source"]).run(env, task["step_limit"])[0] is False
+    except pr.PredicateRefused:
+        return False
 
 
 ORACLES = {"F2": oracle_f2, "F3": oracle_f3, "F5": oracle_f5}
@@ -302,15 +319,20 @@ class R6Agent(ScriptedAdopter):
         super().__init__(1.0, seed)
         self.task, self.fail_p, self.flag_miss, self.conf, self.rec = task, fail_p, flag_miss, conf, {}
 
+    def claim_for(self, a):
+        """(claim, planted_fail): the planted draws only choose which claim is made."""
+        fails = random.Random(f"fail:{self.seed}:{a}").random() < self.fail_p
+        return (wrong_claim(self.task, random.Random(f"mode:{self.seed}:{a}")) if fails else right_claim(self.task)), fails
+
     def turn(self, ctx):
         out = []
         for e in super().turn(ctx):
             if e["type"] == "work":
                 a = ctx.agent
-                fails = random.Random(f"fail:{self.seed}:{a}").random() < self.fail_p
-                claim = (wrong_claim(self.task, random.Random(f"mode:{self.seed}:{a}")) if fails
-                         else right_claim(self.task))
+                claim, fails = self.claim_for(a)
                 ok = ORACLES[self.task["family"]](self.task, claim)
+                if fails is None:
+                    fails = not ok
                 rec = {"claim": claim, "pass": ok, "planted_fail": fails, "flag": None, "conf": None}
                 if self.flag_miss is not None:  # a failing candidate is flagged with probability 1 - a; a passing one never
                     rec["flag"] = int(not ok and random.Random(f"flag:{self.seed}:{a}").random() >= self.flag_miss)
@@ -330,14 +352,16 @@ def _taskset(tasks):
     return f
 
 
-def play(tasks, sizes, reruns, seed, tag, plant, flag_miss=None, conf=None):
+def play(tasks, sizes, reruns, seed, tag, plant, flag_miss=None, conf=None, make=None):
     """Run every (size, task, rerun) episode through h.run_arms and the real team.run_episode. tasks: {id: task};
-    plant(ep_seed) -> the episode's failure probability; conf(ep_seed...) is a (centre, bias) pair or None.
+    plant(ep_seed, task) -> the episode's failure probability; conf is a (centre, bias) pair or None; make(ep_seed,
+    task), when given, builds the agent instead (RT and F6).
     Returns (per-agent rows in the H2 layout, {(n, task, rerun): agent}). Refuses a row whose pass differs from the oracle."""
     agents = {}
 
     def kw(arm, n, t, r, ep_seed):
-        agents[(n, t, r)] = R6Agent(ep_seed, tasks[t], plant(ep_seed), flag_miss, conf)
+        agents[(n, t, r)] = (make(ep_seed, tasks[t]) if make else
+                             R6Agent(ep_seed, tasks[t], plant(ep_seed, tasks[t]), flag_miss, conf))
         return {"adopter": agents[(n, t, r)]}
 
     rows = h.run_arms(team.run_episode, _taskset(tasks), arms=["none"], sizes=sizes, task_ids=list(tasks),
@@ -356,7 +380,7 @@ def play_solo(tasks, reruns, seed, tag, plant, conf):
     for t in tasks:
         for r in range(reruns):
             ep_seed = task_seed(f"{tag}:none:1", seed, h._int(t, "task", 0, 10**6) * 10**6 + r)
-            ag = R6Agent(ep_seed, tasks[t], plant(ep_seed), None, conf)
+            ag = R6Agent(ep_seed, tasks[t], plant(ep_seed, tasks[t]), None, conf)
             ts = _taskset(tasks)(1, t)
             rec = team.run_episode(ts, "none", "A", n_agents=1, seed=ep_seed, adopter=ag)
             (p,) = h.agent_passes(rec, ts)
@@ -368,14 +392,20 @@ def play_solo(tasks, reruns, seed, tag, plant, conf):
 
 # ------------------------------------------------------------------------------------------ helpers ----
 
-def make_tasks(family, design, seed, tag, first_id):
-    """{task id: task}: design["tasks"] tasks of the family's planted difficulty."""
-    d, count = design["difficulty"][family], design["tasks"]
-    if family == "F5":
-        ts = gen_lemma_tasks(d, count, design["false_rate"], seed, tag, design["step_limit"], design["total_steps"])
-    else:
-        ts = gen_circuit_tasks(family, design["n_vars"], d, count, seed, tag, design["yes_rate"] if family == "F3" else None)
-    return {first_id + i: t for i, t in enumerate(ts)}
+def make_tasks(family, design, seed, tag, first_id, difficulties=None):
+    """{task id: task}: design["tasks"] tasks of the family's planted difficulty (split evenly over `difficulties`
+    when a plant mixes several, e.g. to show that spread between tasks is not read as a shared cause)."""
+    ds = [design["difficulty"][family]] if difficulties is None else list(difficulties)
+    if design["tasks"] % len(ds):
+        raise ValueError("tasks must divide evenly over the difficulties")
+    count, out = design["tasks"] // len(ds), {}
+    for k, d in enumerate(ds):
+        if family == "F5":
+            ts = gen_lemma_tasks(d, count, design["false_rate"], seed, f"{tag}-{k}", design["step_limit"], design["total_steps"])
+        else:
+            ts = gen_circuit_tasks(family, design["n_vars"], d, count, seed, f"{tag}-{k}", design["yes_rate"] if family == "F3" else None)
+        out.update({first_id + k * count + i: t for i, t in enumerate(ts)})
+    return out
 
 
 def _pmf_bin(i, m, p):
@@ -441,12 +471,14 @@ def in_interval(x, interval):
 
 # ------------------------------------------------------------------------------------------------ H2 ----
 
-def run_h2(family, seed, design, plant, est):
+def run_h2(family, seed, design, plant, est, difficulties=None):
     """H2 on one family at one difficulty: fit sizes 2 and 4, forecast size 8, planted (q, c) from plant."""
-    d = design["difficulty"][family]
+    mixed = difficulties is not None and len(set(difficulties)) > 1
+    d = design["difficulty"][family] if difficulties is None else difficulties[0]
     q, c = 1 - plant["pass_p"][d], plant["c"]
-    pl = lambda s: 1.0 if random.Random(f"common:{s}").random() < c else q  # noqa: E731
-    fit_t, held_t = make_tasks(family, design, seed, "h2fit", 0), make_tasks(family, design, seed, "h2held", 1000)
+    pl = lambda s, t: 1.0 if random.Random(f"common:{s}").random() < c else 1 - plant["pass_p"][t["difficulty"]]  # noqa: E731
+    fit_t = make_tasks(family, design, seed, "h2fit", 0, difficulties)
+    held_t = make_tasks(family, design, seed, "h2held", 1000, difficulties)
     fit_rows, fit_ag = play(fit_t, [2, 4], design["reruns"], 2 * seed, f"h2fit-{family}", pl)
     held_rows, held_ag = play(held_t, [8], design["reruns"], 2 * seed + 1, f"h2held-{family}", pl)
     res = h.h2_primary(fit_rows, held_rows, fit_sizes=[2, 4], target_n=8, level=est["level"], alpha=est["alpha"],
@@ -456,6 +488,8 @@ def run_h2(family, seed, design, plant, est):
     for (n, _t, _r), x in ep.items():
         counts[n][x] += 1
     ok, delta, thr, qi, ci = lr_region(counts, q, c, est["alpha_recover"], res["fit"], est["grid_steps"])
+    if mixed:  # no single planted q: only the decision and the fit are meaningful
+        ok, q = None, None
     return {"estimate": {"q": res["fit"]["q"], "c": res["fit"]["c"]}, "interval": {"q": qi, "c": ci},
             "planted": {"q": q, "c": c}, "recovered": ok, "delta": delta, "threshold": thr,
             "decision": res["decision"], "harness": res,
@@ -474,10 +508,10 @@ def run_h3(family, seed, design, plant, est):
         if p_with + b - 0.1 < 0 or p_with + b + 0.1 > 1:
             raise ValueError("confidence would clip: the planted bias must not be altered by clipping")
     tasks = make_tasks(family, design, seed, "h3", 0)
-    team_rows, ag = play(tasks, [4], design["reruns"], 3 * seed, f"h3team-{family}", lambda s: 1 - p_with,
+    team_rows, ag = play(tasks, [4], design["reruns"], 3 * seed, f"h3team-{family}", lambda s, t: 1 - p_with,
                          conf=(p_with, bt))
-    none_rows, _ = play(tasks, [4], design["reruns"], 3 * seed + 1, f"h3none-{family}", lambda s: 1 - p0)
-    solo = play_solo(tasks, 4 * design["reruns"], 3 * seed + 2, f"h3solo-{family}", lambda s: 1 - p_with, (p_with, bs))
+    none_rows, _ = play(tasks, [4], design["reruns"], 3 * seed + 1, f"h3none-{family}", lambda s, t: 1 - p0)
+    solo = play_solo(tasks, 4 * design["reruns"], 3 * seed + 2, f"h3solo-{family}", lambda s, t: 1 - p_with, (p_with, bs))
     rows = ([{"arm": "team", "task": r["task"], "pass": r["pass"],
               "conf": ag[(r["n"], r["task"], r["rerun"])].rec[f"a{r['agent']}"]["conf"]} for r in team_rows]
             + [{"arm": "solo", "task": r["task"], "pass": r["pass"], "conf": r["conf"]} for r in solo])
@@ -488,7 +522,7 @@ def run_h3(family, seed, design, plant, est):
                             with_arm="team", without_arm="none", B=est["B"], seed=seed, level=est["level"])
     planted = bt - bs
     return {"estimate": res["delta_g"], "interval": res["interval"], "planted": planted,
-            "recovered": in_interval(planted, res["interval"]), "decision": res["decision"], "harness": res,
+            "recovered": in_interval(planted, res["interval"]), "decision": res["decision"], "harness": res, "rows": rows,
             "behaviour": {"estimate": beh["diff"], "interval": beh["interval"], "planted": eff,
                           "recovered": in_interval(eff, beh["interval"])}}
 
@@ -518,7 +552,7 @@ def run_h5(family, seed, design, plant, est):
     _p(f, "f"), _p(a, "false_clean"), _p(s, "spread")
     if f * (1 + s) > 1:
         raise ValueError("f (1 + spread) must not exceed 1")
-    pl = lambda ep: f * (1 + s) if random.Random(f"state:{ep}").random() < 0.5 else f * (1 - s)  # noqa: E731
+    pl = lambda ep, t: f * (1 + s) if random.Random(f"state:{ep}").random() < 0.5 else f * (1 - s)  # noqa: E731
     d = dict(design, tasks=design["h5_tasks"])
     tasks = make_tasks(family, d, seed, "h5", 0)
     cal_rows, cal_ag = play(tasks, [16], design["cal_reruns"], 4 * seed, f"h5cal-{family}", pl, flag_miss=a)
@@ -532,13 +566,244 @@ def run_h5(family, seed, design, plant, est):
     ci = clopper_pearson(miss, len(failing), est["level"])
     return {"estimate": res["S"], "interval": res["interval"], "planted": planted,
             "recovered": in_interval(planted, res["interval"]), "decision": res["decision"], "harness": res,
-            "false_clean": {"estimate": miss / len(failing), "interval": ci, "planted": a,
+            "episodes": (cal, scored), "false_clean": {"estimate": miss / len(failing), "interval": ci, "planted": a,
                             "recovered": in_interval(a, ci), "failing_candidates": len(failing)}}
+
+
+# ------------------------------------------------------------------------------------------------ RT ----
+
+ARMS_RT = ("treatment", "control")
+
+
+class RTAgent(R6Agent):
+    """a0 = proposer, a1 = responder, on one F5 lemma. The proposer's label depends on the lemma alone (u, drawn once
+    per lemma, so both arms see the same proposer); the responder's draws are keyed by the episode seed.
+    rt = {"accept_false", "reject_true", "find", "bogus"}; find / bogus are this arm's responder rates."""
+
+    def __init__(self, seed, task, rt, u):
+        super().__init__(seed, task, 0.0, None, None)
+        self.rt, self.u = rt, u
+
+    def proposer_claim(self):
+        t = self.task
+        if t["truth"]:
+            return ({"label": False, "counterexample": {"x": 0, "y": 0}} if self.u < self.rt["reject_true"]
+                    else {"label": True, "counterexample": None})
+        return ({"label": True, "counterexample": None} if self.u < self.rt["accept_false"] else right_claim(t))
+
+    def claim_for(self, a):
+        prop = self.proposer_claim()
+        if a == "a0":
+            return prop, None
+        if not prop["label"]:
+            return (right_claim(self.task) if not self.task["truth"] else {"label": True, "counterexample": None}), None
+        r = random.Random(f"resp:{self.seed}").random()
+        if self.task["truth"]:  # a counterexample to a true lemma can never verify
+            return ({"label": False, "counterexample": {"x": 0, "y": 0}} if r < self.rt["bogus"]
+                    else {"label": True, "counterexample": None}), None
+        return (right_claim(self.task) if r < self.rt["find"] else {"label": True, "counterexample": None}), None
+
+
+def rt_outcome(task, proposer, responder):
+    """Override rule, one for both arms: the proposer's label stands unless the responder supplies a counterexample that
+    the checker verifies. Returns (accepted, verified_refutation, unverified_counterexample)."""
+    cx = responder["label"] is False and responder["counterexample"] is not None
+    ok = cx and counterexample_verifies(task, responder["counterexample"])
+    return int(proposer["label"] is True and not ok), int(bool(ok)), int(bool(cx) and not ok)
+
+
+def rt_exact_p(x, y):
+    """One-sided exact McNemar toward treatment < control: x lemmas accepted only in control, y only in treatment.
+    P(Binomial(x + y, 1/2) >= x); 1 when there are no discordant lemmas."""
+    k = x + y
+    return math.fsum(math.comb(k, i) for i in range(x, k + 1)) / 2 ** k
+
+
+def rt_permutation_null(diffs, perms, seed):
+    """Sum of the paired differences with arm labels swapped independently within each lemma (a swap negates d)."""
+    rng = random.Random(task_seed("rt-null", seed, 0))
+    return [sum(d if rng.random() < 0.5 else -d for d in diffs) for _ in range(perms)]
+
+
+def _cp(k, m, level):
+    return clopper_pearson(k, m, level) if m else (0.0, 1.0)
+
+
+def run_rt(seed, design, plant, est):
+    """RT: the share of false lemmas still accepted, treatment minus control, paired by lemma."""
+    rt = plant["rt"]
+    d = design["difficulty"]["F5"]
+    tasks = {i: t for i, t in enumerate(gen_lemma_tasks(d, design["rt_lemmas"], design["false_rate"], seed, "rt",
+                                                        design["step_limit"], design["total_steps"]))}
+    us = {i: random.Random(task_seed("rt-prop", seed, i)).random() for i in tasks}
+    by_src = {id(t): i for i, t in tasks.items()}
+    arms, rec = {}, {}
+    for k, arm in enumerate(ARMS_RT):
+        rates = dict(accept_false=rt["accept_false"], reject_true=rt["reject_true"], find=rt["find"][arm],
+                     bogus=rt["bogus"][arm])
+        rows, ag = play(tasks, [2], 1, 5 * seed + k, f"rt-{arm}", None,
+                        make=lambda ep, t, rates=rates: RTAgent(ep, t, rates, us[by_src[id(t)]]))
+        arms[arm] = rows
+        rec[arm] = {i: ag[(2, i, 0)] for i in tasks}
+    out = {a: {i: rt_outcome(tasks[i], ag.rec["a0"]["claim"], ag.rec["a1"]["claim"]) for i, ag in rec[a].items()}
+           for a in ARMS_RT}
+    false_ids = [i for i, t in tasks.items() if not t["truth"]]
+    true_ids = [i for i, t in tasks.items() if t["truth"]]
+    diffs = [out["treatment"][i][0] - out["control"][i][0] for i in false_ids]
+    if not diffs:
+        raise ValueError("no false lemma drawn")
+    x = sum(dv == -1 for dv in diffs)   # accepted only in control
+    y = sum(dv == 1 for dv in diffs)    # accepted only in treatment
+    planted = rt["accept_false"] * (rt["find"]["control"] - rt["find"]["treatment"])
+    interval = h._boot(diffs, h._mean, est["B"], seed, est["level"], "rt-boot")
+    prop_acc = [i for i in false_ids if rec["control"][i].rec["a0"]["claim"]["label"] is True]
+    true_acc = [i for i in true_ids if rec["control"][i].rec["a0"]["claim"]["label"] is True]
+    per_arm = {}
+    for arm in ARMS_RT:
+        hit = sum(out[arm][i][1] for i in prop_acc)
+        bog = sum(out[arm][i][2] for i in true_acc)
+        per_arm[arm] = {
+            "recall": {"estimate": hit / len(prop_acc) if prop_acc else None,
+                       "interval": _cp(hit, len(prop_acc), est["level"]), "planted": rt["find"][arm], "n": len(prop_acc)},
+            "unverified": {"estimate": bog / len(true_acc) if true_acc else None,
+                           "interval": _cp(bog, len(true_acc), est["level"]), "planted": rt["bogus"][arm],
+                           "n": len(true_acc)},
+            "accepted": sum(out[arm][i][0] for i in false_ids) / len(false_ids)}
+        for key in ("recall", "unverified"):
+            e = per_arm[arm][key]
+            e["recovered"] = e["estimate"] is not None and in_interval(e["planted"], e["interval"])
+    reasons = [] if len(prop_acc) >= est["rt_min_accepted"] else [
+        f"false lemmas accepted by the proposer ({len(prop_acc)}) fewer than {est['rt_min_accepted']}"]
+    lo, hi = interval
+    decision = "uninformative" if reasons else "supported" if hi < 0 else "killed" if lo > 0 else "inconclusive"
+    return {"estimate": h._mean(diffs), "interval": interval, "planted": planted,
+            "recovered": in_interval(planted, interval), "decision": decision, "uninformative": reasons,
+            "discordant": (x, y), "p_one_sided": rt_exact_p(x, y), "diffs": diffs, "arms": per_arm, "rows": arms}
+
+
+# ------------------------------------------------------------------------------------------------ F6 ----
+
+DEFECTS = (
+    ("quantifier_swap", "For every n there is a circuit of size at most n^<k> deciding L on inputs of length n.",
+     "forall n, exists C, size(C) <= n^<k> and forall x in {0,1}^n, C(x) = L(x)", "forall n, exists C,",
+     "exists C, forall n,"),
+    ("n_vs_N", "The machine runs in time polynomial in the bit-length N of its input, with exponent <k>.",
+     "forall x, time(M, x) <= N^<k> + <k> where N = |x|", "N^<k> + <k>", "n^<k> + <k>"),
+    ("vacuous_hypothesis", "Every satisfiable 3-CNF with at most m clauses is solved within <k> m steps.",
+     "forall phi, sat(phi) and clauses(phi) <= m -> steps(phi) <= <k> m", "sat(phi) and clauses(phi) <= m",
+     "clauses(phi) < 0"),
+    ("uniform_vs_nonuniform", "A single machine decides L for every input length, using at most <k> work cells.",
+     "exists M, forall n, forall x in {0,1}^n, M(x) = L(x) and cells(M, x) <= <k>", "exists M, forall n,",
+     "forall n, exists M,"),
+    ("degenerate_edge", "For every input length n >= 1 the bound f(n) <= <k> g(n) holds.",
+     "forall n >= 1, f(n) <= <k> g(n)", "n >= 1", "n >= 5"),
+)
+
+
+def n_spans(length):
+    """Spans [start, end) with 0 <= start < end <= length: the support of a uniformly random span guess."""
+    return length * (length + 1) // 2
+
+
+def random_span(rng, length):
+    """A span drawn uniformly from the n_spans(length) spans."""
+    k = rng.randrange(n_spans(length))
+    s0 = 0
+    while k >= length - s0:
+        k -= length - s0
+        s0 += 1
+    return [s0, s0 + 1 + k]
+
+
+def gen_audit_tasks(count, faithful_rate, seed, tag):
+    """F6 pairs: an informal statement and a formal one, faithful with probability faithful_rate, else one defect whose
+    exact span [start, end) in the formal text is recorded. Ground truth is the planted label and span."""
+    _int(count, "count", 1, 10**5), _p(faithful_rate, "faithful_rate")
+    rng = random.Random(task_seed(f"gen-F6:{tag}", seed, 0))
+    out = []
+    for _ in range(count):
+        kind, inf, formal, old, new = DEFECTS[rng.randrange(len(DEFECTS))]
+        k = str(rng.randrange(1, 10))
+        inf, formal, old, new = (x.replace("<k>", k) for x in (inf, formal, old, new))
+        if rng.random() < faithful_rate:
+            out.append({"family": "F6", "difficulty": 0, "informal": inf, "formal": formal, "defective": False,
+                        "defect": None, "span": None})
+            continue
+        bad = formal.replace(old, new)
+        if bad.count(new) != 1 or formal.count(old) != 1:
+            raise ValueError("a defect must be a single edit")
+        a = bad.index(new)
+        out.append({"family": "F6", "difficulty": 0, "informal": inf, "formal": bad, "defective": True, "defect": kind,
+                    "span": [a, a + len(new)]})
+    return out
+
+
+def oracle_f6(task, claim):
+    """F6: a faithful pair needs the verdict faithful; a defective pair needs the verdict defective with the exact span."""
+    try:
+        if type(claim["faithful"]) is not bool:
+            return 0
+        if not task["defective"]:
+            return int(claim["faithful"])
+        sp = claim["span"]
+        return int(claim["faithful"] is False and isinstance(sp, (list, tuple)) and len(sp) == 2
+                   and all(type(v) is int for v in sp) and list(sp) == task["span"])
+    except (TypeError, KeyError):
+        return 0
+
+
+ORACLES["F6"] = oracle_f6
+
+
+class F6Agent(R6Agent):
+    """Scripted auditor: flags a defective pair with probability detect and a faithful one with false_alarm; a flag
+    carries the exact span with probability locate, else a uniformly random span."""
+
+    def __init__(self, seed, task, aud):
+        super().__init__(seed, task, 0.0, None, None)
+        self.aud = aud
+
+    def claim_for(self, a):
+        r = random.Random(f"audit:{self.seed}:{a}")
+        t, u = self.task, r.random()
+        if t["defective"]:
+            if u >= self.aud["detect"]:
+                return {"faithful": True, "span": None}, None
+            if r.random() < self.aud["locate"]:
+                return {"faithful": False, "span": list(t["span"])}, None
+        elif u >= self.aud["false_alarm"]:
+            return {"faithful": True, "span": None}, None
+        return {"faithful": False, "span": random_span(r, len(t["formal"]))}, None
+
+
+def run_f6(seed, design, plant, est):
+    """F6 Definition Audit: rates with exact (Clopper-Pearson) intervals; no hypothesis test (plan section 4)."""
+    aud = plant["audit"]
+    tasks = {i: t for i, t in enumerate(gen_audit_tasks(design["audit_pairs"], design["faithful_rate"], seed, "f6"))}
+    rows, ag = play(tasks, [2], 1, 6 * seed, "f6", None, make=lambda ep, t: F6Agent(ep, t, aud))
+    recs = [(tasks[r["task"]], ag[(r["n"], r["task"], r["rerun"])].rec[f"a{r['agent']}"]["claim"]) for r in rows]
+    dfc = [(t, c) for t, c in recs if t["defective"]]
+    fth = [(t, c) for t, c in recs if not t["defective"]]
+    flagged_def = [(t, c) for t, c in dfc if c["faithful"] is False]
+    tp, fp = len(flagged_def), sum(c["faithful"] is False for _, c in fth)
+    tn = sum(c["faithful"] is True for _, c in fth)
+    exact = sum(c["span"] == t["span"] for t, c in flagged_def)
+
+    def rate(k, m, planted):
+        ci = _cp(k, m, est["level"])
+        return {"estimate": k / m if m else None, "interval": ci, "planted": planted, "n": m, "k": k,
+                "recovered": bool(m) and in_interval(planted, ci)}
+
+    exp_tp, exp_fp = aud["detect"] * len(dfc), aud["false_alarm"] * len(fth)
+    chance = math.fsum(aud["locate"] + (1 - aud["locate"]) / n_spans(len(t["formal"])) for t, _ in dfc) / len(dfc) if dfc else 0.0
+    return {"recall": rate(tp, len(dfc), aud["detect"]), "true_negative": rate(tn, len(fth), 1 - aud["false_alarm"]),
+            "precision": rate(tp, tp + fp, exp_tp / (exp_tp + exp_fp) if exp_tp + exp_fp else 0.0),
+            "span": rate(exact, tp, chance), "rows": rows, "tasks": tasks}
 
 
 # ------------------------------------------------------------------------------------------ scorecards ----
 
-LENS = {"F2": "circuit", "F3": "meta_complexity", "F5": "circuit"}
+LENS = {"F2": "circuit", "F3": "meta_complexity", "F5": "circuit", "F6": "descriptive"}
 PLANTED_GATES = ("G2", "G3", "G4")
 
 
@@ -619,9 +884,9 @@ def card_report(family, tasks, rows, agents, seed, card):
 # ----------------------------------------------------------------------------------------------- stage A ----
 
 DESIGN = ("n_vars", "tasks", "reruns", "h5_tasks", "cal_reruns", "h5_reruns", "difficulty", "families", "h35_family",
-          "yes_rate", "false_rate", "step_limit", "total_steps")
-PLANT = ("pass_p", "c", "conf_bias", "ask_effect", "false_clean", "f", "spread")
-EST = ("level", "alpha", "alpha_recover", "grid_steps", "B", "perms", "edge", "K", "negligible", "max_unparseable")
+          "yes_rate", "false_rate", "step_limit", "total_steps", "rt_lemmas", "audit_pairs", "faithful_rate")
+PLANT = ("pass_p", "c", "conf_bias", "ask_effect", "false_clean", "f", "spread", "rt", "audit")
+EST = ("level", "alpha", "alpha_recover", "grid_steps", "B", "perms", "edge", "K", "negligible", "max_unparseable", "rt_min_accepted")
 CARD = ("weights", "rubric", "briefing_keywords", "overclaim_patterns", "gate_plant")
 
 
@@ -643,6 +908,18 @@ def _check_config(design, plant, est, card):
         _int(d, "pass_p key", 0, 7), _p(p, "pass_p", True, True)
     _p(plant["c"], "c"), _p(plant["ask_effect"] + 0.5, "ask_effect + 0.5")  # ask_effect in [-0.5, 0.5]
     _need(plant["conf_bias"], ("team", "solo"), "conf_bias")
+    for k in ("rt_lemmas", "audit_pairs"):
+        _int(design[k], k, 2, 10**5)
+    _p(design["faithful_rate"], "faithful_rate")
+    rt = _need(plant["rt"], ("accept_false", "reject_true", "find", "bogus"), "rt")
+    _p(rt["accept_false"], "accept_false"), _p(rt["reject_true"], "reject_true")
+    for k in ("find", "bogus"):
+        _need(rt[k], ARMS_RT, f"rt.{k}")
+        for arm in ARMS_RT:
+            _p(rt[k][arm], f"rt.{k}.{arm}")
+    for k, v in _need(plant["audit"], ("detect", "false_alarm", "locate"), "audit").items():
+        _p(v, f"audit.{k}")
+    _int(est["rt_min_accepted"], "rt_min_accepted", 1, 10**5)
     _p(est["level"], "level", True, True), _p(est["alpha_recover"], "alpha_recover", True, True)
     _need(card["gate_plant"], ("rate", "gate"), "gate_plant")
     _p(card["gate_plant"]["rate"], "gate rate")
@@ -659,10 +936,12 @@ def stage_a(seed, *, design, plant, est, card):
     _int(seed, "seed", 0, 10**9)
     _check_config(design, plant, est, card)
     out = {"H2": {}, "cards": {}, "not_instantiated": {"H1": "stays with R5 (plan Part II section 2)",
-                                                       "not_done": ["F1", "F4", "F6", "RT"]}}
+                                                       "not_done": ["F1", "F4"]}}
     for fam in design["families"]:
         r = out["H2"][fam] = run_h2(fam, seed, design, plant, est)
         out["cards"][fam] = [card_report(fam, t, rows, ag, seed, card) for t, rows, ag in r.pop("runs")]
     out["H3"] = run_h3(design["h35_family"], seed, design, plant, est)
     out["H5"] = run_h5(design["h35_family"], seed, design, plant, est)
+    out["RT"] = run_rt(seed, design, plant, est)
+    out["F6"] = run_f6(seed, design, plant, est)
     return out

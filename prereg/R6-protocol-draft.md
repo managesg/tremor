@@ -204,6 +204,7 @@ The freeze confirms or replaces each decision. The independent reviewer checks e
 | R6-O21 | Admission records for each batch: owner words, UTC window, max window hours, batch id | owner | **yes** |
 | R6-O22 | Output cap and per-call timeout for B0′ and later, from P0 | line author | no |
 | R6-O23 | Register any PR circuit-size functions only after M1 is accepted (PL:142); otherwise F5 excludes circuit-size lemmas | line author; reviewer | no |
+| R6-O24 | `rt_min_accepted`: the minimum number of false lemmas the proposer must accept for the Red Team contrast to be informative (required config key of `lab/r6_stage_a.py`); set by the pilot's SE rule (R5 plan:217) from B1′, frozen before the main run | line author (delegated, protocol line 7) | no |
 
 ## 14. What the freeze record must contain
 
