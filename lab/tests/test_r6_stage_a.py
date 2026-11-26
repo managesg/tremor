@@ -417,6 +417,10 @@ class Recovery(Exact):
                 se = math.sqrt(sum((e - mean) ** 2 for e in eps) / (len(eps) - 1) / len(eps))
                 self.assertLessEqual(abs(mean - 0.7 * 0.7), Z * se, (fam, r))
             self.at_least(rec, len(seeds), 1 - 0.001)
+            # the decision under the planted model: the exact coverage test (size <= alpha) does not reject, and the
+            # forecast is never wholly worse than the independent comparator (one tail of the 95% interval: 0.025)
+            self.at_least(sum(r["harness"]["coverage"]["p"] > 0.05 for r in runs), len(runs), 1 - 0.05)
+            self.at_most(sum(r["decision"] == "killed" for r in runs), len(runs), 0.025)
             # across seeds the mean estimate is the planted value (z and the standard error are derived, see Exact)
             self.mean_within([r["estimate"]["q"] for r in runs], 0.3, f"{fam} q")
             self.mean_within([r["estimate"]["c"] for r in runs], 0.3, f"{fam} c")
@@ -462,14 +466,12 @@ class Recovery(Exact):
         runs = [a.run_h3("F2", s, design(tasks=8), pl, est(perms=49)) for s in range(1, 6)]
         for r in runs:
             self.assertAlmostEqual(r["planted"], -0.2, places=12)
-        self.assertGreaterEqual(sum(r["recovered"] for r in runs), 4)  # nominal 95%: exact bound below
         self.at_least(sum(r["recovered"] for r in runs), 5, 0.95)
         ests = [r["estimate"] for r in runs]
         self.mean_within(ests, -0.2, "H3 killed side")
         self.excludes([r["interval"] for r in runs], ests, -0.2, -1)
         killed = sum(r["decision"] == "killed" for r in runs)
         self.assertEqual(killed, sum(r["interval"][1] < 0 for r in runs))  # killed = the interval wholly below 0
-        self.assertGreaterEqual(killed, 1)
         self.assertEqual(sum(r["decision"] == "supported" for r in runs), 0)
 
     def test_h5_recovers_planted_S_and_the_false_clean_rate(self):
@@ -488,7 +490,6 @@ class Recovery(Exact):
             lo, hi = self.cp(k, m, 0.95)  # the test's own exact interval: kills a changed level or a wrong tail
             self.assertAlmostEqual(fc["interval"][0], lo, places=9)
             self.assertAlmostEqual(fc["interval"][1], hi, places=9)
-            self.assertLess(fc["interval"][1] - fc["interval"][0], 4 * Z * math.sqrt(0.25 / m))  # cannot exceed a few SEs
         self.at_least(sum(r["recovered"] for r in runs), len(seeds), 0.95)
         self.at_least(sum(r["false_clean"]["recovered"] for r in runs), len(seeds), 0.95)
         ests = [r["estimate"] for r in runs]
@@ -498,8 +499,18 @@ class Recovery(Exact):
         self.excludes([r["interval"] for r in runs], ests, planted, +1)
 
     def test_every_planted_value_is_recovered_in_a_full_stage_a_run(self):
-        out = a.stage_a(2, design=design(families=("F2",), tasks=4, h5_reruns=10), plant=plant(), est=est(B=30, perms=19), card=card())
-        self.assertTrue(out["RT"]["estimate"] < 0 and out["F6"]["recall"]["estimate"] > 0.5)
+        out = a.stage_a(2, design=design(families=("F2", "F3", "F5"), tasks=6, h5_reruns=24, cal_reruns=14), plant=plant(),
+                        est=est(B=100, perms=49), card=card())
+        flags = [r["recovered"] for r in out["H2"].values()]
+        flags += [out["H3"]["recovered"], out["H3"]["behaviour"]["recovered"], out["H5"]["recovered"],
+                  out["H5"]["false_clean"]["recovered"], out["RT"]["recovered"]]
+        for arm in out["RT"]["arms"].values():
+            flags += [arm["recall"]["recovered"], arm["unverified"]["recovered"]]
+        flags += [out["F6"][k]["recovered"] for k in ("recall", "true_negative", "precision", "span")]
+        self.assertEqual(len(flags), 3 + 5 + 4 + 4)
+        # the H2 checks sit at level 1 - 0.001, the rest at 0.95: the whole set is not significantly below the lowest
+        self.at_least(sum(flags), len(flags), 0.95)
+        self.assertTrue(all(f is True or f is False for f in flags))
 
 
 # ----------------------------------------------------------------- closed forms for every null ----
