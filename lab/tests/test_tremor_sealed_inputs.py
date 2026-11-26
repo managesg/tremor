@@ -334,6 +334,13 @@ class SealedTests(unittest.TestCase):
             with self.assertRaises(g.AdmissionRefused):
                 g._input_sha(str(self.root), "held/a.json")
 
+    def test_nofollow_layer_alone_refuses_parent_swap(self):
+        """/proc check disabled (readlink says what is expected); lstat runs after the swap, so the inode
+        check sees the outside file too: only O_NOFOLLOW on the parent open is left."""
+        want = os.path.join(os.path.realpath(self.root), "held", "a.json")
+        with self.swap_parent_for_symlink(), mock.patch.object(os, "readlink", lambda p: want):
+            self.refused(s.seal, ["held/a.json"], "c", str(self.root), NOW)
+
     def test_open_regular_rooted_checks(self):
         root = os.path.realpath(self.root)
         with g._open_regular(f"{root}/held/a.json", root) as f:

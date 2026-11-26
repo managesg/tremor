@@ -553,6 +553,23 @@ class GateTests(unittest.TestCase):
             with self.assertRaises(g.AdmissionRefused):
                 g._open_regular(str(self.root / "ln.txt"))
 
+    def test_nofollow_layer_alone_refuses_parent_swap(self):
+        (self.root / "held").mkdir()
+        (self.root / "held" / "a.txt").write_bytes(b"inside")
+        outside = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (outside / "a.txt").write_bytes(b"OUTSIDE")
+        real = g._open_regular
+
+        def attack(path, root=None):
+            os.rename(self.root / "held", self.root / "held_bak")
+            os.symlink(outside, self.root / "held")
+            return real(path, root)
+        want = os.path.join(os.path.realpath(self.root), "held", "a.txt")
+        # /proc check disabled; lstat runs after the swap, so the inode check passes: O_NOFOLLOW alone.
+        with mock.patch.object(g, "_open_regular", attack), mock.patch.object(os, "readlink", lambda p: want):
+            with self.assertRaises(g.AdmissionRefused):
+                g._input_sha(str(self.root), "held/a.txt")
+
     def test_input_sha_refuses_hard_linked_file(self):
         self.assertEqual(g._input_sha(str(self.root), "input.txt"), sha(b"input"))
         os.link(self.root / "input.txt", self.root / "hl.txt")
