@@ -69,15 +69,59 @@ def _bad_const(v):
     _refuse(f"non-finite constant in record: {v}")
 
 
-def _read(path):
-    # O_NOFOLLOW + fstat: no check-then-read gap on the final path component.
+def _open_regular(path, root=None):
+    """Open a regular file read-only, or refuse. Returns a binary file object (caller closes).
+
+    Closed: (1) with `root` (a real directory path), path must lie under it and is opened openat-style,
+    one component at a time from the root's descriptor with O_NOFOLLOW (O_DIRECTORY for parents), so a
+    parent directory swapped for a symlink at any moment is refused; (2) after the open, Linux's
+    /proc/self/fd link must equal the expected path under root (no /proc/self/fd: refused, not
+    skipped); (3) lstat before open, O_NOFOLLOW on the last component, and the descriptor's device and
+    inode must equal that lstat; (4) a regular file only.
+    NOT closed: the root directory itself being swapped (the caller declares it), and a file whose
+    content changes after it is read. Without `root` only (3) and (4) apply (small JSON records).
+    """
+    dirfd = None
     try:
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        before = os.lstat(path)
+        if stat.S_ISLNK(before.st_mode):
+            _refuse(f"{path} is a symlink")
+        if root is None:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        else:
+            if not os.path.isdir("/proc/self/fd"):
+                _refuse("no /proc/self/fd: cannot verify the opened file (Linux only)")
+            rel = os.path.relpath(path, root)
+            parts = rel.split(os.sep)
+            if rel.startswith("..") or os.path.isabs(rel) or not parts or "" in parts or "." in parts:
+                _refuse(f"{path} is not under {root}")
+            dirfd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+            for name in parts[:-1]:
+                nxt = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=dirfd)
+                os.close(dirfd)
+                dirfd = nxt
+            fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=dirfd)
     except OSError as e:
         _refuse(f"cannot read {path}: {e}")
-    with os.fdopen(fd, "rb") as f:
-        if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+    finally:
+        if dirfd is not None:
+            os.close(dirfd)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode):
             _refuse(f"{path} is not a regular file")
+        if (st.st_dev, st.st_ino) != (before.st_dev, before.st_ino):
+            _refuse(f"{path} changed between check and open")
+        if root is not None and os.readlink(f"/proc/self/fd/{fd}") != os.path.join(root, rel):
+            _refuse(f"{path}: opened file is not the file under the root")
+        return os.fdopen(fd, "rb")
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def _read(path):
+    with _open_regular(path) as f:
         return f.read()
 
 
@@ -163,7 +207,8 @@ def _input_sha(repo_root, rel):
         _refuse(f"protected input escapes repo_root: {rel}")
     if real != os.path.normpath(full) or os.path.islink(full):
         _refuse(f"protected input is or traverses a symlink: {rel}")
-    return hashlib.sha256(_read(full)).hexdigest()
+    with _open_regular(full, root) as f:  # chunked: a large input is never loaded whole
+        return hashlib.file_digest(f, "sha256").hexdigest()
 
 
 def check(freeze_record_path, admission_record_path, now_utc, repo_root, **caps):

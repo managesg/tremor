@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from lab import tremor_admission_gate as g
 
@@ -527,6 +528,37 @@ class GateTests(unittest.TestCase):
         self.assertEqual(g.main(["admit", *base]), 0)
         self.assertEqual(g.main(["admit", *base]), 2)
         self.assertEqual(len(self.claims()), 1)
+
+    # chunked input hash and descriptor identity
+    def test_input_sha_large_file_chunked_equal_digest(self):
+        data = bytes(range(256)) * (3 * 1024 * 4)  # 3 MiB, over the digest chunk
+        (self.root / "big.bin").write_bytes(data)
+        with mock.patch.object(g, "_read", side_effect=AssertionError("whole-file read")):
+            self.assertEqual(g._input_sha(str(self.root), "big.bin"), sha(data))
+
+    def test_input_sha_refuses_inode_swap_between_lstat_and_open(self):
+        real = os.lstat
+
+        def fake(path, *a, **k):
+            r = real(path, *a, **k)
+            return os.stat_result((r.st_mode, r.st_ino + 1, r.st_dev, r.st_nlink, r.st_uid, r.st_gid,
+                                   r.st_size, 0, 0, 0))
+        with mock.patch.object(os, "lstat", fake):
+            with self.assertRaises(g.AdmissionRefused):
+                g._input_sha(str(self.root), "input.txt")
+
+    def test_open_regular_nofollow_last_component_when_lstat_is_fooled(self):
+        os.symlink(self.root / "input.txt", self.root / "ln.txt")
+        with mock.patch.object(os, "lstat", lambda p, *a, **k: os.stat(p)):
+            with self.assertRaises(g.AdmissionRefused):
+                g._open_regular(str(self.root / "ln.txt"))
+
+    def test_open_regular_refuses_directory_and_symlink(self):
+        with self.assertRaises(g.AdmissionRefused):
+            g._open_regular(str(self.root))
+        os.symlink(self.root / "input.txt", self.root / "ln2.txt")
+        with self.assertRaises(g.AdmissionRefused):
+            g._open_regular(str(self.root / "ln2.txt"))
 
 
 if __name__ == "__main__":
