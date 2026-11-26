@@ -53,6 +53,9 @@ Paths are relative to the repository root.
     - The release owner and Alejandro own release adoption and G8 sharing.
     - The claims reviewer and resource owner own the provider Console totals and T7 accounting. The provisional 4.0 GPU-hour T7 hold stays until it is backed by evidence.
 - [x] **Goal registry CLOSED 2026-11-25.** Owner cleared the /goal and PC removed the goal and loop hooks everywhere, so no goal registry remains to wait on (Assistant relay, sup:9f33b3f027c3a347). The Assistant is now `claude_683b11af` (`codex_c125641a` retired).
+- [ ] SUBTASK 2026-11-26: clean-archive suite re-check at the final HEAD (package and lab counts against the 944/1523 clean-archive baselines; skips and host-only errors named) so the 23:59 ET final STATUS cites fresh counts. Reason: the final STATUS needs same-day test results; no gate, local only.
+- [ ] SUBTASK 2026-11-26: write the TREMOR handoff note refresh by 23:00 ET (04:00Z) in docs/reports/HANDOFF_TREMOR_20261125_NIGHT.md. Reason: the Thanksgiving directive requires it; no gate, local only.
+- [ ] SUBTASK 2026-11-26: build the R6 F1 task generator and its mechanical checker (lab/r6_f1_tasks.py, tests, mutants, Opus review). Reason: P0 prerequisite 6 (R6-O5) says the P0 prompts are F1 whatever the pilot family; offline, its own tests, no gate.
 - [x] **Wednesday report, 2026-11-25:** report file exists at `docs/reports/TREMOR_CHECKPOINT_20261125.md` (Assistant instruction msg_fa7cc4d5b05e: the standing-duties line was never tickable, so it is a note below).
 
 ### Standing duties (note, not a checklist line; Assistant sup:9f33b3f027c3a347)
