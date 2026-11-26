@@ -204,7 +204,7 @@ Difficulty is a dial ($n$, size bound, clause ratio), set from the pilot to stay
 
 ## 2. R5 hypotheses instantiated here
 
-**Precondition.** `lab/r5_perf_harness.py` and its tests are **untracked** at `9a74aef` and under repair after a rejected review (the mathematics stood; missing: the `run_episode` loop and the H5 gap; the H2 overdispersion check measured task spread; per the independent Opus review of 2026-11-26, record to be added to DECISION_LOG). **Stage A (R3) does not start until the harness is committed and its review has closed. That commit, `d0c67d7`, is recorded in DL and as an inherited pin in the R6 protocol.** R6 uses the harness exactly as pinned.
+**Precondition.** `lab/r5_perf_harness.py` and its tests were **untracked** at `9a74aef` and went through a rejected review (the mathematics stood; missing: the `run_episode` loop and the H5 gap; the H2 overdispersion check measured task spread). They are now committed in `d0c67d7` (65 tests) after the fixes and a re-review; the review record is in DECISION_LOG. **Stage A (R3) does not start until the harness is committed and its review has closed. That commit, `d0c67d7`, is recorded in DL and as an inherited pin in the R6 protocol.** R6 uses the harness exactly as pinned.
 
 | Hypothesis | On R6-TS | Harness call (names as of today; confirmed at the pin) |
 |---|---|---|

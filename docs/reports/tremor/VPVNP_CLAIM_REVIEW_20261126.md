@@ -52,7 +52,7 @@ PL = `prereg/R6-pvsnp-research-line-plan.md`. CK = `docs/reports/tremor/PVSNP_BR
 | 9 | `perm`, `hc` (L614-L621) | `perm` uses `X (sigma i, i)`, the prose `x_{i,sigma(i)}` (L44): equal after `sigma -> sigma^{-1}`. Not checked: that `IsCycleOn Set.univ` means "one cycle through all points" for every `m` |
 | 10 | `VP`, `VNP`, `Separation` (L663-L682) | VP bounds variables, total degree and size; VNP sums a VP family over bit vectors; strict subset for every field. Matches L170-L176 |
 | 11 | Characteristic | `PERM` for `p != 2` only (L70-L72; entries `+-1/2`, L567-L570); `HC` for all fields ("needs no division", L572). Consistent across Sections 1, 2.5, M |
-| 12 | Use of VNP-completeness | The separation needs only membership: `PERM` by Ryser's formula (L3445-L3453), `HC` at L3547. The reductions to `PERM`/`HC` are proved in the paper (Prop. E.1, M.2; L3490-L3517). Valiant's completeness theorem is cited for framing (L49-L51), not as a step |
+| 12 | Use of VNP-completeness | The separation needs only membership: `PERM` by Ryser's formula (L3445-L3453), `HC` at L3547. For the reductions to `PERM`/`HC` the paper gives proofs (Prop. E.1, M.2; L3490-L3517). Valiant's completeness theorem is cited for framing (L49-L51), not as a step |
 | 13 | Extraction damage | Overlines are lost: "VNP not in VP" at L76, L89 means the closure. L475-L479 have displaced radicals |
 | 14 | Discrepancy | [Guo26] is described as a bound "of order `m^2 log m`" (L139); its title reads "`n^2 log log n`" (L792). Check against the source |
 
