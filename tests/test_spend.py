@@ -1,6 +1,7 @@
 import json
 import multiprocessing
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -1096,6 +1097,241 @@ class Pilot3Tests(unittest.TestCase):
         self.canary()
         with self.assertRaises(spend.SpendCeilingExceeded):
             self.led("pilot3").reserve("r0", M, 2000, 300)
+
+
+def _sheet_data(fetched, **over):
+    lc = {"threshold_input_tokens": 1000, "input": 4, "output": 20, "cache_read": 0.2, "cache_write_5m": 5, "cache_write_1h": 8}
+    d = {"fetched": fetched.isoformat(), "source_url": "https://x", "unit": "usd_per_million_tokens", "opened": True,
+         "aliases": {M: [M + "-20260101"]}, "models": {M: {**P, "long_context": lc}, "other": dict(P)}}
+    d.update(over)
+    return d
+
+
+class SheetContinuityTests(unittest.TestCase):
+    """A batch pinned sheet A; the refetched sheet B may continue it only when the code proves B equals A but for 'fetched'."""
+
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        self.today = datetime.now(timezone.utc).date()
+        self.old_day = self.today - timedelta(days=5)  # older than MAX_AGE_DAYS: refused by a normal load
+
+    def write(self, name, data):
+        p = os.path.join(self.d, name)
+        with open(p, "w") as f:
+            json.dump(data, f)
+        return p
+
+    def pinned(self, batch="ep1", name="l.jsonl", old=None):
+        """Ledger on the OLD sheet (loaded as of its own day) with one reserve: the batch pins the old digest."""
+        old = old or _sheet_data(self.old_day)
+        self.old_path = self.write("old.json", old)
+        led = spend.Ledger(os.path.join(self.d, name),
+                           spend.PriceSheet.load(self.old_path, today=date.fromisoformat(old["fetched"])), batch=batch)
+        led.reserve("pre-" + name, M, 100, 100)
+        return led
+
+    def new_ledger(self, data=None, batch="ep1", name="l.jsonl", predecessor="old", sheet_day=None):
+        path = self.write("new.json", data or _sheet_data(self.today))
+        sheet = spend.PriceSheet.load(path, today=sheet_day)
+        pred = self.old_path if predecessor == "old" else predecessor
+        return spend.Ledger(os.path.join(self.d, name), sheet, batch=batch, predecessor_sheet=pred)
+
+    def assertRefused(self, led, reason, call="a"):
+        with self.assertRaises(spend.PriceSheetRefused) as cm:
+            led.reserve(call, M, 100, 100)
+        self.assertEqual(str(cm.exception), "price sheet changed mid-batch 'ep1'")  # the original text, unchanged
+        self.assertRegex(cm.exception.reason, reason)
+
+    def pin_of(self, batch="ep1"):
+        return spend.Ledger(os.path.join(self.d, "l.jsonl"), spend.PriceSheet.load(os.path.join(self.d, "old.json"), allow_expired=True)).totals()["opens"][batch]
+
+    def cheap(self):  # a sheet at 1% of every rate, as a forger would present
+        d = _sheet_data(self.today)
+        for m in d["models"].values():
+            for k in P:
+                m[k] = m[k] / 100
+        return d
+
+    def conts(self, name="l.jsonl"):
+        return [e for e in spend.Ledger._read(os.path.join(self.d, name)) if e["kind"] == "sheet_continuity"]
+
+    def test_default_refuses_a_changed_sheet(self):
+        self.pinned()
+        self.assertRefused(self.new_ledger(predecessor=None), "no predecessor")
+        self.assertEqual(self.conts(), [])
+
+    def test_equal_rates_continue_the_batch_with_one_line_then_pin_the_new_digest(self):
+        self.pinned()
+        led = self.new_ledger()
+        led.reserve("a", M, 100, 100)
+        c, = self.conts()
+        new_sha = led.sheet.sha256
+        self.assertEqual((c["batch"], c["new_sha256"], c["old_fetched"], c["new_fetched"]),
+                         ("ep1", new_sha, self.old_day.isoformat(), self.today.isoformat()))
+        self.assertNotEqual(c["old_sha256"], new_sha)
+        for i in range(3):  # later reservations pin the NEW digest: no predecessor needed, no second line
+            self.new_ledger(predecessor=None).reserve(f"b{i}", M, 100, 100)
+        self.assertEqual(len(self.conts()), 1)
+        self.assertEqual(led.totals()["opens"]["ep1"], new_sha)
+        # the old sheet no longer matches the pin: today's refusal
+        old_again = spend.Ledger(os.path.join(self.d, "l.jsonl"), spend.PriceSheet.load(self.old_path, today=self.old_day), batch="ep1")
+        self.assertRefused(old_again, "no predecessor", "z")
+
+    def test_any_rate_difference_is_refused(self):
+        def edit(f):
+            def g(d):
+                f(d)
+                return d
+            return g
+        keys = ("input", "output", "cache_read", "cache_write_5m", "cache_write_1h")
+        cases = {}
+        for k in keys:
+            cases[f"model.{k}"] = edit(lambda d, k=k: d["models"][M].__setitem__(k, d["models"][M][k] + 0.01))
+            cases[f"other.{k}"] = edit(lambda d, k=k: d["models"]["other"].__setitem__(k, d["models"]["other"][k] + 0.01))
+            cases[f"long_context.{k}"] = edit(lambda d, k=k: d["models"][M]["long_context"].__setitem__(k, d["models"][M]["long_context"][k] + 0.01))
+            cases[f"null.{k}"] = edit(lambda d, k=k: d["models"]["other"].__setitem__(k, None))
+        cases["threshold"] = edit(lambda d: d["models"][M]["long_context"].__setitem__("threshold_input_tokens", 1001))
+        cases["no_long_context"] = edit(lambda d: d["models"][M].pop("long_context"))
+        cases["unit"] = edit(lambda d: d.__setitem__("unit", "usd_per_token"))
+        cases["aliases"] = edit(lambda d: d["aliases"].__setitem__(M, [M + "-20260102"]))
+        cases["aliases_dropped"] = edit(lambda d: d.pop("aliases"))
+        cases["source_url"] = edit(lambda d: d.__setitem__("source_url", "https://y"))
+        cases["opened"] = edit(lambda d: d.__setitem__("opened", False))
+        cases["model_added"] = edit(lambda d: d["models"].__setitem__("extra", dict(P)))
+        cases["model_removed"] = edit(lambda d: d["models"].pop("other"))
+        cases["extra_key"] = edit(lambda d: d.__setitem__("note", "x"))
+        for name, f in cases.items():
+            with self.subTest(name):
+                shutil.rmtree(self.d)
+                self.d = tempfile.mkdtemp()
+                self.pinned()
+                with self.assertRaisesRegex(spend.PriceSheetRefused, "changed mid-batch"):
+                    self.new_ledger(f(_sheet_data(self.today))).reserve("a", M, 100, 100)
+                self.assertEqual(self.conts(), [])
+                self.assertEqual(spend.Ledger._read(os.path.join(self.d, "l.jsonl"))[-1]["id"], "pre-l.jsonl")  # nothing reserved
+
+    def test_only_fetched_may_differ(self):  # the exception is exactly the 'fetched' key
+        self.pinned()
+        d = _sheet_data(self.today - timedelta(days=1))
+        self.new_ledger(d).reserve("a", M, 100, 100)
+        self.assertEqual(len(self.conts()), 1)
+
+    def test_predecessor_digest_must_equal_the_pinned_one(self):
+        self.pinned()
+        other = self.write("other.json", _sheet_data(self.old_day - timedelta(days=1)))  # same rates, other bytes
+        self.assertRefused(self.new_ledger(predecessor=other), "not the sheet this batch pinned")
+        with self.assertRaises(spend.PriceSheetRefused):  # the CURRENT sheet is not a predecessor of itself either
+            self.new_ledger(predecessor=os.path.join(self.d, "new.json")).reserve("a", M, 100, 100)
+        self.assertEqual(self.conts(), [])
+
+    def test_missing_or_unreadable_predecessor_is_refused(self):
+        self.pinned()
+        bad = os.path.join(self.d, "bad.json")
+        with open(bad, "w") as f:
+            f.write("{")
+        for pred in (os.path.join(self.d, "absent.json"), bad):
+            with self.assertRaises(spend.PriceSheetRefused):
+                self.new_ledger(predecessor=pred).reserve("a", M, 100, 100)
+        self.assertEqual(self.conts(), [])
+
+    def test_current_sheet_must_still_be_inside_the_age_window(self):
+        old = self.today - timedelta(days=9)
+        self.pinned(old=_sheet_data(old - timedelta(days=1)))
+        stale = self.new_ledger(_sheet_data(self.today))
+        stale.sheet.data["fetched"] = old.isoformat()  # the sheet's date is now outside the window; its rates are unchanged
+        self.assertRefused(stale, "days old")
+        self.assertEqual(self.conts(), [])
+        with self.assertRaises(spend.PriceSheetRefused):  # allow_expired is not a default
+            spend.PriceSheet.load(self.old_path)
+        self.assertEqual(spend.PriceSheet.load(self.old_path, allow_expired=True).data["fetched"], (old - timedelta(days=1)).isoformat())
+
+    def test_future_dated_current_sheet_is_refused(self):
+        self.pinned()
+        led = self.new_ledger()
+        led.sheet.data["fetched"] = (self.today + timedelta(days=2)).isoformat()
+        self.assertRefused(led, "days old")
+
+    def test_unused_predecessor_changes_nothing(self):
+        led = self.pinned()
+        led2 = spend.Ledger(led.path, led.sheet, batch="ep1", predecessor_sheet=self.old_path)
+        led2.reserve("a", M, 100, 100)  # the sheet did not change
+        self.assertEqual(self.conts(), [])
+
+    def forge(self, name, *lines):
+        with open(os.path.join(self.d, name), "a") as f:
+            for e in lines:
+                f.write(json.dumps({"kind": "sheet_continuity", **e}) + "\n")
+
+    def test_forged_continuity_line_in_another_file_is_not_followed(self):
+        self.pinned()
+        cheap = self.new_ledger(self.cheap(), predecessor=None)
+        self.forge("other.jsonl", {"batch": "ep1", "old_sha256": self.pin_of(), "new_sha256": cheap.sheet.sha256})
+        with self.assertRaises(spend.SpendError):  # ledger-corrupt: stopping, nothing reserved
+            cheap.reserve("a", M, 100, 100)
+        self.assertEqual([e["id"] for e in spend.Ledger._read(cheap.path) if e["kind"] == "reserve"], ["pre-l.jsonl"])
+        with self.assertRaises(spend.SpendError):  # nor does the honest sheet get past it
+            self.new_ledger().reserve("b", M, 100, 100)
+
+    def test_forged_line_in_another_file_that_has_its_own_open_is_ignored_by_totals(self):
+        self.pinned()
+        led = self.new_ledger(predecessor=None)
+        other = os.path.join(self.d, "other.jsonl")  # a second file opening ep1 on the old pin, then forging a move
+        with open(other, "w") as f:
+            f.write(json.dumps({"kind": "batch_open", "batch": "ep1", "price_sheet": {"sha256": self.pin_of()}}) + "\n")
+        self.forge("other.jsonl", {"batch": "ep1", "old_sha256": self.pin_of(), "new_sha256": led.sheet.sha256})
+        self.assertEqual(led.totals()["opens"]["ep1"], self.pin_of())  # the first file's pin stands
+        self.assertRefused(led, "no predecessor")
+
+    def test_continuity_line_before_its_batch_open_is_corrupt(self):
+        self.pinned()
+        self.forge("other.jsonl", {"batch": "ep1", "old_sha256": "a" * 64, "new_sha256": "b" * 64})
+        with self.assertRaises(spend.SpendError):
+            self.new_ledger().reserve("a", M, 100, 100)
+
+    def test_branching_continuity_is_corrupt(self):
+        led = self.pinned()
+        pin = self.pin_of()
+        self.forge("l.jsonl", {"batch": "ep1", "old_sha256": pin, "new_sha256": "b" * 64},
+                   {"batch": "ep1", "old_sha256": pin, "new_sha256": "c" * 64})
+        with self.assertRaises(spend.SpendError):
+            led.totals()
+        with self.assertRaises(spend.SpendError):
+            self.new_ledger().reserve("a", M, 100, 100)
+
+    def test_continuity_digests_must_be_64_lowercase_hex(self):
+        self.pinned()
+        pin = self.pin_of()
+        for bad in ("B" * 64, "b" * 63, "g" * 64, "", pin):  # the last: old == new
+            with self.subTest(bad=bad):
+                shutil.copy(os.path.join(self.d, "l.jsonl"), os.path.join(self.d, "keep.bak"))
+                self.forge("l.jsonl", {"batch": "ep1", "old_sha256": pin, "new_sha256": bad})
+                with self.assertRaises(spend.SpendError) as cm:  # corrupt, not merely "sheet refused"
+                    self.new_ledger().totals()
+                self.assertNotIsInstance(cm.exception, spend.PriceSheetRefused)
+                shutil.copy(os.path.join(self.d, "keep.bak"), os.path.join(self.d, "l.jsonl"))
+
+    def test_legitimate_continuity_in_the_batchs_own_file_is_followed(self):
+        led = self.pinned()
+        led.reserve("second", M, 100, 100)
+        self.new_ledger().reserve("a", M, 100, 100)
+        self.assertEqual(self.new_ledger(predecessor=None).totals()["opens"]["ep1"], spend.PriceSheet.load(os.path.join(self.d, "new.json")).sha256)
+
+    def test_corrupt_continuity_line_stops_the_ledger(self):
+        led = self.pinned()
+        self.forge("l.jsonl", {"batch": "ep1", "old_sha256": "a"})
+        with self.assertRaises(spend.SpendError):
+            led.reserve("a", M, 100, 100)
+
+    def test_continuity_for_a_batch_opened_in_another_file_is_written_into_that_file(self):
+        self.pinned(batch="canary", name="canary.jsonl")  # canary.jsonl opens canary AND its parent ep1 on the old sheet
+        self.new_ledger(batch="ep1", name="ep1.jsonl").reserve("a", M, 100, 100)
+        self.assertEqual([c["batch"] for c in self.conts("canary.jsonl")], ["ep1"])  # where ep1's batch_open lives
+        self.assertEqual(self.conts("ep1.jsonl"), [])
+        self.new_ledger(batch="ep1", name="ep1.jsonl", predecessor=None).reserve("b", M, 100, 100)
+        self.new_ledger(batch="ep1", name="third.jsonl", predecessor=None).reserve("c", M, 100, 100)
+        self.assertEqual(len(self.conts("canary.jsonl")), 1)
+        with self.assertRaisesRegex(spend.PriceSheetRefused, "changed mid-batch 'canary'"):  # the ep1 move is not the canary's
+            self.new_ledger(batch="canary", name="canary.jsonl", predecessor=None).reserve("d", M, 100, 100)
 
 
 if __name__ == "__main__":

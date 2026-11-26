@@ -111,6 +111,7 @@ def build_parser():
         g.add_argument("--base-url", help="test hook: a loopback fake server (the client refuses any other host)")
         g.add_argument("--ledger-dir", help="test hook, with --base-url only")
         g.add_argument("--price-sheet", help="test hook")
+        g.add_argument("--predecessor-price-sheet", help="the older price sheet an open batch pinned; accepted only when its rates equal the current sheet's (sheet_continuity)")
     an = es.add_parser("analyse", help="report for an EP-1 or pilot output directory")
     an.add_argument("outdir")
     return ap

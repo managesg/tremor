@@ -939,6 +939,46 @@ class CliTests(Base):
         rc, text = self.run_cli(["ep1", "analyse", os.path.join(self.d, "p")])
         self.assertEqual(rc, 0)
 
+    def _continuity_cli(self, extra):
+        """A real `ep1 run` on a loopback ledger whose ep1 batch pinned an OLDER (expired) sheet with identical rates."""
+        from datetime import date, timedelta
+        with open(os.path.join(self.d, "ps.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        old_day = date.fromisoformat(data["fetched"]) - timedelta(days=6)
+        data["fetched"] = old_day.isoformat()
+        old = os.path.join(self.d, "old-ps.json")
+        with open(old, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        spend.Ledger(os.path.join(self.ldir, "ep1.jsonl"), spend.PriceSheet.load(old, today=old_day), batch="ep1") \
+            .reserve("pre", ep1.MODEL, 100, 100)
+        reserved = []
+
+        def fake_run(kind, cl, led, seed, out, dry_run=False, review=None):
+            reserved.append(led.reserve("c1", ep1.MODEL, 100, 100))
+            return {"ok": True}
+        args = ["ep1", "run", "--out-dir", os.path.join(self.d, "z"), "--i-have-owner-confirm", "--base-url", "http://127.0.0.1:9",
+                "--ledger-dir", self.ldir, "--price-sheet", os.path.join(self.d, "ps.json"), "--review", self.review]
+        with mock.patch.object(ep1, "run_batch", fake_run):
+            rc, text = self.run_cli(args + [x.replace("OLD", old) for x in extra], {ep1.KEY_ENV: KEY})
+        lines = spend.Ledger._read(os.path.join(self.ldir, "ep1.jsonl"))
+        return rc, text, reserved, [e for e in lines if e["kind"] == "sheet_continuity"]
+
+    def test_predecessor_price_sheet_flag_continues_a_batch_pinned_to_an_equal_older_sheet(self):
+        rc, text, reserved, conts = self._continuity_cli(["--predecessor-price-sheet", "OLD"])
+        self.assertEqual(rc, 0, text)
+        self.assertEqual(len(reserved), 1)
+        self.assertEqual([c["batch"] for c in conts], ["ep1"])
+
+    def test_without_the_predecessor_flag_the_changed_sheet_is_still_refused(self):
+        rc, text, reserved, conts = self._continuity_cli([])
+        self.assertEqual(rc, 2, text)
+        self.assertIn("changed mid-batch", text)
+        self.assertEqual((reserved, conts), ([], []))
+
+    def test_predecessor_flag_has_no_default(self):
+        ns = cli.build_parser().parse_args(["ep1", "run", "--out-dir", "x"])
+        self.assertIsNone(ns.predecessor_price_sheet)
+
     def test_ledger_dir_alone_is_refused(self):
         rc, text = self.run_cli(["ep1", "run", "--out-dir", os.path.join(self.d, "z"), "--i-have-owner-confirm",
                                  "--ledger-dir", self.ldir], {ep1.KEY_ENV: KEY})

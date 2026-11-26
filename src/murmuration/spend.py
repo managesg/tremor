@@ -33,6 +33,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import threading
 import time
 from contextlib import contextmanager
@@ -43,6 +44,7 @@ import fcntl
 KEYS = ("input", "output", "cache_read", "cache_write_5m", "cache_write_1h")
 USAGE_FIELDS = ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 MAX_AGE_DAYS = 3
+_HEX64 = re.compile(r"[0-9a-f]{64}")
 HARD_CAP_USD = 10.0  # owner ceiling; never read from an argument
 DEFAULT_CEILING = 9.00  # default per LEDGER FILE; the program-wide ceiling is HARD_CAP_USD
 MAX_TOKENS_LIMIT = 64_000
@@ -161,12 +163,19 @@ def _check_prices(model, p):
         raise PriceSheetRefused(f"price sheet has non-finite or negative {bad} for {model!r}")
 
 
+def _check_age(fetched, today, max_age_days):
+    age = ((today or datetime.now(timezone.utc).date()) - fetched).days
+    if age > max_age_days or age < 0:
+        raise PriceSheetRefused(f"price sheet fetched {fetched} is {age} days old (limit {max_age_days})")
+
+
 class PriceSheet:
     def __init__(self, data, sha256):
-        self.data, self.sha256 = data, sha256
+        self.data, self.sha256, self.today = data, sha256, None
 
     @classmethod
-    def load(cls, path, today=None, max_age_days=MAX_AGE_DAYS):
+    def load(cls, path, today=None, max_age_days=MAX_AGE_DAYS, allow_expired=False):
+        """allow_expired skips ONLY the age check; it exists for the predecessor sheet of a sheet_continuity (see Ledger)."""
         try:
             with open(path, "rb") as f:
                 raw = f.read()
@@ -185,10 +194,15 @@ class PriceSheet:
                 _check_prices(name, m["long_context"])
                 if not _pos_int(m["long_context"].get("threshold_input_tokens")):
                     raise PriceSheetRefused(f"bad long_context threshold for {name!r}")
-        age = ((today or datetime.now(timezone.utc).date()) - fetched).days
-        if age > max_age_days or age < 0:
-            raise PriceSheetRefused(f"price sheet fetched {fetched} is {age} days old (limit {max_age_days})")
-        return cls(data, hashlib.sha256(raw).hexdigest())
+        if not allow_expired:
+            _check_age(fetched, today, max_age_days)
+        sheet = cls(data, hashlib.sha256(raw).hexdigest())
+        sheet.today = today
+        return sheet
+
+    def check_age(self, today=None, max_age_days=MAX_AGE_DAYS):
+        """The load-time check again, against the same `today` the sheet was loaded with (None: the clock)."""
+        _check_age(date.fromisoformat(self.data["fetched"]), today or self.today, max_age_days)
 
     def expires_on(self):
         return date.fromisoformat(self.data["fetched"]) + timedelta(days=MAX_AGE_DAYS)
@@ -242,7 +256,7 @@ def _prompt_tokens(u):
 
 
 class Ledger:
-    def __init__(self, path, sheet, ceiling=DEFAULT_CEILING, max_calls=None, batch=None):
+    def __init__(self, path, sheet, ceiling=DEFAULT_CEILING, max_calls=None, batch=None, predecessor_sheet=None):
         if not path:
             raise SpendError("a spend ledger path is required")
         if not (_num(ceiling) and 0 < ceiling <= HARD_CAP_USD):
@@ -253,6 +267,7 @@ class Ledger:
         if batch is not None and batch not in BATCH_SPECS:
             raise SpendError(f"unknown batch {batch!r}")
         self.path, self.sheet, self.ceiling, self.max_calls, self.batch = path, sheet, float(ceiling), max_calls, batch
+        self.predecessor_sheet = predecessor_sheet  # PATH of the sheet an already-open batch pinned, for sheet_continuity only
         self.lock_timeout = LOCK_TIMEOUT
         self.dir = os.path.dirname(os.path.abspath(path))
         os.makedirs(self.dir, mode=0o700, exist_ok=True)
@@ -325,10 +340,10 @@ class Ledger:
         """This ledger file's entries (public read for drivers)."""
         return self._read(self.path)
 
-    def _append(self, entry):
+    def _append(self, entry, path=None):
         # one O_APPEND write of one line: a stopped run never leaves a torn line mid-file
         data = (json.dumps(entry, sort_keys=True, allow_nan=False) + "\n").encode()
-        fd = os.open(self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        fd = os.open(path or self.path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         try:
             os.write(fd, data)
             os.fsync(fd)
@@ -360,6 +375,15 @@ class Ledger:
                 over = True
             elif e["kind"] == "batch_open":
                 opens.setdefault(e.get("batch"), (e.get("price_sheet") or {}).get("sha256"))
+            elif e["kind"] == "sheet_continuity":
+                # valid only AFTER this same file's batch_open of that batch and only from the digest pinned at that point
+                # (so a line in any other file, before the open, or branching from an old digest is corrupt, never followed)
+                b, old, new = e.get("batch"), e.get("old_sha256"), e.get("new_sha256")
+                if not (isinstance(b, str) and all(isinstance(x, str) and _HEX64.fullmatch(x) for x in (old, new)) and old != new):
+                    raise SpendError("corrupt sheet_continuity entry: stopping")
+                if opens.get(b) != old:
+                    raise SpendError("corrupt sheet_continuity entry (not after its batch_open or not from the pinned digest): stopping")
+                opens[b] = new
             elif e["kind"] == "batch_stop":
                 stops.append((e.get("batch"), e.get("reason")))
         spent = sum(charged.values()) + sum(v for k, v in reserved.items() if k not in charged)
@@ -404,20 +428,22 @@ class Ledger:
         """This ledger file's totals, plus global_usd/overspent across every ledger file in the directory."""
         own = self._sum(self._lines())
         files = self._files()
-        others = [self._sum(self._read(f)) for f in files if os.path.abspath(f) != os.path.abspath(self.path)]
+        ofiles = [f for f in files if os.path.abspath(f) != os.path.abspath(self.path)]
+        others = [self._sum(self._read(f)) for f in ofiles]
         own["global_usd"] = own["spent_usd"] + sum(o["spent_usd"] for o in others)
         own["overspent"] = own["overspent"] or any(o["overspent"] for o in others)
-        bt, opens, stops = {}, {}, list(own["stops"])
-        for x in [own] + others:  # batches are counted across EVERY file of the directory
+        bt, opens, stops, open_files = {}, {}, list(own["stops"]), {}
+        for x, f in zip([own] + others, [self.path] + ofiles):  # batches are counted across EVERY file of the directory
             for n, a in x["batches"].items():
                 b = bt.setdefault(n, dict.fromkeys(a, 0))
                 for k in a:
                     b[k] += a[k]
             for n, sha in x["opens"].items():
-                opens.setdefault(n, sha)
+                if n not in opens:  # the first file's batch_open is the pin's source; continuity is read from that file only
+                    opens[n], open_files[n] = sha, f
         for o in others:
             stops += o["stops"]
-        own["batches"], own["opens"], own["stops"] = bt, opens, stops
+        own["batches"], own["opens"], own["stops"], own["open_files"] = bt, opens, stops, open_files
         return own
 
     def _batch_total(self, t, name):
@@ -442,12 +468,12 @@ class Ledger:
             ok = BATCH_SPECS[self.batch].get("settled_reasons", SETTLED_REASONS)
             if not why or any(r not in ok for r in why) or _stops_in_scope(t["stops"], need):
                 raise BatchStopped(f"batch {self.batch!r} cannot open until {need!r} has settled ({' or '.join(ok)})")
-        to_open = []
+        to_open, moves = [], []
         for n in lin:
             sp, tot = BATCH_SPECS[n], self._batch_total(t, n)
             if n in t["opens"]:
                 if t["opens"][n] != sha:
-                    raise PriceSheetRefused(f"price sheet changed mid-batch {n!r}")
+                    moves.append((t["open_files"][n], self._continuity(n, t["opens"][n], sha)))
             else:
                 to_open.append(n)
             if not (tot["calls"] + 1 <= sp["calls"]):
@@ -456,7 +482,29 @@ class Ledger:
                 raise SpendCeilingExceeded(f"batch {n!r}: spent {tot['usd']:.4f} + worst case {worst:.4f} would cross {sp['usd']:.2f} USD")
             if not (tot["tokens"] + tok <= sp["tokens"]):
                 raise SpendCeilingExceeded(f"batch {n!r}: {tot['tokens']} tokens + worst case {tok} would cross {sp['tokens']}")
-        return to_open
+        return to_open, moves
+
+    def _continuity(self, n, pinned, sha):
+        """The sheet_continuity entry for batch n, or PriceSheetRefused. Accepted only when the predecessor file hashes to the
+        digest the batch pinned, and the two sheets are identical in every key but 'fetched' (so every rate, tier, unit and
+        alias), and the current sheet is within its age window. Anything else is today's refusal."""
+        why = "no predecessor price sheet given"
+        if self.predecessor_sheet is not None:
+            try:
+                old = PriceSheet.load(self.predecessor_sheet, allow_expired=True)
+                if old.sha256 != pinned:
+                    why = "predecessor sheet is not the sheet this batch pinned"
+                elif {k: v for k, v in old.data.items() if k != "fetched"} != {k: v for k, v in self.sheet.data.items() if k != "fetched"}:
+                    why = "predecessor and current sheets differ beyond 'fetched'"
+                else:
+                    self.sheet.check_age()
+                    return {"kind": "sheet_continuity", "batch": n, "old_sha256": pinned, "new_sha256": sha,
+                            "old_fetched": old.data["fetched"], "new_fetched": self.sheet.data["fetched"]}
+            except PriceSheetRefused as e:
+                why = str(e)
+        err = PriceSheetRefused(f"price sheet changed mid-batch {n!r}")  # the original text; the reason rides on .reason
+        err.reason = why
+        raise err
 
     def estimate(self, model, usage):
         """USD for one response's usage block. Thinking tokens are billed inside output_tokens."""
@@ -510,7 +558,10 @@ class Ledger:
                     f"all ledgers {t['global_usd']:.4f} + worst case {worst:.4f} would cross the owner cap {HARD_CAP_USD:.2f} USD")
             tag = {}
             if self.batch is not None:
-                for n in self._check_batch(t, worst, input_tokens_ub + max_tokens, self.sheet.sha256):
+                to_open, moves = self._check_batch(t, worst, input_tokens_ub + max_tokens, self.sheet.sha256)
+                for path, m in moves:  # into the file that holds that batch's own batch_open
+                    self._append(m, path)
+                for n in to_open:
                     self._append({"kind": "batch_open", "batch": n, "price_sheet": self.sheet.source()})
                 tag = {"batch": self.batch}
             self._append({"kind": "reserve", "id": call_id, "model": model, "worst_usd": worst,

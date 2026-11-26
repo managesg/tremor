@@ -776,7 +776,8 @@ def cli(a):
         _check_freeze()  # Before the Ledger constructor can create its directory.
     try:
         sheet = spend.PriceSheet.load(a.price_sheet or PRICE_SHEET)
-        led = spend.Ledger(os.path.join(a.ledger_dir or spend.PILOT_LEDGER_DIR, f"{kind}.jsonl"), sheet, batch=kind)
+        led = spend.Ledger(os.path.join(a.ledger_dir or spend.PILOT_LEDGER_DIR, f"{kind}.jsonl"), sheet, batch=kind,
+                           predecessor_sheet=getattr(a, "predecessor_price_sheet", None))
         if a.base_url:  # test hook: the client itself refuses any non-loopback host other than api.anthropic.com
             from urllib.parse import urlsplit
             cl = bc.ClaudeClient(key, led, a.base_url, allow_host=urlsplit(a.base_url).hostname)
@@ -784,6 +785,6 @@ def cli(a):
             cl = bc.ClaudeClient(key, led)
         out = run_batch(kind, cl, led, a.schedule_seed, a.out_dir, dry_run=bool(a.base_url), review=a.review)
     except (spend.SpendError, bc.EpisodeVoided, bc.EpisodeCapExceeded) as e:
-        raise ValueError(f"refused: {type(e).__name__}: {e}") from None
+        raise ValueError(f"refused: {type(e).__name__}: {e}" + (f" [{e.reason}]" if getattr(e, "reason", None) else "")) from None
     print(json.dumps(out, sort_keys=True, indent=1, default=str))
     return 0
