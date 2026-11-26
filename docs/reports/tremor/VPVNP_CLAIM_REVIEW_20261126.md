@@ -209,3 +209,7 @@ Needing a human expert:
 9. **Do not use T1-T3 results as evidence about the theorem.** They measure agents.
 
 Not checked: Appendices A-C, E-J, O, P beyond headings; the sealed keyword lists; `IsCycleOn Set.univ` in Mathlib; any citation.
+
+## Addendum 2026-11-26: what could and could not be checked offline
+
+Checked (regex over the extracted text, an internal-consistency check only, not a verification of any source): all 76 distinct citation keys used in the text before the bibliography appear in the bibliography (127 entries); 51 bibliography entries are not matched by the regex in the text (formatting may hide some). The bibliography has 8 entries dated 2026 that we cannot verify: `Cur26`, `Guo26`, `KV26`, `OAI26`, `Raz26`, `She26`, `She26b`, `WZ26`. The text cites `[Str88, WZ26]` for the variant of Strassen's asymptotic spectrum from which the paper's "spectral points" come, so a central tool of the argument rests on a 2026 work we have not seen. Not checked, and not checkable from here: the Lean repository (needs the owner's yes/no for a read-only shallow clone), the OpenAI manuscript (the paper's reference `OAI26` describes it as a manuscript on the border determinantal complexity of the permanent with a cubic lower bound, which differs from the owner's description of an OpenAI paper "VP and VNP are different"; no URL was given), the independent audit (no URL), every citation's content, and the proof. Only the paper's own caveats are safe to quote.
