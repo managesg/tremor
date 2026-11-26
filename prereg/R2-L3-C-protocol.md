@@ -16,13 +16,15 @@ text says OPEN and section 14 names the decision and its owner.
 | Key | File | State when read |
 |---|---|---|
 | SC | `prereg/R2-L2-L3-L4-scope.md` | committed (`d4b1f91`) |
-| RR | `docs/reports/workplan-ep/R2-R4-protocol-readiness.md` | **untracked**; sha256 `1352e8941da7e699f81153461a46ba1cf717fb41aa55260ebf771e49087b5db6` |
+| RR | `docs/reports/workplan-ep/R2-R4-protocol-readiness.md` | tracked (`f791802`); sha256 `1352e8941da7e699f81153461a46ba1cf717fb41aa55260ebf771e49087b5db6` |
 | P | `docs/PROPOSAL-RESIDENCY-V3.md` | committed text at HEAD `86e97d5` (same as at `d4b1f91`). The working tree has uncommitted edits that shift lines after P:585; line numbers here are the committed ones |
 | W | `docs/WORKPLAN-RESIDENCY-V3.md` | committed |
 | AP | `docs/reports/ep-approvals.md` | D1 at AP:166 |
 | ADM | `docs/reports/tremor/OWNER_DECISION_protected_admissions_M3R3_M4_M9.md` | as read |
-| RC | `docs/reports/workplan-ep/R1-readout-controls.md` | **untracked** |
+| RC | `docs/reports/workplan-ep/R1-readout-controls.md` | tracked (`c0daf55`) |
 | code | `src/murmuration/{monsel,susceptibility,nulls,readouts}.py` | candidate commit `f62cfe1`; working tree identical for these four files |
+| DL | `docs/reports/tremor/DECISION_LOG.md` | tracked; DL:242 says a freeze pins a commit at or after `c0daf55`, not `f62cfe1` |
+| harness | `lab/l3c_harness.py` | commit `1dabf53`; `null_loss_ratio` is being added by another worker and is not yet here |
 
 ## 2. Hypothesis and the single primary endpoint
 
@@ -33,15 +35,20 @@ ensemble's loss and beats conservative aggregation (P:459-462; RR:20).
 **Single primary endpoint.** The loss of ensemble catch rate under the registered
 selection-pressure condition, compared between the rotating-view arm and the fixed-view arm
 (RR:20): loss(rotating) divided by loss(fixed), with its 95% cluster-bootstrap interval (P:179,
-P:184-185). The proposal expects that ratio to be at most one half (P:461).
+P:184-185). The proposal expects that ratio to be at most one half (P:461). Because best-of-16
+selection can itself produce a ratio below one half (P:172-174), the primary must also sit below
+the pressured null ratio (section 9 step 5).
 
 Prediction C is a conjunction. This draft registers the two per-view clauses (at least 30 points,
-at most 10) as a manipulation check that selection pressure exists, and "beats conservative
-aggregation" as a key secondary contrast, read as an intersection-union conjunct with no multiplicity adjustment (P:236-237; RR:45;
-DECISION_LOG 2026-11-25). "Supported" requires all clauses (CLOSED, L3-O2).
+at most 10) as a manipulation check that selection pressure exists. "Beats conservative
+aggregation" is a conjunct only if the harness defines the conservative arm as a rule distinct from
+the fixed arm (section 3); otherwise it is dropped from the conjunction with the reason recorded at
+the freeze. "Supported" requires the remaining clauses and the null condition of section 10
+(CLOSED, L3-O2, as amended in "Review fixes 2026-11-25").
 
 Prediction A is secondary (P:457-458). Prediction B is secondary unless section 16 makes it
-primary.
+primary. The Holm family is {A, B, rotation against one random view per decision}: three tests
+(section 9 step 4).
 
 ## 3. Arms and matched comparators
 
@@ -52,7 +59,7 @@ is charged to the arms that use it (P:193-194).
 |---|---|
 | Rotating hidden view on the selected ensemble (technique) | P:445-448; RR:20 |
 | Fixed views on the same selected ensemble (reference for the primary) | RR:20 |
-| Conservative aggregation | P:453-454; RR:20 |
+| Conservative aggregation | P:453-454; RR:20. In the harness at `1dabf53` it equals the fixed arm, so a contrast against it is vacuous (section 9 step 4) |
 | One randomly sampled view per decision | P:454; RR:20 |
 | Top k by individual catch rate | P:452; RR:20 |
 | Random k | P:452; RR:20 |
@@ -113,8 +120,8 @@ with no offensive or harmful content (AP:166), ratified by the owner for L3-C (S
 4. **Loss per arm.** catch without pressure minus catch under pressure.
 5. **Primary.** loss(rotating) / loss(fixed), reruns averaged within chain first.
 
-Supporting readouts: `susceptibility.pairwise_miss` for the joint-miss matrix, phi and Kish n_eff
-(`readouts.py:105-125`), and `susceptibility.kish_spread_check` for the spread of phi
+Supporting readouts: `readouts.pairwise_miss` (`readouts.py:105`) for the joint-miss matrix, phi and
+Kish n_eff (`readouts.py:105-125`), and `susceptibility.kish_spread_check` for the spread of phi
 (`susceptibility.py:131-171`; P:195-198). Both take a list of rows, not the dict `monsel` takes.
 
 Gaps in the candidate code: `monsel` has no function for best-of-N selection, for conservative
@@ -122,21 +129,30 @@ aggregation, or for the loss ratio. These need a harness and tests before a free
 monitor operating point for C is not stated in the repo (L3-O9); the 5% false-positive rate belongs
 to prediction B (P:458-459).
 
+**Pressure form (OPEN, L3-O3).** The proposal states the pressure against one toy monitor (P:460),
+but the harness at `1dabf53` scores each candidate by its summed misses over the visible views, not
+against one monitor. Which form is registered must be closed before the freeze. Until then the
+manipulation check (per-view change in catch rate under selection, section 9 step 2) cannot be
+computed, because "the selected-against monitor" is undefined.
+
 ## 7. Minimum effect and margin
 
 - Rotation halves the ensemble's loss (P:461; RR:20).
 - Manipulation check: the selected-against monitor falls by at least 30 points and a hidden view by
-  at most 10 (P:460-461).
+  at most 10 (P:460-461). Computable only once L3-O3 fixes the pressure form (section 6).
 - Kill bounds: views degrade within 10 points of each other; weak local monitors catch under 20% at
-  every setting (P:467-470).
+  every setting (P:467-470). Both interval readings are defined in section 10.
 
 Thresholds are proposals; the pre-registration fixes them after the variance pilot (P:231). The
 proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
 
 ## 8. Sample size, power and stopping
 
-- **Rule.** n is set so the standard error of the primary contrast is at most min(K, E − K)/2.8,
-  which gives 80% power to support at E and to kill at zero (P:181-183; W:182-185). Raw counts are
+- **Rule.** Work on the effect scale, effect = 1 − ratio, so the registered effect is E = 0.5 (a
+  ratio of one half) and the kill bound K is a number on that scale. n is set so the standard error
+  of the effect is at most min(K, E − K)/2.8, which gives 80% power to support at E and to kill at
+  zero (P:181-183; W:182-185). The rule is not applied to the ratio itself. The bootstrap interval of
+  the ratio maps to an interval of the effect. Raw counts are
   divided by the design effect 1 + (m − 1)·ICC from the pilot (P:186-188).
 - **n is OPEN (L3-O10).** E is the halving (P:461); K is not given; no variance or discordance
   pilot is released (ADM:136).
@@ -156,22 +172,37 @@ proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
 
 ## 9. Analysis plan
 
-1. Average reruns within chain, then the cluster bootstrap over chains (P:179; RR:43).
+1. Average reruns within chain, then the cluster bootstrap over chains (P:179; RR:43). Frozen
+   bootstrap spec: percentile method on the ratio; resample count B is OPEN (L3-O17, no number
+   invented); the seed for each task is derived as sha256 of `tag:seed:task`, with `tag` the
+   registered bootstrap label and `seed` the seed-map entry (L3-O7); the code and seed are in the
+   freeze record. Resamples with loss(fixed) <= 0 are excluded and counted; if the excluded share
+   exceeds a cap (OPEN, L3-O17), the result is inconclusive.
 2. **Manipulation check.** Per-view change in catch rate under selection, against the 30-point and
    10-point clauses (P:460-461).
 3. **Primary.** 95% interval of loss(rotating) / loss(fixed) against one half (P:461, P:184-185).
    If loss(fixed) has an interval that includes zero the ratio is undefined and the primary is
    reported as not testable; the handling rule is part of L3-O10.
-4. **Key secondaries** (P:236-237; RR:45): rotation against conservative
-   aggregation is a conjunct of C (intersection-union, no adjustment); rotation against one random view
-   per decision (P:468-469) is the only other secondary, so a Holm family of size one applies: no adjustment.
+4. **Secondaries and multiplicity.** The Holm family is {prediction A, prediction B, rotation
+   against one random view per decision (P:468-469)}: three tests, Holm-adjusted (P:236-237). RR:45
+   is not cited for any "no adjustment" claim. **Conservative aggregation:** while the harness
+   conservative arm equals the fixed arm, "rotation beats conservative aggregation" is vacuous and
+   cannot be tested. At the freeze it is either (a) defined in the harness as a rule distinct from
+   P:453-454 and kept as an intersection-union conjunct of C, outside the Holm family, or (b)
+   dropped from the conjunction with the reason recorded. The protocol accepts either; the choice
+   and its reason are recorded at the freeze (L3-O18).
 5. **Null comparison.** `nulls.correlated_monitors(m, p, c)` returns the exact probability that all
    m views miss, the pairwise joint miss and phi under a common-cause model (`nulls.py:134-146`,
    `:8-9`). Null ensemble catch is 1 minus `all_miss`. The views in this null are exchangeable and
    nothing adapts to a selector, so the null predicts no difference between rotating and fixed
    views. The observed loss ratio is reported next to that null, with p and c fitted on the
-   calibration set; the fitting rule is CLOSED (L3-O12, two-moment fit). If scripted monitors reproduce the observed
-   curve, the result is a property of the loop and is reported as such (P:172-174).
+   calibration set; the fitting rule is CLOSED (L3-O12, two-moment fit). **Pressured null ratio:**
+   the harness function `null_loss_ratio` (being added by another worker; named here, not
+   implemented here) runs the same comparison, including best-of-16 selection, on pools drawn from
+   the fitted (p, c), and returns the null loss ratio with its own 95% interval by the same
+   bootstrap. If the observed interval is not below the null ratio, the result is a property of the
+   selection loop and is reported as such (P:172-174) and as not supported. If the null is not
+   fitted (D4), the condition cannot be met and the outcome is inconclusive.
 6. Report the joint miss table and paired discordance (RR:20), Kish n_eff with the phi spread
    (P:195-198), and the tetrachoric correlation beside phi (P:432-433).
 
@@ -179,15 +210,23 @@ proposal gives no numeric kill bound K for the loss ratio itself. OPEN (L3-O10).
 
 By where the 95% interval falls (P:184-185):
 
-- **Supported:** the interval of the loss ratio lies at or below one half (P:461). Conjunction
-  with the other clauses: L3-O2.
+- **Supported:** the 95% interval of loss(rotating) / loss(fixed) lies at or below one half
+  (P:461) AND lies below the pressured null ratio of section 9 step 5, and the manipulation check
+  and any conservative-aggregation conjunct held (section 9 step 4). If the interval is not below
+  the null, the result is a property of the selection loop and is reported as not supported.
 - **Killed** (P:467-470), any one of:
-  - views degrade within 10 points of each other;
-  - rotation does no better than conservative aggregation or than sampling one view per decision;
+  - views degrade within 10 points of each other, meaning the 95% interval of the largest
+    between-view difference in degradation lies within 10 points;
+  - rotation does no better than sampling one view per decision, or than conservative aggregation if
+    that conjunct is kept, meaning the 95% interval of the paired difference in loss includes zero or
+    favours the comparator;
   - weak local monitors catch under 20% at every setting, so there is nothing to degrade.
+- **Kill wins.** If a kill criterion and "supported" both apply, the kill wins and the result is
+  reported as not supported.
 - **Inconclusive:** otherwise, including any outcome marked unreachable at freeze (P:964-965).
 
-The proposal says the last kill is likely on the local tier (P:470-472). The tiers and settings
+The proposal says the last kill is likely on the local tier (P:470-472). "Within 10 points" and
+"does no better" are interval statements as above, not point comparisons. The tiers and settings
 that "every setting" ranges over are OPEN (L3-O13).
 
 ## 11. Pre-run sanity checks
@@ -240,8 +279,8 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 | ID | Decision still needed | Owner |
 |---|---|---|
 | L3-O1 | The primary lock of section 16: a written statement that C is not declined, or a decline that makes B primary | Owner |
-| L3-O2 | **CLOSED(decision):** "supported" requires every clause of C (see Decisions since drafting, D1) | Freeze confirms |
-| L3-O3 | The registered selection rule: what the output selector sees in the fixed arm, and the definition of the selection-pressure condition | Line author; independent reviewer checks it stays inside P:982 |
+| L3-O2 | **CLOSED(decision), amended:** "supported" requires the clauses in section 10 (D1 and Review fixes) | Freeze confirms |
+| L3-O3 | The registered selection rule: what the output selector sees in the fixed arm, and the pressure form (one toy monitor per P:460, or summed misses over visible views as in the harness). The manipulation check cannot be computed until this closes | Line author; independent reviewer checks it stays inside P:982 |
 | L3-O4 | **CLOSED(decision):** all arms of the section 3 table, at equal calls (D3) | Independent reviewer checks at freeze |
 | L3-O5 | k, the view definitions and the call budget per arm (RR:20) | Line author |
 | L3-O6 | How the failure and clean pools are generated, their sizes, and the exact toy stand-in | Line author writes; custodian seals |
@@ -252,9 +291,11 @@ Memory and runtime per line: no figure in the repo (ADM:107). Only the owner cha
 | L3-O11 | **CLOSED(decision):** fixed n, one analysis, no interim look (D2) | Owner approves at freeze |
 | L3-O12 | **CLOSED(decision):** two-moment fit on the calibration set (D4) | Freeze confirms |
 | L3-O13 | Model tiers and snapshots, task-family revision, team size | Owner (tiers and spend); line author |
-| L3-O14 | RR and RC are untracked. A freeze must pin a committed or closure-archived tree (ADM:27) | Owner approves the commit; integration owner makes it |
+| L3-O14 | RR and RC are tracked (`f791802`, `c0daf55`). A freeze must pin a commit at or after `c0daf55` (DL:242) and the harness at `1dabf53` (ADM:27) | Owner approves the commit; integration owner makes it |
 | L3-O15 | No native launch entry point exists for this batch (ADM:26, ADM:91) | Line author builds; owner admits |
 | L3-O16 | Independent review of this protocol (SC:39) | Independent reviewer |
+| L3-O17 | Bootstrap resample count B and the cap on the excluded share (loss(fixed) <= 0); no number is in the repo | Line author; reviewer checks |
+| L3-O18 | Conservative arm: define distinct from P:453-454 in the harness, or drop from the conjunction; record the reason | Line author; recorded at freeze |
 
 ## 15. What the freeze record must contain
 
@@ -275,6 +316,11 @@ Per RR:48-52 and SC:35-39:
 7. Approval and review evidence, quoted exactly (RR:50-51), including the independent review
    (SC:39).
 8. The D1 basis (AP:166) and its ratification (SC:31).
+9. The null-ratio procedure (`null_loss_ratio`, its fitted (p, c) and pool draws), the bootstrap
+   code and seed derivation (section 9 step 1), and the harness commit (`1dabf53` or later).
+10. The owner lock line of section 16 and the custodian attestation that pools were sealed and
+    unread at the lock time.
+11. The conservative-arm choice (L3-O18) and the pressure form (L3-O3).
 
 A freeze is a pre-registration. It does not authorise a GPU run; each batch needs its own admission
 (ADM:89).
@@ -307,8 +353,8 @@ outcome is seen (SC:21-22; P:462; RR:57; W:50-51). The lock works as follows.
 ## Decisions since drafting (2026-11-24, line author under OD4; the freeze confirms or replaces them)
 
 Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided under OD4" (`628f9b4`) and "L3-C harness definitions" (`1dabf53`).
-- **C or B:** C, locked before any outcome (section 16).
-- **Conjunction rule:** both conjuncts must hold (an intersection-union test, each reported separately).
+- **C or B:** C, recommended; owner lock pending (L3-O1) (section 16).
+- **Conjunction rule:** the conjuncts that remain must all hold (an intersection-union test, each reported separately); see "Review fixes 2026-11-25" for the amended conjunction.
 - **Harness (`lab/l3c_harness.py`):** the offline harness covers steps 1-5. Its definition choices (selector, fixed arm, per-task rotation seed, conservative arm, loss as a difference) are recorded in the decision log as proposals for the open items L3-O3, L3-O4, L3-O7 and L3-O8. L3-O8 is built; the others still need the freeze to confirm them.
 - **Still OPEN:** the operating point (L3-O9), the near-zero-loss rule (L3-O10), the seed map and every other item in section 14 that is not listed above.
 
@@ -316,12 +362,29 @@ Source: `docs/reports/tremor/DECISION_LOG.md`, "parked owner-yes items decided u
 
 Method rules only; no number is set. The freeze confirms or replaces each. Source for D1 and D2: `docs/reports/tremor/DECISION_LOG.md`, "2026-11-25: M4 rule-type OPEN items closed".
 
-- **D1, L3-O2 (CLOSED).** "Supported" requires every clause of C: the loss ratio at or below one half, the manipulation check, and rotation beating conservative aggregation. This is an intersection-union test, each clause reported separately, no multiplicity adjustment. The clause "beats conservative aggregation" is therefore a conjunct as well as a key secondary; no Holm correction governs the conjunct (DECISION_LOG 2026-11-25: intersection-union, no multiplicity adjustment); section 9 step 4 is updated to match (line author under OD4, 2026-11-25; the freeze confirms or replaces it). Source: P:459-462 ("and"); DECISION_LOG 2026-11-24 OD4 table row "L2-C and L3-C conjunctions".
+- **D1, L3-O2 (CLOSED).** "Supported" requires every clause of C: the loss ratio at or below one half, the manipulation check, and rotation beating conservative aggregation. This is an intersection-union test, each clause reported separately. **Amended 2026-11-25 (see Review fixes):** the conservative-aggregation clause is a conjunct only if distinct from the fixed arm, the null-ratio condition is added, and the Holm family is {A, B, rotation vs one random view}; section 9 step 4 is updated to match (line author under OD4, 2026-11-25; the freeze confirms or replaces it). Source: P:459-462 ("and"); DECISION_LOG 2026-11-24 OD4 table row "L2-C and L3-C conjunctions".
 - **D2, L3-O11 (CLOSED).** Fixed n, one analysis, no interim look at arm outcomes (section 8 draft default adopted). Source: DECISION_LOG 2026-11-25 row "L2-O11, L3-O11, L4-O11"; the proposal gives no sequential design. The size n stays OPEN under L3-O10.
 - **D3, L3-O4 (CLOSED).** The arm list is the section 3 table in full: RR:20's arms plus the P:452-455 baselines (all views, Koran rule, Jha split, majority-vote panel), all at equal monitor calls (P:451-452). Only the rotating-versus-fixed ratio is primary; the key secondaries stay as in section 9 step 4 and the other arms are descriptive, with no test. Source: P:451-455 lists them as baselines "at equal monitor calls"; RR:20 requires "the registered selection rules". The independent reviewer (L3-O16) checks the list.
-- **D4, L3-O12 (CLOSED).** Fit `correlated_monitors(m=k, p, c)` by matching two moments of the selected ensemble S on the calibration failure set: q is the mean per-view miss rate and j the mean pairwise joint miss over the k(k-1)/2 pairs. Then 1-c = (1-q)^2 / (1 + j - 2q) and p = (q-c)/(1-c), the closed form of the model at `nulls.py:8-9` (checked on one exact case). If 1 + j - 2q is 0 or j < q^2 (negative phi), c would leave [0,1]: report "null not fitted" and give no null comparison. No calibration or assessment data is touched by the rule itself.
+- **D4, L3-O12 (CLOSED).** Fit `correlated_monitors(m=k, p, c)` by matching two moments of the selected ensemble S on the calibration failure set: q is the mean per-view miss rate and j the mean pairwise joint miss over the k(k-1)/2 pairs. Then 1-c = (1-q)^2 / (1 + j - 2q) and p = (q-c)/(1-c), the closed form of the model at `nulls.py:8-9` (checked on one exact case). D4 requires k >= 2 (`nulls.py:136`). If 1 + j - 2q is 0 or j < q^2 (negative phi), c would leave [0,1]: report "null not fitted" and give no null comparison. No calibration or assessment data is touched by the rule itself.
 - **Sub-rule recorded under L3-O10 (item stays OPEN).** The near-zero-loss rule needs no number: if the 95% interval of loss(fixed) includes 0, the ratio is reported as not testable (section 9 step 3) and the line outcome is inconclusive, never supported. K, n, ICC and reachable outcomes still need the unreleased pilot.
 - **Sub-rule recorded under L3-O3 (item stays OPEN).** The fixed arm's selector sees all selected views (DECISION_LOG 2026-11-24 harness definitions; P:446-447 hides a view only in the rotating arm). The pressure condition (which monitor is selected against, and the per-monitor form) is still undefined in the repo.
-- **L3-O14 (stays OPEN).** RR (sha256 `1352e894...`, unchanged) and RC are now tracked (`f791802`, `c0daf55`), so the tracking half is done and a freeze must pin a commit at or after `c0daf55`. The owner's approval of that commit is not on record.
+- **L3-O14 (stays OPEN).** RR (sha256 `1352e894...`, unchanged) and RC are tracked (`f791802`, `c0daf55`), so the tracking half is done and a freeze must pin a commit at or after `c0daf55` (DL:242). The owner's approval of that commit is not on record.
 
 Still OPEN, with the missing source: L3-O1 (owner's lock line with message id and UTC time; custodian attestation), L3-O3 (pressure-condition definition), L3-O5 (k and the call budget; no number in the repo), L3-O6 (pool sizes and the stand-in; custody), L3-O7 (split IDs and seed map; custodian), L3-O8 (harness built at `1dabf53`, but no ACCEPT verdict on it is recorded), L3-O9 (C's operating point; P:458 gives 5% only for B), L3-O10 (K, n, pilot ICC and discordance; ADM:136 pilot unreleased), L3-O13 (tiers, snapshots, spend; owner), L3-O14 (owner approval), L3-O15 (launcher; owner admits), L3-O16 (independent review).
+
+## Review fixes 2026-11-25
+
+Line author under OD4; the freeze confirms or replaces each. No number is set.
+
+| Finding | Change |
+|---|---|
+| 1. Ratio below one half can come from the selection loop alone | "Supported" now also needs the interval below the pressured null ratio from `null_loss_ratio` on pools drawn from fitted (p, c); else not supported (sections 2, 9.5, 10). Reason: P:172-174. |
+| 2. Conservative-arm conjunct is vacuous | Stated that it equals the fixed arm in the harness; either distinct rule from P:453-454 or dropped, reason recorded at freeze (3, 9.4, L3-O18). |
+| 3. Kill versus supported | Kill wins; "does no better" and "within 10 points" defined as 95% interval statements (10). |
+| 4. Holm family | Family is {A, B, rotation vs one random view}; size-one claim and RR:45 citation removed (2, 9.4). |
+| 5. Power scale | min(K, E-K)/2.8 applied to effect = 1 - ratio, E = 0.5 (8). |
+| 6. Bootstrap | Method, B (OPEN L3-O17), sha256 `tag:seed:task` seed, exclusion of loss(fixed) <= 0 with count and cap (OPEN) (9.1). |
+| 7. Pressure form | Harness sums misses over visible views, not one monitor (P:460); form OPEN L3-O3; manipulation check not computable until closed (6, 7, 14). |
+| 8. "C, locked" | Now "recommended; owner lock pending (L3-O1)". |
+| 9. Minors | RR and RC tracked; freeze pins commit at or after `c0daf55` (DL:242), harness `1dabf53`; `readouts.pairwise_miss` (`readouts.py:105`); the rule stated in section 10 instead of a pointer to L3-O2; D4 needs k >= 2 (`nulls.py:136`). |
+| 10. Freeze record | Added null-ratio procedure, bootstrap code and seed, harness commit, owner lock line, custodian attestation (15). |

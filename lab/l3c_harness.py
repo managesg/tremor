@@ -1,5 +1,5 @@
 """Offline L3-C harness: best-of-N selection against a monitor ensemble (prereg/R2-L3-C-protocol.md,
-section 6 steps 1-5 and open item L3-O8). Standard library plus murmuration.monsel only.
+section 6 steps 1-5 and open item L3-O8). Standard library plus murmuration.monsel only (null draws follow nulls.correlated_monitors' model).
 
 No parameter the proposal leaves open (n, number of views, k, operating point) has a default here.
 The operating point (L3-O9) is not modelled: miss bits are already thresholded 0/1 inputs.
@@ -7,6 +7,10 @@ The operating point (L3-O9) is not modelled: miss bits are already thresholded 0
 Layout. A pool is a list of tasks; a task is a list of candidate outputs; a candidate is a dict
 view name -> 0/1 (1 = that view missed it), as in monsel (monsel.py:9).
 """
+import hashlib
+import math
+import random
+
 from murmuration import monsel
 
 
@@ -91,6 +95,39 @@ def loss_ratio(loss_rotating, loss_fixed):
     return loss_rotating / loss_fixed
 
 
+def task_seed(tag, seed, task):
+    """Per-task seed: first 8 bytes (63 bits) of sha256 of f"{tag}:{seed}:{task}". Unlike seed + task, adjacent
+    base seeds and reruns do not share task seeds."""
+    _int(seed, "seed", -2**63, 2**63)
+    _int(task, "task", 0, 10**12)
+    if not isinstance(tag, str) or not tag:
+        raise ValueError("tag must be a nonempty string")
+    return int.from_bytes(hashlib.sha256(f"{tag}:{seed}:{task}".encode()).digest()[:8], "big") >> 1
+
+
+def conservative_is_distinct():
+    """False: the conservative-aggregation arm cannot be told apart from the fixed arm here.
+
+    The only source for it names the rule, not a formula: proposal P:453-454 says "conservative aggregation
+    (Coste et al.)", and the prior-art note (docs/research/residency/S3-prior-art-v3.md:251) glosses it as
+    "worst-case or mean minus a penalty on disagreement". On 0/1 miss bits the worst case over the visible
+    views is 1 only for a candidate every view misses, and the fixed selector (most misses, first wins) picks
+    such a candidate whenever one exists, so the arms are equal. The mean-minus-penalty form needs a penalty
+    weight that no source gives (OPEN). So 'rotation beats conservative aggregation' is vacuous; see
+    rotation_beats_conservative."""
+    return False
+
+
+def rotation_beats_conservative(result):
+    """Conjunct 'beats conservative aggregation' for a compare_arms result: "vacuous" while
+    conservative_is_distinct() is False, never a silent tie; otherwise True when rotating loses less."""
+    if not isinstance(result, dict) or not {"rotating", "conservative"} <= set(result):
+        raise ValueError("result must be a compare_arms dict")
+    if not conservative_is_distinct():
+        return "vacuous"
+    return result["rotating"] < result["conservative"]
+
+
 def _check_pool(pool, n):
     if not isinstance(pool, (list, tuple)) or not pool:
         raise ValueError("pool must be a nonempty list of tasks")
@@ -106,12 +143,13 @@ def compare_arms(pool, calibration, k, n, seed):
 
     selected = monsel.select(calibration, k). Pressure is best-of-n per task over the first n candidates.
     Every arm is scored by the full selected ensemble; arms differ only in what the selector sees:
-    static: all selected views; rotating: all but monsel.hidden_view(selected, seed + task index);
+    static: all selected views; rotating: all but monsel.hidden_view(selected, task_seed("rotate", seed, task index));
     conservative: all selected views, but it only knows flagged/unflagged (conservative_catch) and takes
     the first unflagged candidate, else candidate 0. Before-pressure catch averages all n candidates.
     """
     _int(seed, "seed", -2**63, 2**63)
     _int(n, "n", 1, 10**9)
+    _int(k, "k", 2, 10**9)  # rotation hides one view and needs one left (nulls.py:136 needs m >= 2)
     _check_pool(pool, n)
     selected = monsel.select(calibration, k)
     for task in pool:
@@ -126,9 +164,83 @@ def compare_arms(pool, calibration, k, n, seed):
     for t, task in enumerate(pool):
         cands, rows = list(range(n)), list(task[:n])
         picks["static"].append(rows[best_of_n(cands, rows, selected, n)])
-        seen = visible_views(selected, True, seed + t)
+        seen = visible_views(selected, True, task_seed("rotate", seed, t))
         picks["rotating"].append(rows[best_of_n(cands, rows, seen, n)])
         flags = [conservative_catch({v: [r[v]] for v in selected}, selected)[0] for r in rows]
         picks["conservative"].append(rows[flags.index(0) if 0 in flags else 0])
     out = {arm: pressure_loss(before, catch(p)) for arm, p in picks.items()}
     return {"selected": selected, "before": before, **out}
+
+
+def _frac(x, name):
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or not 0 <= x <= 1:
+        raise ValueError(f"{name} must be a number in [0, 1]")
+    return x
+
+
+def null_loss_ratio(p, c, k, n_candidates, n_tasks, reps, seed):
+    """Pressured null: loss(rotating) / loss(fixed) with no model effect, from compare_arms on drawn pools.
+
+    The selector never optimises against the hidden view, so a common-cause pool alone gives a ratio below 1.
+    Each candidate is missed by all k views with probability c, else by each view independently with
+    probability p (nulls.correlated_monitors' model; k views, all selected). Calibration is drawn the same way,
+    n_tasks episodes. Ratio of mean losses over `reps` pools; every argument is explicit (all OPEN)."""
+    _frac(p, "p"), _frac(c, "c")
+    for x, name in ((k, "k"), (n_candidates, "n_candidates"), (n_tasks, "n_tasks"), (reps, "reps")):
+        _int(x, name, 2 if name == "k" else 1, 10**9)
+    views = [f"v{i}" for i in range(k)]
+    rng = random.Random(task_seed("null", seed, 0))
+
+    def draw():
+        if rng.random() < c:
+            return {v: 1 for v in views}
+        return {v: int(rng.random() < p) for v in views}
+
+    rot = fix = 0.0
+    for r in range(reps):
+        pool = [[draw() for _ in range(n_candidates)] for _ in range(n_tasks)]
+        cal = {v: [e[v] for e in (draw() for _ in range(n_tasks))] for v in views}
+        out = compare_arms(pool, cal, k, n_candidates, task_seed("null-arms", seed, r))
+        rot, fix = rot + out["rotating"], fix + out["static"]
+    return loss_ratio(rot / reps, fix / reps)
+
+
+def supported_against_null(interval_high, null_ratio, bound):
+    """True only when the interval's upper end is at or below the bound AND strictly below the null ratio."""
+    for x in (interval_high, null_ratio, bound):
+        if isinstance(x, bool) or not isinstance(x, (int, float)):
+            raise ValueError("interval_high, null_ratio and bound must be numbers")
+    return interval_high <= bound and interval_high < null_ratio
+
+
+def bootstrap_ratio(pools, B, seed, max_excluded_share, level):
+    """Cluster bootstrap of loss(rotating) / loss(fixed) over `pools`, a list of compare_arms results.
+
+    Resamples B times with replacement; a resample whose mean fixed loss is <= 0 is excluded, not raised on.
+    Returns {"interval": (low, high), "excluded": count, "kept": count} (percentile interval at `level`), or
+    None when the excluded share exceeds max_excluded_share or nothing is kept. Cap and level are OPEN: the
+    caller passes both."""
+    if not isinstance(pools, (list, tuple)) or not pools:
+        raise ValueError("pools must be a nonempty list of compare_arms results")
+    for r in pools:
+        if not isinstance(r, dict) or not {"rotating", "static"} <= set(r):
+            raise ValueError("each pool must be a compare_arms result")
+    _int(B, "B", 1, 10**9)
+    _frac(max_excluded_share, "max_excluded_share")
+    if _frac(level, "level") in (0, 1):
+        raise ValueError("level must be strictly between 0 and 1")
+    rng = random.Random(task_seed("boot", seed, 0))
+    ratios, excluded = [], 0
+    for _ in range(B):
+        draw = [pools[rng.randrange(len(pools))] for _ in pools]
+        fix = sum(r["static"] for r in draw) / len(draw)
+        if fix <= 0:
+            excluded += 1
+        else:
+            ratios.append(loss_ratio(sum(r["rotating"] for r in draw) / len(draw), fix))
+    if not ratios or excluded / B > max_excluded_share:
+        return None
+    ratios.sort()
+    a = (1 - level) / 2
+    lo, hi = ratios[int(a * len(ratios))], ratios[min(len(ratios) - 1, math.ceil((1 - a) * len(ratios)) - 1)]
+    return {"interval": (lo, hi), "excluded": excluded, "kept": len(ratios)}

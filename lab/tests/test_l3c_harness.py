@@ -60,10 +60,10 @@ class Harness(unittest.TestCase):
             self.assertEqual(sorted(h.visible_views(sel, True, s) + [hid]), sel)
 
     def test_arms_hand_computed(self):
-        r = h.compare_arms(TINY, CAL, 3, 3, 0)
+        r = h.compare_arms(TINY, CAL, 3, 3, 4)
         self.assertEqual(r["selected"], ["a", "b", "c"])  # a ties b at 1/2, name order; then b adds 1/2; then c
         # before: 6 episodes, all-missed T0c2 and T1c1 -> 4/6. static and conservative end at 0 catch -> loss 2/3.
-        # rotating: seeds 0,1 hide b then a; picks T0c1 (caught by b), T1c1 (missed) -> 1/2; loss 2/3 - 1/2 = 1/6.
+        # rotating: task_seed("rotate", 4, t) hides b then a; picks T0c1 (caught by b), T1c1 (missed) -> 1/2; loss 2/3 - 1/2 = 1/6.
         self.assertAlmostEqual(r["before"], 2 / 3)
         self.assertAlmostEqual(r["static"], 2 / 3)
         self.assertAlmostEqual(r["rotating"], 1 / 6)
@@ -87,12 +87,12 @@ class Harness(unittest.TestCase):
             seen = h.visible_views(sel, True, s + t)
             picks.append(h.best_of_n([0, 1], task, seen, 2))
         self.assertNotEqual(picks[0], picks[1])
-        # compare_arms must use seed + task index. Three views; c0 is missed by a and b (caught by c),
+        # compare_arms must use task_seed("rotate", seed, task index). Three views; c0 is missed by a and b (caught by c),
         # c1 is missed by all. Hiding c ties c0 with c1 (first wins: c0, caught); hiding another view
         # makes c1 strictly best (uncaught). Pick s with hidden(s) == c and hidden(s + 1) != c.
         sel3 = ["a", "b", "c"]
-        s3 = next(x for x in range(200)
-                  if monsel.hidden_view(sel3, x) == "c" and monsel.hidden_view(sel3, x + 1) != "c")
+        hid = lambda x, t: monsel.hidden_view(sel3, h.task_seed("rotate", x, t))
+        s3 = next(x for x in range(200) if hid(x, 0) == "c" and hid(x, 1) != "c")
         task3 = [{"a": 1, "b": 1, "c": 0}, {"a": 1, "b": 1, "c": 1}]
         cal3 = {"a": [0, 1, 1], "b": [1, 0, 1], "c": [1, 1, 0]}
         r = h.compare_arms([task3, task3], cal3, 3, 2, s3)
@@ -150,9 +150,113 @@ class Harness(unittest.TestCase):
             lambda: h.compare_arms(TINY, CAL, 3, 4, 0),
             lambda: h.compare_arms(TINY, CAL, 3, 3, "0"),
         ]
+        bad += [
+            lambda: h.compare_arms(TINY, CAL, 1, 3, 0),  # k < 2
+            lambda: h.null_loss_ratio(0.5, 0.2, 1, 4, 5, 3, 0),
+            lambda: h.null_loss_ratio(1.5, 0.2, 3, 4, 5, 3, 0),
+            lambda: h.null_loss_ratio(0.5, 0.2, 3, 4, 5, 0, 0),
+            lambda: h.bootstrap_ratio([], 10, 0, 0.5, 0.9),
+            lambda: h.bootstrap_ratio([{"rotating": 0.1, "static": 0.2}], 10, 0, 1.5, 0.9),
+            lambda: h.bootstrap_ratio([{"rotating": 0.1, "static": 0.2}], 10, 0, 0.5, 1),
+            lambda: h.bootstrap_ratio([{"rotating": 0.1}], 10, 0, 0.5, 0.9),
+            lambda: h.supported_against_null(True, 0.5, 0.5),
+            lambda: h.task_seed("", 0, 0),
+            lambda: h.task_seed("t", 0, -1),
+            lambda: h.rotation_beats_conservative({}),
+        ]
         for i, f in enumerate(bad):
             with self.subTest(case=i), self.assertRaises(ValueError):
                 f()
+
+    def test_task_seed_sha256(self):
+        import hashlib
+        want = int.from_bytes(hashlib.sha256(b"rotate:5:3").digest()[:8], "big") >> 1
+        self.assertEqual(h.task_seed("rotate", 5, 3), want)
+        self.assertNotEqual(h.task_seed("rotate", 5, 3), h.task_seed("rotate", 5, 4))
+        self.assertNotEqual(h.task_seed("rotate", 5, 3), h.task_seed("boot", 5, 3))
+        # adjacent base seeds must not share task seeds (seed + t gave (0,1) == (1,0))
+        a = {h.task_seed("rotate", 0, t) for t in range(50)}
+        b = {h.task_seed("rotate", 1, t) for t in range(50)}
+        self.assertFalse(a & b)
+
+    def test_k_below_two_rejected(self):
+        for k in (0, 1, True):
+            with self.assertRaises(ValueError):
+                h.compare_arms(TINY, CAL, k, 3, 0)
+
+    def test_conservative_is_vacuous(self):
+        self.assertIs(h.conservative_is_distinct(), False)
+        r = h.compare_arms(TINY, CAL, 3, 3, 4)
+        self.assertEqual(h.rotation_beats_conservative(r), "vacuous")
+        self.assertEqual(h.rotation_beats_conservative({"rotating": 0.0, "conservative": 0.5}), "vacuous")
+        # the reason in the docstring: on 0/1 bits the arm equals the fixed arm on every pool
+        views = ["a", "b", "c", "d"]
+        for sd in range(25):
+            pool = toy_pool(sd, 12, 5, views)
+            cal = {v: [int(x) for x in random.Random(sd + i).choices([0, 1], k=20)] for i, v in enumerate(views)}
+            r = h.compare_arms(pool, cal, 3, 5, sd)
+            self.assertEqual(r["conservative"], r["static"])
+        self.assertIn("vacuous", h.rotation_beats_conservative.__doc__)
+        self.assertIn("P:453-454", h.conservative_is_distinct.__doc__)
+
+    def test_supported_against_null(self):
+        self.assertTrue(h.supported_against_null(0.4, 0.6, 0.5))
+        self.assertTrue(h.supported_against_null(0.5, 0.6, 0.5))   # bound is inclusive
+        self.assertFalse(h.supported_against_null(0.55, 0.9, 0.5))  # above bound
+        self.assertFalse(h.supported_against_null(0.4, 0.4, 0.5))   # not strictly below the null
+        self.assertFalse(h.supported_against_null(0.4, 0.3, 0.5))
+        self.assertFalse(h.supported_against_null(0.5, 0.5, 0.5))
+
+    def test_null_loss_ratio(self):
+        args = (0.5, 0.2, 3, 6, 20, 30, 9)
+        r = h.null_loss_ratio(*args)
+        self.assertEqual(r, h.null_loss_ratio(*args))              # deterministic
+        self.assertNotEqual(r, h.null_loss_ratio(*args[:-1], 10))  # seed matters
+        self.assertGreater(r, 0)
+        self.assertLess(r, 1)  # no model effect, yet rotation loses less: the pressured null is below 1
+        # c = 1: every candidate missed by every view, so no fixed loss: refuses rather than dividing
+        with self.assertRaises(ValueError):
+            h.null_loss_ratio(0.5, 1, 3, 6, 20, 5, 0)
+        with self.assertRaises(TypeError):
+            h.null_loss_ratio(0.5, 0.2, 3, 6, 20, 30)  # no default for the seed
+
+    def test_null_draw_matches_correlated_monitors(self):
+        # the draw model is nulls.correlated_monitors': P(all miss) = c + (1 - c) p^m
+        from fractions import Fraction
+        from murmuration import nulls
+        want = float(nulls.correlated_monitors(3, Fraction(2, 5), Fraction(1, 4))["all_miss"])
+        seen = []
+        orig = h.compare_arms
+        h.compare_arms = lambda pool, cal, k, n, s: (seen.extend(c for t in pool for c in t), orig(pool, cal, k, n, s))[1]
+        try:
+            h.null_loss_ratio(0.4, 0.25, 3, 8, 200, 3, 1)
+        except ValueError:
+            pass
+        finally:
+            h.compare_arms = orig
+        got = sum(all(c.values()) for c in seen) / len(seen)
+        self.assertAlmostEqual(got, want, delta=0.03)
+
+    def test_bootstrap_ratio(self):
+        pools = [{"rotating": 0.1, "static": 0.4}, {"rotating": 0.2, "static": 0.4}]
+        r = h.bootstrap_ratio(pools, 200, 3, 0.0, 0.9)
+        self.assertEqual((r["excluded"], r["kept"]), (0, 200))
+        lo, hi = r["interval"]
+        self.assertAlmostEqual(lo, 0.25)   # both pools drawn: ratios 0.25, 0.375, 0.5
+        self.assertAlmostEqual(hi, 0.5)
+        self.assertEqual(r, h.bootstrap_ratio(pools, 200, 3, 0.0, 0.9))
+        # a pool with zero fixed loss: resamples drawing only it are excluded, not raised on
+        mixed = [{"rotating": 0.0, "static": 0.0}, {"rotating": 0.1, "static": 0.4}]
+        m = h.bootstrap_ratio(mixed, 400, 1, 0.5, 0.9)
+        self.assertGreater(m["excluded"], 0)
+        self.assertEqual(m["excluded"] + m["kept"], 400)
+        self.assertLess(m["excluded"] / 400, 0.5)
+        # excluded share above the caller's cap: None
+        self.assertIsNone(h.bootstrap_ratio(mixed, 400, 1, 0.01, 0.9))
+        # nothing kept: None even with cap 1
+        self.assertIsNone(h.bootstrap_ratio([{"rotating": 0.0, "static": 0.0}], 20, 1, 1.0, 0.9))
+        with self.assertRaises(TypeError):
+            h.bootstrap_ratio(pools, 10, 0)  # cap and level have no defaults
 
 
 if __name__ == "__main__":
