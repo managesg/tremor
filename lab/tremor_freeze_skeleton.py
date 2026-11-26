@@ -10,20 +10,28 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import tempfile
 
 from lab import tremor_admission_gate as g
 
-# field -> protocol section (prereg/R2-L2-C-protocol.md section 15 items; limits from section 13)
-SECTIONS = {
-    "protected_inputs": "15.3", "reserved_gpu_hours": "13", "hosted_usd_plan": "13",
-    "hosted_usd_stop": "13", "config_hash": "15.2", "model_snapshot": "15.4",
-    "task_family_revision": "15.4", "scorer_ids": "15.4", "contrasts": "15.4",
-    "stopping_rules": "15.4", "expected_and_max_resources": "15.4",
-    "approval_review_evidence": "15.6", "d1_basis": "15.7", "inherited_pins": "15.8",
+# field -> (heading regex of the section that owns it, regex of the freeze-record item that names it).
+# Numbers are looked up in the given protocol's own text, never assumed (L2/L3/L4/M7 number differently).
+_LIMITS = r"Resource and budget limits|Spend"
+_FREEZE = r"What the freeze record must contain"
+_MODEL = r"Model snapshot"
+_FIELDS = {
+    "protected_inputs": r"Protected inputs", "config_hash": r"Code tree hash",
+    "model_snapshot": _MODEL, "task_family_revision": _MODEL, "scorer_ids": _MODEL,
+    "contrasts": _MODEL, "stopping_rules": _MODEL, "expected_and_max_resources": _MODEL,
+    "approval_review_evidence": r"Approval and review evidence", "d1_basis": r"D1 basis",
+    "inherited_pins": r"inherited from the M3",
 }
-_NUMBERS = ("reserved_gpu_hours", "hosted_usd_plan", "hosted_usd_stop")
+_LIMIT_FIELDS = ("reserved_gpu_hours", "hosted_usd_plan", "hosted_usd_stop")
+HOSTED_NOTE = ("effective hosted cap is the caller's cap (the owner's shared USD 10), "
+               "never the protocol's own stop")
+NOT_FOUND = "section not found"
 
 
 def skeleton(protocol_path, repo_root, batch, protected_inputs=()):
@@ -49,23 +57,62 @@ def skeleton(protocol_path, repo_root, batch, protected_inputs=()):
     return rec
 
 
-def missing(record):
-    """[(field, protocol section)] of the author or custodian fields still empty."""
+def _refs(text):
+    """{field: reference} found in this protocol's headings and freeze-record items."""
+    heads, items, cur = [], [], None
+    for line in text.split("\n"):
+        m = re.match(r"## (\d+a?)\. (.*)", line)
+        if m:
+            heads.append((m.group(1), m.group(2)))
+            cur = m.group(1) if re.search(_FREEZE, m.group(2)) else None
+            continue
+        if cur is not None:
+            n = re.match(r"(\d+)\. (.*)", line)
+            if n:
+                items.append([n.group(1), n.group(2)])
+    refs = {}
+    fz = next((n for n, h in heads if re.search(_FREEZE, h)), None)
+    for k, rx in _FIELDS.items():
+        it = next((i for i, tx in items if re.search(rx, tx)), None)
+        if fz and it:
+            refs[k] = f"section {fz} item {it}"
+    lim = next((n for n, h in heads if re.search(_LIMITS, h)), None)
+    for k in _LIMIT_FIELDS:
+        if lim:
+            refs[k] = f"section {lim}"
+    return refs
+
+
+def missing(record, repo_root="."):
+    """[(field, reference)] of author or custodian fields still empty. The reference is looked up in
+    the record's own protocol at its pinned commit; 'section not found' when that file lacks it."""
+    refs = {}
+    try:
+        rc, blob = g._git(repo_root, "cat-file", "blob", f"{record.get('commit')}:{record.get('protocol_path')}")
+        if not rc:
+            refs = _refs(blob.decode("utf-8", "replace"))
+    except (TypeError, ValueError):
+        pass
+
+    def ref(k):
+        r = refs.get(k, NOT_FOUND)
+        return f"{r}; {HOSTED_NOTE}" if k in ("hosted_usd_plan", "hosted_usd_stop") else r
+
     out = []
-    for k in _NUMBERS:
+    for k in _LIMIT_FIELDS:
         v = record.get(k)
         if isinstance(v, bool) or not isinstance(v, (int, float)):
-            out.append((k, SECTIONS[k]))
+            out.append((k, ref(k)))
     pins = record.get("protected_inputs")
     if not isinstance(pins, list) or not pins:
-        out.append(("protected_inputs", SECTIONS["protected_inputs"]))
+        out.append(("protected_inputs", ref("protected_inputs")))
     else:
         for i, p in enumerate(pins):
             if not isinstance(p, dict) or not g._nonempty(p.get("custodian")):
-                out.append((f"protected_inputs[{i}].custodian", SECTIONS["protected_inputs"]))
+                out.append((f"protected_inputs[{i}].custodian", ref("protected_inputs")))
     for k in g._PRESENCE_ONLY:
         if not g._nonempty(record.get(k)):
-            out.append((k, SECTIONS[k]))
+            out.append((k, ref(k)))
     return out
 
 
@@ -99,8 +146,8 @@ def main(argv=None):
     except g.AdmissionRefused as e:
         print(f"REFUSED: {e}")
         return 2
-    for k, s in missing(rec):
-        print(f"MISSING {k} (protocol section {s})")
+    for k, s in missing(rec, a.repo_root):
+        print(f"MISSING {k} ({s})")
     return 0
 
 

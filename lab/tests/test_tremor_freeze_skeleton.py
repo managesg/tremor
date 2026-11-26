@@ -112,12 +112,55 @@ class SkeletonTests(unittest.TestCase):
         self.write_pair(r)
         self.assertTrue(self.gate())
 
-    def test_missing_names_sections(self):
-        m = dict(s.missing(self.sk(())))
-        self.assertEqual(m["reserved_gpu_hours"], "13")
-        self.assertEqual(m["d1_basis"], "15.7")
-        self.assertEqual(m["inherited_pins"], "15.8")
-        self.assertEqual(m["protected_inputs"], "15.3")
+    def test_missing_without_sections_says_not_found(self):
+        m = dict(s.missing(self.sk(()), str(self.root)))
+        self.assertEqual(m["d1_basis"], s.NOT_FOUND)
+        self.assertEqual(m["protected_inputs"], s.NOT_FOUND)
+        self.assertTrue(m["reserved_gpu_hours"] == s.NOT_FOUND)
+
+    def real(self, name):
+        """missing() for the real protocol file, committed into the throwaway repo."""
+        src = Path(__file__).resolve().parents[2] / "prereg" / name
+        (self.root / name).write_bytes(src.read_bytes())
+        self.git("add", "."); self.git("commit", "-qm", name)
+        r = s.skeleton(name, str(self.root), "B1", ())
+        return dict(s.missing(r, str(self.root)))
+
+    def test_real_l2(self):
+        m = self.real("R2-L2-C-protocol.md")
+        self.assertEqual(m["d1_basis"], "section 15 item 7")
+        self.assertEqual(m["inherited_pins"], "section 15 item 8")
+        self.assertEqual(m["model_snapshot"], "section 15 item 4")
+        self.assertTrue(m["reserved_gpu_hours"].startswith("section 13"))
+
+    def test_real_l3(self):
+        m = self.real("R2-L3-C-protocol.md")
+        self.assertEqual(m["model_snapshot"], "section 15 item 5")
+        self.assertEqual(m["approval_review_evidence"], "section 15 item 7")
+        self.assertEqual(m["d1_basis"], "section 15 item 8")
+        self.assertEqual(m["inherited_pins"], s.NOT_FOUND)
+
+    def test_real_l4(self):
+        m = self.real("R2-L4-C-protocol.md")
+        self.assertEqual(m["model_snapshot"], "section 15 item 5")
+        self.assertEqual(m["d1_basis"], "section 15 item 8")
+        self.assertEqual(m["inherited_pins"], s.NOT_FOUND)
+
+    def test_real_m7(self):
+        m = self.real("M7-grover-protocol-draft.md")
+        self.assertEqual(m["protected_inputs"], "section 13 item 3")
+        self.assertEqual(m["model_snapshot"], "section 13 item 4")
+        self.assertEqual(m["approval_review_evidence"], "section 13 item 6")
+        self.assertTrue(m["reserved_gpu_hours"].startswith("section 11"))
+        self.assertEqual(m["d1_basis"], s.NOT_FOUND)
+        self.assertEqual(m["inherited_pins"], s.NOT_FOUND)
+        self.assertNotIn("section 15", " ".join(m.values()))
+
+    def test_hosted_note_on_every_hosted_limit(self):
+        m = self.real("R2-L3-C-protocol.md")
+        for k in ("hosted_usd_plan", "hosted_usd_stop"):
+            self.assertIn("owner's shared USD 10", m[k])
+        self.assertNotIn("USD 10", m["reserved_gpu_hours"])
 
     def test_bad_inputs_refused(self):
         for bad in ("../x", "/etc/passwd", "absent.txt"):
