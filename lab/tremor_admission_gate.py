@@ -78,8 +78,9 @@ def _open_regular(path, root=None):
     /proc/self/fd link must equal the expected path under root (no /proc/self/fd: refused, not
     skipped); (3) lstat before open, O_NOFOLLOW on the last component, and the descriptor's device and
     inode must equal that lstat; (4) a regular file only.
-    NOT closed: the root directory itself being swapped (the caller declares it), and a file whose
-    content changes after it is read. Without `root` only (3) and (4) apply (small JSON records).
+    NOT closed: the root directory itself being swapped (the caller declares it), a bind mount of an
+    outside directory inside the repo (the walk does not see mount crossings; comparing st_dev would not
+    help, a same-filesystem bind mount keeps st_dev), and a file whose content changes after it is read. Without `root` only (3) and (4) apply (small JSON records).
     """
     dirfd = None
     try:
@@ -208,6 +209,8 @@ def _input_sha(repo_root, rel):
     if real != os.path.normpath(full) or os.path.islink(full):
         _refuse(f"protected input is or traverses a symlink: {rel}")
     with _open_regular(full, root) as f:  # chunked: a large input is never loaded whole
+        if os.fstat(f.fileno()).st_nlink > 1:
+            _refuse(f"protected input has more than one hard link: {rel}")
         return hashlib.file_digest(f, "sha256").hexdigest()
 
 

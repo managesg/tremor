@@ -553,6 +553,13 @@ class GateTests(unittest.TestCase):
             with self.assertRaises(g.AdmissionRefused):
                 g._open_regular(str(self.root / "ln.txt"))
 
+    def test_input_sha_refuses_hard_linked_file(self):
+        self.assertEqual(g._input_sha(str(self.root), "input.txt"), sha(b"input"))
+        os.link(self.root / "input.txt", self.root / "hl.txt")
+        for rel in ("input.txt", "hl.txt"):
+            with self.assertRaisesRegex(g.AdmissionRefused, "hard link"):
+                g._input_sha(str(self.root), rel)
+
     def test_open_regular_refuses_directory_and_symlink(self):
         with self.assertRaises(g.AdmissionRefused):
             g._open_regular(str(self.root))
