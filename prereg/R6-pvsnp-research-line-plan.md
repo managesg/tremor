@@ -203,7 +203,7 @@ Difficulty is a dial ($n$, size bound, clause ratio), set from the pilot to stay
 
 ## 2. R5 hypotheses instantiated here
 
-**Precondition.** `lab/r5_perf_harness.py` and its tests are **untracked** at `9a74aef` and under repair after a rejected review (the mathematics stood; missing: the `run_episode` loop and the H5 gap; the H2 overdispersion check measured task spread; per the independent Opus review of 2026-11-26, record to be added to DECISION_LOG). **Stage A (R3) does not start until the harness is committed and its review has closed. That commit, `<R5-HARNESS-SHA>`, is recorded in DL and as an inherited pin in the R6 protocol.** R6 uses the harness exactly as pinned.
+**Precondition.** `lab/r5_perf_harness.py` and its tests are **untracked** at `9a74aef` and under repair after a rejected review (the mathematics stood; missing: the `run_episode` loop and the H5 gap; the H2 overdispersion check measured task spread; per the independent Opus review of 2026-11-26, record to be added to DECISION_LOG). **Stage A (R3) does not start until the harness is committed and its review has closed. That commit, `d0c67d7`, is recorded in DL and as an inherited pin in the R6 protocol.** R6 uses the harness exactly as pinned.
 
 | Hypothesis | On R6-TS | Harness call (names as of today; confirmed at the pin) |
 |---|---|---|
@@ -307,7 +307,7 @@ No request reaches the service before `admit` succeeds.
 | Step | Work | Acceptance |
 |---|---|---|
 | R0 | Revision 2 of this plan, fresh Opus review | ACCEPT recorded in DL |
-| R1 | Pin the R5 harness commit | `<R5-HARNESS-SHA>` committed, review closed, recorded in DL |
+| R1 | Pin the R5 harness commit | `d0c67d7` committed, review closed, recorded in DL |
 | R2 | Four Sonnet workers in parallel, separate files. **W1** `lab/r6_pvsnp_tasks.py`, M1 by dynamic programming. **W2** `lab/r6_m1_enum.py`, an **independent** M1 by exhaustive enumeration, written without sight of W1. **W3** `lab/r6_scorecard.py`. **W4** `lab/r6_predicates.py`, the whitelist parser and step limit, with the escape test. Then an Opus reviewer: mutants, W1 against W2 on every entry, both against the recalled values (4, 14, 222; 16; 7) | Every targeted mutant killed; the escape test passes; W1 and W2 agree. **A mismatch between W1 and W2, or with a recalled value, opens an investigation and is not a failed acceptance; it goes to the Opus advisor, never to a vote.** R2 is accepted once the investigation closes with a recorded cause |
 | R3 | Stage A offline through the pinned R5 harness: scripted agents with planted $q$, $c$, confidence bias, false-lemma rate, defect rate | Each planted value recovered; each null matches its closed form; a planted gate failure appears in the gate report and leaves `pass` unchanged |
 | R4 | Opus drafts `prereg/R6-protocol.md`; Sonnet writes the HTTP client against a **stub only** | No OPEN method item; no real request sent |
