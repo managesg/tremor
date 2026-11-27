@@ -671,5 +671,345 @@ class CopyAndMutantTests(unittest.TestCase):
             self.assertNotEqual(old, new, name)
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Part 3: (c)(d) task interface: render_prompt_cd, prompt_sha256_cd, check_claim_cd.
+# ---------------------------------------------------------------------------------------------------------------
+_LAB_CACHE = {}
+
+
+def cd_label(t):
+    key = (t.kind, t.mu, t.source)
+    if key not in _LAB_CACHE:
+        _LAB_CACHE[key] = T.label_cd(t, SL, TOTAL)
+    return _LAB_CACHE[key]
+
+
+def claim(t, a, mod=T):
+    return mod.check_claim_cd(t, a, SL, TOTAL)
+
+
+def custom(src, mu=2, kind="c"):
+    return T.TaskCD(kind, mu, 0, "true", src)
+
+
+class MyIntCD(int):
+    pass
+
+
+class ClaimCDHandCheckedTests(unittest.TestCase):
+    def test_pair_must_really_falsify_a_hand_checked_predicate(self):
+        t = custom("x + y != 30")                      # fails only at (15, 15)
+        self.assertEqual(claim(t, (15, 15)), "correct")
+        for bad in ((15, 14), (14, 15), (0, 0), (1, 14)):
+            self.assertEqual(claim(t, bad), "wrong", bad)
+        self.assertEqual(claim(t, [15, 15]), "correct")
+
+    def test_rank_predicate_uses_the_registry_mu2_and_mu3(self):
+        t = custom("rk(x, 2, 2) <= 1")                 # x = 9 is the identity, rank 2; x = 3 has rank 1
+        self.assertEqual(claim(t, (9, 0)), "correct")
+        self.assertEqual(claim(t, (3, 0)), "wrong")
+        t3 = custom("rk(x, 3, 3) <= 2", 3)             # 273 = bits 0, 4, 8 = identity; 7 is one row
+        self.assertEqual(claim(t3, (273, 5)), "correct")
+        self.assertEqual(claim(t3, (7, 5)), "wrong")
+
+    def test_answer_true_is_wrong_when_a_counterexample_exists_and_right_when_none(self):
+        self.assertEqual(claim(custom("x + y != 30"), "true"), "wrong")
+        self.assertEqual(claim(custom("x + y < 31"), "true"), "correct")
+        self.assertEqual(claim(custom("x + y < 31"), (15, 15)), "wrong")
+
+    def test_true_lemma_answered_false_with_any_pair_is_wrong(self):
+        for kind in T.KINDS_CD:
+            t = T.generate_cd(kind, 2, 0, "true")
+            self.assertTrue(cd_label(t).holds)
+            self.assertEqual(claim(t, "true"), "correct")
+            for pair in ((0, 0), (15, 15), (9, 6), (3, 12)):
+                self.assertEqual(claim(t, pair), "wrong", (kind, pair))
+
+
+class ClaimCDPlantedTests(unittest.TestCase):
+    def test_label_pair_is_correct_and_agrees_with_independent_python(self):
+        for kind in T.KINDS_CD:
+            for seed in range(8):
+                t = T.generate_cd(kind, 2, seed, "planted_false")
+                L = cd_label(t)
+                self.assertFalse(L.holds)
+                self.assertEqual(claim(t, L.counterexample), "correct")
+                self.assertEqual(claim(t, "true"), "wrong")
+
+    def test_a_pair_where_the_planted_predicate_holds_is_wrong(self):
+        t = T.generate_cd("d", 2, 0, "planted_false")
+        p = rp.parse(t.source, T.registry_cd(2))
+        good = next((x, y) for x in range(16) for y in range(16) if p.evaluate({"x": x, "y": y}, SL) is True)
+        self.assertEqual(claim(t, good), "wrong")
+
+    def test_mu3_pair_check_is_cheap_and_consistent_with_brute_force(self):
+        for kind in T.KINDS_CD:
+            t = T.generate_cd(kind, 3, 1, "true")
+            for x, y in ((1, 8), (73, 292), (511, 511), (7, 56), (7, 7), (1, 2)):
+                want = "wrong" if pure_cd(kind, x, y, 3) else "correct"
+                self.assertEqual(claim(t, (x, y)), want, (kind, x, y))
+
+    def test_mu3_true_answered_true_is_correct(self):
+        self.assertEqual(claim(T.generate_cd("c", 3, 0, "true"), "true"), "correct")
+
+
+class ClaimCDMalformedTests(unittest.TestCase):
+    def test_malformed_answers_get_no_partial_credit(self):
+        t = T.generate_cd("c", 2, 0, "planted_false")
+        c = cd_label(t).counterexample
+        bad = [None, 5, 5.0, True, "True", "TRUE", " true", "false", "", "1 2", (c[0],), (c[0], c[1], 0), (), [],
+               (c[0], 1.0), (float(c[0]), c[1]), (c[0], None), (True, c[1]), (c[0], True), (-1, c[1]), (c[0], -1),
+               (16, 0), (0, 16), (2**80, 0), ("1", "2"), {"x": c[0], "y": c[1]}, b"true", (MyIntCD(c[0]), c[1]),
+               ((c[0], c[1]),), [[c[0], c[1]]], frozenset(c), (c[0], c[1], c[0], c[1])]
+        for a in bad:
+            self.assertEqual(claim(t, a), "malformed", repr(a))
+
+    def test_mu_bounds_of_the_pair(self):
+        t = custom("x + y < 99999", 3)
+        self.assertEqual(claim(t, (511, 511)), "wrong")
+        self.assertEqual(claim(t, (512, 0)), "malformed")
+        self.assertEqual(claim(custom("x + y < 3"), (15, 15)), "correct")
+        self.assertEqual(claim(custom("x + y < 3"), (16, 0)), "malformed")
+
+
+class RenderPromptCDTests(unittest.TestCase):
+    def test_prompt_states_domain_predicate_exactly_and_answer_format(self):
+        for kind in T.KINDS_CD:
+            for mu in (2, 3):
+                t = T.generate_cd(kind, mu, 0, "true")
+                s = T.render_prompt_cd(t)
+                self.assertIn(t.source + "\n", s)
+                self.assertIn(f"0 <= x < 2**{mu * mu}", s)
+                self.assertIn(f"0 <= y < 2**{mu * mu}", s)
+                self.assertIn("rank over the field F_2", s)
+                self.assertIn("single word true", s)
+                self.assertIn("pair of integers", s)
+
+    def test_prompt_leaks_no_kind_variant_label_or_source_name(self):
+        words = ("planted", "variant", "kind", "transversal", "triangle", "paper", "gen-T3", "false variant",
+                 "TaskCD", "label", "counterexample exists", "planted_false")
+        for kind in T.KINDS_CD:
+            for mu in (2, 3):
+                for variant in T.VARIANTS:
+                    for seed in range(6):
+                        s = T.render_prompt_cd(T.generate_cd(kind, mu, seed, variant)).lower()
+                        for w in words:
+                            self.assertNotIn(w.lower(), s, (kind, mu, variant, seed, w))
+        s2 = T.render_prompt_cd(T.generate_cd("c", 2, 0, "true"))
+        self.assertNotIn("seed", s2)
+
+    def test_prompt_depends_only_on_mu_and_source_and_is_deterministic(self):
+        a = T.generate_cd("d", 2, 3, "planted_false")
+        self.assertEqual(T.render_prompt_cd(a), T.render_prompt_cd(T.generate_cd("d", 2, 3, "planted_false")))
+        self.assertEqual(T.prompt_sha256_cd(a), T.prompt_sha256_cd(a._replace(seed=99, variant="true")))
+        self.assertNotEqual(T.prompt_sha256_cd(a), T.prompt_sha256_cd(T.generate_cd("d", 2, 0, "true")))
+        self.assertNotEqual(T.prompt_sha256_cd(T.generate_cd("c", 2, 0, "true")),
+                            T.prompt_sha256_cd(T.generate_cd("c", 3, 0, "true")))
+        self.assertEqual(len(T.prompt_sha256_cd(a)), 64)
+
+
+class CDRefusalTests(unittest.TestCase):
+    def test_bad_tasks_are_refused_everywhere(self):
+        g = T.generate_cd("c", 2, 0, "true")
+        bads = [None, "c", ("c", 2, 0, "true", "x"), T.generate("a", 5, 0, "true"),
+                g._replace(mu=True), g._replace(mu=2.0), g._replace(mu=None), g._replace(mu=4), g._replace(mu=1),
+                g._replace(seed=True), g._replace(seed=1.5), g._replace(seed=None), g._replace(kind="a"),
+                g._replace(variant="maybe"), g._replace(source=None), g._replace(source=5)]
+        for b in bads:
+            for fn in (T.render_prompt_cd, T.prompt_sha256_cd):
+                with self.assertRaises(ValueError, msg=(fn.__name__, b)):
+                    fn(b)
+            with self.assertRaises(ValueError, msg=b):
+                T.check_claim_cd(b, "true", SL, TOTAL)
+
+    def test_budget_hit_raises_instead_of_guessing(self):
+        t = T.generate_cd("c", 2, 0, "true")
+        with self.assertRaises(rp.PredicateRefused):
+            T.check_claim_cd(t, "true", 5, TOTAL)
+        self.assertEqual(T.check_claim_cd(t, (0, 0), 5, TOTAL), "malformed")   # pair path maps the refusal
+
+    def test_check_claim_does_not_read_the_variant(self):
+        t = T.generate_cd("c", 2, 0, "planted_false")
+        c = cd_label(t).counterexample
+        for v in T.VARIANTS:
+            self.assertEqual(claim(t._replace(variant=v), c), "correct")
+            self.assertEqual(claim(t._replace(variant=v), "true"), "wrong")
+
+
+class LyingStr(str):
+    def __eq__(self, o):
+        return True
+
+    def __ne__(self, o):
+        return False
+
+    __hash__ = str.__hash__
+
+
+class StrictParsingTests(unittest.TestCase):
+    def test_str_subclass_with_lying_eq_is_malformed_in_both_interfaces(self):
+        lie = LyingStr("nope")
+        self.assertEqual(T.check_claim(T.generate("a", 6, 0, "true"), lie, SL, TOTAL), "malformed")
+        self.assertEqual(T.check_claim(T.generate("a", 6, 0, "true"), LyingStr("true"), SL, TOTAL), "malformed")
+        t = custom("x + y != 30")
+        self.assertEqual(claim(t, lie), "malformed")
+        self.assertEqual(claim(t, LyingStr("true")), "malformed")
+
+    def test_prompt_pins_bit_order_shapes_and_pair_format(self):
+        s = T.render_prompt_cd(T.generate_cd("c", 3, 0, "true"))
+        for frag in ("an integer packs a 3-by-3 0/1 matrix row by row, bit 3*i+j being entry (i, j).",
+                     "bit c*i+j being entry (i, j)", "(r, c) = (3, 3), (6, 3), (3, 6)", "refuses any other",
+                     "as a tuple or list, for example (3, 12)"):
+            self.assertIn(frag, s)
+
+    def test_exhausted_budget_on_a_pair_is_malformed_not_an_exception(self):
+        t = T.generate_cd("c", 2, 0, "planted_false")
+        c = cd_label(t).counterexample
+        self.assertEqual(T.check_claim_cd(t, c, 3, TOTAL), "malformed")
+        self.assertEqual(T.check_claim_cd(t, c, SL, 3), "malformed")
+        self.assertEqual(T.check_claim_cd(t, c, SL, TOTAL), "correct")
+
+
+def _cd_battery(M):
+    """Fast checks of the part-3 code on a loaded copy; returns the names of failed checks (mu = 2 labels only)."""
+    bad = []
+
+    def chk(name, fn):
+        try:
+            ok = fn()
+        except Exception:
+            ok = False
+        if not ok:
+            bad.append(name)
+
+    def cl(t, a):
+        return M.check_claim_cd(t, a, SL, TOTAL)
+
+    def cust(src, mu=2):
+        return M.TaskCD("c", mu, 0, "true", src)
+
+    chk("hand", lambda: cl(cust("x + y != 30"), (15, 15)) == "correct" and cl(cust("x + y != 30"), (15, 14)) == "wrong")
+    chk("lists", lambda: cl(cust("x + y != 30"), [15, 15]) == "correct")
+    chk("true_wrong", lambda: cl(cust("x + y != 30"), "true") == "wrong" and cl(cust("x + y < 31"), "true") == "correct")
+    chk("true_true_lemma", lambda: cl(M.generate_cd("c", 2, 0, "true"), "true") == "correct"
+        and cl(M.generate_cd("d", 2, 0, "true"), (15, 15)) == "wrong")
+    chk("not_label_text", lambda: cl(cust("x + y < 31"), (15, 15)) == "wrong")
+    chk("rank", lambda: cl(cust("rk(x, 2, 2) <= 1"), (9, 0)) == "correct" and cl(cust("rk(x, 2, 2) <= 1"), (3, 0)) == "wrong"
+        and cl(cust("rk(x, 3, 3) <= 2", 3), (273, 5)) == "correct" and cl(cust("rk(x, 3, 3) <= 2", 3), (7, 5)) == "wrong")
+    chk("malformed", lambda: all(cl(cust("x + y != 30"), a) == "malformed" for a in (
+        None, 5, True, "True", "false", "", (1,), (1, 2, 3), (), (1, 1.0), (True, 1), (1, True), (-1, 1), (1, -1),
+        (16, 0), (0, 16), {"x": 1, "y": 2}, "1 2", (1, None), (MyIntCD(15), 15))))
+    chk("range3", lambda: cl(cust("x + y < 99999", 3), (511, 511)) == "wrong" and cl(cust("x + y < 99999", 3), (512, 0)) == "malformed")
+
+    def planted():
+        for kind in M.KINDS_CD:
+            for seed in range(4):
+                t = M.generate_cd(kind, 2, seed, "planted_false")
+                L = M.label_cd(t, SL, TOTAL)
+                if cl(t, L.counterexample) != "correct" or cl(t, "true") != "wrong":
+                    return False
+                p = rp.parse(t.source, M.registry_cd(2))
+                good = next((x, y) for x in range(16) for y in range(16) if p.evaluate({"x": x, "y": y}, SL) is True)
+                if cl(t, good) != "wrong":
+                    return False
+        return True
+    chk("planted", planted)
+
+    def prompt():
+        for kind in M.KINDS_CD:
+            for mu in (2, 3):
+                for v in M.VARIANTS:
+                    t = M.generate_cd(kind, mu, 1, v)
+                    s = M.render_prompt_cd(t)
+                    if (t.source + "\n" not in s or f"0 <= x < 2**{mu * mu}" not in s or f"0 <= y < 2**{mu * mu}" not in s
+                            or "rank over the field F_2" not in s or "single word true" not in s
+                            or any(w in s.lower() for w in ("planted", "variant", "kind", "transversal", "triangle",
+                                                            "paper", "false variant"))):
+                        return False
+        a = M.generate_cd("d", 2, 3, "planted_false")
+        return (M.prompt_sha256_cd(a) == M.prompt_sha256_cd(a._replace(seed=99, variant="true"))
+                and len(M.prompt_sha256_cd(a)) == 64 and M.prompt_sha256_cd(a) != M.prompt_sha256_cd(M.generate_cd("d", 2, 0, "true")))
+    chk("prompt", prompt)
+
+    def refusals():
+        g = M.generate_cd("c", 2, 0, "true")
+        for b in (None, "c", g._replace(mu=True), g._replace(mu=2.0), g._replace(mu=None), g._replace(mu=4),
+                  g._replace(seed=True), g._replace(kind="a"), g._replace(variant="maybe"), g._replace(source=None)):
+            for fn in (lambda t: M.render_prompt_cd(t), lambda t: M.check_claim_cd(t, "true", SL, TOTAL)):
+                try:
+                    fn(b)
+                except ValueError:
+                    continue
+                return False
+        return True
+    chk("refusals", refusals)
+
+    class Lie(str):
+        __eq__ = lambda self, o: True
+        __ne__ = lambda self, o: False
+        __hash__ = str.__hash__
+    chk("strsub", lambda: cl(cust("x + y != 30"), Lie("true")) == "malformed" and cl(cust("x + y != 30"), Lie("x")) == "malformed"
+        and M.check_claim(M.generate("a", 6, 0, "true"), Lie("x"), SL, TOTAL) == "malformed")
+    chk("bitorder", lambda: "bit 2*i+j being entry (i, j)" in M.render_prompt_cd(M.generate_cd("c", 2, 0, "true"))
+        and "bit c*i+j being entry (i, j)" in M.render_prompt_cd(M.generate_cd("d", 3, 0, "true"))
+        and "(r, c) = (2, 2), (4, 2), (2, 4)" in M.render_prompt_cd(M.generate_cd("d", 2, 0, "true"))
+        and "for example (3, 12)" in M.render_prompt_cd(M.generate_cd("d", 2, 0, "true"))
+        and "rk accepts only the three shapes" in M.render_prompt_cd(M.generate_cd("d", 2, 0, "true")))
+    chk("budget", lambda: M.check_claim_cd(M.generate_cd("c", 2, 0, "true"), (0, 0), 3, TOTAL) == "malformed")
+    return bad
+
+
+MUTANTS_CD = {
+    "true_always_correct": ('        return "correct" if label_cd(t, step_limit, total_steps).holds else "wrong"\n    env = _pair_cd',
+                            '        return "correct"\n    env = _pair_cd'),
+    "pair_trusted_without_eval": ('    return "wrong" if bad is None else "correct"\n', '    return "correct"\n'),
+    "verdict_inverted": ('    return "wrong" if bad is None else "correct"\n', '    return "correct" if bad is None else "wrong"\n'),
+    "bool_accepted": ("type(v) is not int or not 0 <= v < n for v in answer", "not isinstance(v, int) or not 0 <= v < n for v in answer"),
+    "upper_bound_inclusive": ("not 0 <= v < n for v in answer", "not 0 <= v <= n for v in answer"),
+    "negative_accepted": ("not 0 <= v < n for v in answer", "not -n <= v < n for v in answer"),
+    "wrong_domain_size": ("    n = 1 << (t.mu * t.mu)\n    if any", "    n = 1 << t.mu\n    if any"),
+    "length_check_loosened": ("type(answer) not in (tuple, list) or len(answer) != 2", "type(answer) not in (tuple, list) or len(answer) < 2"),
+    "any_string_accepted": ('        if answer != "true":\n            return "malformed"\n', ""),
+    "str_subclass_trusted": ("    if type(answer) is str:\n        if answer != \"true\":", "    if isinstance(answer, str):\n        if answer != \"true\":"),
+    "str_subclass_trusted_ab": ('if type(answer) is str and answer == "true":', 'if isinstance(answer, str) and answer == "true":'),
+    "bit_order_swapped": ("bit {t.mu}*i+j being entry (i, j).", "bit i+{t.mu}*j being entry (i, j)."),
+    "rk_bit_order_dropped": ("bit c*i+j being entry (i, j); ", ""),
+    "shapes_sentence_dropped": ("rk accepts only the three shapes", "rk accepts the shapes"),
+    "pair_example_dropped": ("written as a tuple or list, for example (3, 12).", "written as two numbers."),
+    "refusal_propagates": ('    except rp.PredicateRefused:  # the candidate pair cannot be evaluated within the budget: no credit\n        return "malformed"\n', '    except KeyError:\n        return "malformed"\n'),
+    "list_refused": ("type(answer) not in (tuple, list) or", "type(answer) not in (tuple,) or"),
+    "prompt_leaks_variant": ('"Question: is the predicate True for every pair (x, y) in the domain?\\n"',
+                             'f"Question ({t.variant}): is the predicate True for every pair (x, y) in the domain?\\n"'),
+    "prompt_drops_source": ('        f"{t.source}\\n"\n        "Question: is the predicate True for every pair', '        "Question: is the predicate True for every pair'),
+    "prompt_wrong_bound": ('f"Domain: every pair of integers (x, y) with 0 <= x < 2**{n} and', 'f"Domain: every pair of integers (x, y) with 0 <= x < 2**{t.mu} and'),
+    "prompt_hash_ignores_source": ("hashlib.sha256(render_prompt_cd(task).encode(\"ascii\"))", "hashlib.sha256(str(task.mu).encode(\"ascii\"))"),
+    "task_check_skipped": ('    if not isinstance(t, TaskCD):\n        raise ValueError("task must be a TaskCD")\n', ""),
+    "bool_mu_check_dropped": ('    _int(t.mu, "mu", MU_MIN, MU_MAX)\n    _int(t.seed, "seed", -2**63, 2**63 - 1)\n    return t\n\n\ndef render_prompt_cd',
+                              '    return t\n\n\ndef render_prompt_cd'),
+}
+
+
+class CDCopyAndMutantTests(unittest.TestCase):
+    def test_cd_battery_passes_on_the_unmodified_copy(self):
+        mod = types.ModuleType("r6_t3_copy")
+        exec(compile(read_source(), "r6_t3_copy.py", "exec"), mod.__dict__)
+        self.assertEqual(_cd_battery(mod), [])
+        self.assertEqual(_cd_battery(T), [])
+
+    def test_every_cd_mutant_is_a_single_change_and_is_killed(self):
+        self.assertGreaterEqual(len(MUTANTS_CD), 8)
+        survivors = []
+        src = read_source()
+        for name, (old, new) in MUTANTS_CD.items():
+            self.assertEqual(src.count(old), 1, name)
+            self.assertNotEqual(old, new, name)
+            with self.subTest(mutant=name):
+                failed = _cd_battery(load_copy(old, new))
+                if not failed:
+                    survivors.append(name)
+                self.assertTrue(failed, name)
+        self.assertEqual(survivors, [])
+
+
 if __name__ == "__main__":
     unittest.main()

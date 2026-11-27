@@ -144,7 +144,9 @@ def check_claim(task, answer, step_limit, total_steps):
     """Verdict "correct", "wrong" or "malformed". 'true' is correct only if check_lemma finds no counterexample
     over the whole domain; an int answer is correct only if the predicate is re-evaluated False on it."""
     t = _check_task(task)
-    if answer == "true" and isinstance(answer, str):
+    # exact type: a str subclass with a lying __eq__ is not the word "true"
+    # (a)(b) keep letting PredicateRefused propagate when a budget is hit; only (c)(d) maps it to "malformed".
+    if type(answer) is str and answer == "true":
         return "correct" if label(t, step_limit, total_steps).holds else "wrong"
     if type(answer) is not int or not 0 <= answer < 1 << t.k:  # subclasses (bool included) are refused
         return "malformed"
@@ -274,3 +276,69 @@ def label_cd(task, step_limit, total_steps):
     n = 1 << (t.mu * t.mu)
     bad = rp.check_lemma(p, ({"x": x, "y": y} for x in range(n) for y in range(n)), step_limit, total_steps)
     return Label(True, None) if bad is None else Label(False, (bad["x"], bad["y"]))
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Part 3: the (a)(b) task interface for (c)(d): render_prompt_cd, prompt_sha256_cd, check_claim_cd.
+# An answer is the str "true" or a counterexample pair (x, y): a tuple or list of exactly two ints (bool and int
+# subclasses refused) in range(2**(mu*mu)). Anything else is "malformed" (no partial credit). A pair is "correct"
+# only when the predicate, re-evaluated in the sandbox with the registry, is False on it; the label text is not used.
+# ---------------------------------------------------------------------------------------------------------------
+def _check_task_cd(t):
+    if not isinstance(t, TaskCD):
+        raise ValueError("task must be a TaskCD")
+    if t.kind not in KINDS_CD or t.variant not in VARIANTS or not isinstance(t.source, str):
+        raise ValueError("bad task fields")
+    _int(t.mu, "mu", MU_MIN, MU_MAX)
+    _int(t.seed, "seed", -2**63, 2**63 - 1)
+    return t
+
+
+def render_prompt_cd(task):
+    t = _check_task_cd(task)
+    n = t.mu * t.mu
+    return (
+        "Finite lemma over pairs of 0/1 matrices.\n"
+        f"Domain: every pair of integers (x, y) with 0 <= x < 2**{n} and 0 <= y < 2**{n}; an integer packs a "
+        f"{t.mu}-by-{t.mu} 0/1 matrix row by row, bit {t.mu}*i+j being entry (i, j).\n"
+        "Predicate (Python-like expression over x and y; & | ^ << >> act on integers, sum(e for i in range(n)) adds e\n"
+        "over i = 0..n-1; rk(x, r, c) is the rank over the field F_2 of the r-by-c 0/1 matrix packed row by row in\n"
+        "the integer x, with 0 <= x < 2**(r*c), bit c*i+j being entry (i, j); rk accepts only the three shapes\n"
+        f"(r, c) = ({t.mu}, {t.mu}), ({2 * t.mu}, {t.mu}), ({t.mu}, {2 * t.mu}) and refuses any other):\n"
+        f"{t.source}\n"
+        "Question: is the predicate True for every pair (x, y) in the domain?\n"
+        "Answer with the single word true, or with one pair of two integers (x, y) in the domain for which it is False,\n"
+        "written as a tuple or list, for example (3, 12).\n"
+    )
+
+
+def prompt_sha256_cd(task):
+    return hashlib.sha256(render_prompt_cd(task).encode("ascii")).hexdigest()
+
+
+def _pair_cd(t, answer):
+    if type(answer) not in (tuple, list) or len(answer) != 2:
+        return None
+    n = 1 << (t.mu * t.mu)
+    if any(type(v) is not int or not 0 <= v < n for v in answer):
+        return None
+    return {"x": answer[0], "y": answer[1]}
+
+
+def check_claim_cd(task, answer, step_limit, total_steps):
+    """Verdict "correct", "wrong" or "malformed" (see part 3 header). 'true' is correct only if check_lemma finds no
+    counterexample over every pair; a pair is correct only if the predicate is re-evaluated False on it."""
+    t = _check_task_cd(task)
+    if type(answer) is str:
+        if answer != "true":
+            return "malformed"
+        return "correct" if label_cd(t, step_limit, total_steps).holds else "wrong"
+    env = _pair_cd(t, answer)
+    if env is None:
+        return "malformed"
+    p = rp.parse(t.source, registry_cd(t.mu))
+    try:
+        bad = rp.check_lemma(p, [env], step_limit, total_steps)
+    except rp.PredicateRefused:  # the candidate pair cannot be evaluated within the budget: no credit
+        return "malformed"
+    return "wrong" if bad is None else "correct"
