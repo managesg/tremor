@@ -267,6 +267,7 @@ name (`src/murmuration/`) so existing imports and commands keep working.
   `docs/reports/tremor/REVIEW_ITEMS_ATTACK_EVIDENCE.md`.
 - **Not done:** Pilot 4 and EP-1 (waiting on a key holder), any Inkling-2-Mini GPU run on the Spark,
   custodian-held sealed inputs, and the M3 and M5-M10 admissions.
+- **Two `quantum` packages:** the public simulator is `quantum/` at the root (run its tests with `PYTHONPATH=. python3 -m unittest tests.test_gatesim`); the lab has its own `lab/quantum/`. With `lab` on the Python path, as the lab test commands do, `lab/quantum` shadows the root package, so run the two sets of tests separately.
 - **Original lab README** (permission replay ledger, safety and privacy notes): `docs/LAB_README.md`.
 - The VP != VNP paper shared on 2026-11-23 is used only as a source of finite test tasks. Its proof is not
   verified by us, and nothing here supports a claim about P vs NP.
