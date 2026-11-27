@@ -79,6 +79,20 @@ lab/tests/test_tremor_sealed_inputs.py
 lab/tests/test_tremor_spend_total.py
 lab/tests/test_r6_t2_identity_agreement.py
 docs/reports/HANDOFF_TREMOR_20261126.md
+src/tremor/
+src/murmuration/
+tests/test_murmuration_shim.py
+README.md
+RESEARCH.md
+lab/r6_t2_tasks.py
+lab/tests/test_r6_t2_tasks.py
+lab/tests/test_tremor_gate_rehearsal.py
+lab/tests/test_r6_end_to_end_rehearsal.py
+data/math500/SOURCE.md
+data/math500/test.jsonl.sha256
+docs/LAB_README.md
+docs/reports/tremor/OWNER_RUN_RETIRE_OLD_CHECKOUTS.md
+docs/reports/tremor/RENAME_TO_TREMOR_PLAN.md
 ```
 
 ## Shared files hunks
@@ -86,17 +100,16 @@ docs/reports/HANDOFF_TREMOR_20261126.md
 none: this lane edits no file another writer also edits; lab/l5_*, lab/r3_* and their tests belong to other writers and are never touched.
 ```
 
-## Verified results (this session, refreshed at HEAD de306ff, 2026-11-27 ~03:30Z)
-- d17c7d3 T2 identity checker A + agreement test (68 OK at that SHA); 9caaeaa zero/ones/coefficient tests: test command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t2_identity lab.tests.test_r6_t2_identity_agreement lab.tests.test_r6_t2_identity_b` result at HEAD: 71 OK.
-- c17ba8c T3 second kill: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t3_lemmas` 34 OK.
-- 18958e4 Stage A interval tests: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_stage_a_interval_extra lab.tests.test_r6_stage_a` 73 OK.
-- 9755a3c R6 amendments applied to prereg/R6-protocol-draft.md and the R6 plan (docs; Sonnet-reviewed ACCEPT); 8464dcc was the reviewed draft.
-- Docs drafts (docs only, no test; claims checked against the cited files): b586619 M4 freeze records (DRAFT, nothing frozen), fa2fb37 M10 settlement reconciliation (Muse helper), 60013d4 row 167 reveal checklist (Cursor helper), de306ff M7 spend/freeze sheet (every M7 cost figure OPEN), 49907a6 blocker-audit rewording.
-- Assistant Opus ACCEPT of 4774391, 7af497d, e0cc831, 829485b, 9caaeaa. Second gap review (3 Sonnet reviewers, 24 new mutants, 22 killed, 1 low survivor fixed afterwards, 1 equivalent): stale handoff and wording fixed here.
-- Acceptance stays 1/10: only M1. "M4 scope APPROVED and frozen (documentary)" in the plan means scope approval only, not an M4 freeze; "M10 PARTLY ACCEPTED" means offline release and reader evidence at local scope, M10 is not accepted.
+## STATE: PAUSED by Alejandro (2026-11-27, chat): "pause your work temporarily until the other agents have tokens available; I'll let you know when to restart". No worker, helper terminal or background job is running. Restart only on his word, through the Assistant or in chat.
 
-## Pending work
-T3 part 2 (rank_f2 registry, security-relevant sandbox extension); per-task registry for the t2 sub-generator; refresh REVIEW_ITEMS_ATTACK_EVIDENCE.md for newer commits; M5/M6/M9 scripted rehearsals on the lane's own stack; final STATUS at 04:59Z.
+## Verified results (HEAD 32857d3, 2026-11-27)
+- **Pushed to github.com/managesg/tremor by Alejandro:** history up to dc09b45, then 85c05a0 (verify with `git ls-remote https://github.com/managesg/tremor.git main`).
+- **Local commits NOT yet pushed** (push is Alejandro's step: `git push https://github.com/managesg/tremor.git master:main` from ~/SeaBridgeAI/murmuration, after checking ls-remote): 4f0efcb README + RESEARCH (R5/R6 lines, findings so far, background; Sonnet-reviewed), 8eb6162 owner-run checkout packet, 32857d3 package rename murmuration -> tremor (Opus-reviewed ACCEPT; test command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest discover -s tests -t .` 974 OK; shim keeps old imports; key TREMOR_EP1_KEY with MURMURATION_EP1_KEY fallback; prereg/ and 3 pinned lab files untouched), plus any later commit shown by `git log --oneline 85c05a0..HEAD`.
+- Earlier tonight (all local, reviewed as stated in the outbox STATUS blocks): T2 identity A/B + task module 7584ba5 (38 OK), T3 part 2 29f54ce (Opus ACCEPT, 108 OK), Stage A interval tests 18958e4 (73 OK), gate and R6 end-to-end rehearsals 6103905 (48 OK), M4/M7/M10/row 167 drafts b586619 de306ff fa2fb37 60013d4 (docs only), R6 amendments 9755a3c, review items refresh 27250a1, handoff and gap review fixes df205c9.
+- Acceptance stays 1 of 10 (M1). No run has started beyond M1; no Inkling contact; paid total USD 0.00.
+
+## Pending work (not started)
+T3 lemma (c)/(d) prompt and check_claim; third gap review of everything since df205c9 (3 Sonnet angles: honesty, tests, safety) including the rename and README; EP-1 code_tree_hash in prereg/EP1.md to compute after the rename; owner-run steps in docs/reports/tremor/OWNER_RUN_RETIRE_OLD_CHECKOUTS.md (save a99cddd, rename directories, add remote): Alejandro runs them; final STATUS.
 
 ## Blockers (named person)
 Key holder for MURMURATION_EP1_KEY (Pilot 4 / EP-1, window to 2026-11-28T23:59Z); Pilot 4 check 7 human Console read; owner names the R6 custodian (R6-O2); PC placement, notice and quiet window for Inkling B0/B1/P0; custodian N2; SmolLM3 weights operator; trainer price; M7 author spend; Lean+Mathlib install gate; whether WSP-R1 (USD ~6 to 9 estimate) counts against the USD 10; OpenAI paper and Toledo audit URLs; owner of record for untracked tremor-named files from 11-20..11-22.
