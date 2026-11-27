@@ -1,4 +1,4 @@
-# murmuration
+# TREMOR lab (formerly named murmuration)
 
 Research prototype: can complex-systems ideas (adaptation, feedback, decay, shared state) make
 coding-agent permissions, orchestration and memory better? **Status: exploratory. Nothing here

@@ -253,9 +253,13 @@ never the scope of the questions.**
   dual-use boundary written down before any run.
 
 ## Lab, tooling and progress (offline, local-first)
-This repository is the single TREMOR project: the public write-up above plus the working lab that
-builds and tests the experiments. The lab was developed as "murmuration"; its Python package keeps that
-name (`src/murmuration/`) so existing imports and commands keep working.
+This repository is the TREMOR project: the public write-up above plus the working lab that builds and
+tests the experiments. TREMOR is the only project name. Some internal names still say "murmuration"
+because they are pinned: the Python package `src/murmuration/`, the environment variable
+`MURMURATION_EP1_KEY`, and `src/murmuration` paths inside the preregistrations (`prereg/`) and the
+Pilot 4 preflight manifest. Renaming them changes the sha256 of files that the admission record and the
+freeze records pin, so it is a planned step with a re-pin, not a quiet find-and-replace (see
+`docs/reports/tremor/RENAME_TO_TREMOR_PLAN.md`).
 
 - **Status:** only milestone M1 (a small GPU calibration) is accepted, 1 of 10. No agent has been run on
   the R5/R6 lines yet; the paid total is USD 0.00 against a hard USD 10 cap enforced in code.
