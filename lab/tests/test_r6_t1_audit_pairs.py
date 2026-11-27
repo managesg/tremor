@@ -184,6 +184,12 @@ class Refusals(unittest.TestCase):
         self.assertEqual(len(fp), len(TOY_SPECS))
         self.assertTrue(all(x["formal"] == TOY and not x["defective"] and x["span"] is None for x in fp))
 
+    def test_minimal_span_edit_at_text_ends(self):
+        self.assertEqual(t.minimal_span("abc", "abcX"), [3, 4])  # pure insertion at the very end
+        self.assertEqual(t.minimal_span("abcX", "abc"), [3, 3])  # pure deletion at the very end
+        self.assertEqual(t.minimal_span("abc", "Xabc"), [0, 1])  # pure insertion at the very start
+        self.assertEqual(t.minimal_span("Xabc", "abc"), [0, 0])  # pure deletion at the very start
+
 
 if __name__ == "__main__":
     unittest.main()

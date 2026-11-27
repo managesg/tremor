@@ -2,7 +2,7 @@
 
 Status: DRAFT, 2026-11-26, written by the TREMOR lane from tracked files only. Nothing here is frozen,
 admitted, approved or a run authority. No price, count or threshold is invented: where a source gives
-none the cell says OPEN. Citations are `file:line` as read at HEAD `56c9189b` (working tree).
+none the cell says OPEN. Citations are `file:line` as read at HEAD `56c9189b` at drafting time (later commits do not change these cites; working tree).
 
 Keys: PROT = `prereg/M7-grover-protocol-draft.md`; GTS = `docs/reports/workplan-ep/Grover-topology-scripted.md`;
 FFR = `docs/reports/tremor/FREEZE_FIELD_REGISTER.md`; OD = `docs/reports/tremor/OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md`;
