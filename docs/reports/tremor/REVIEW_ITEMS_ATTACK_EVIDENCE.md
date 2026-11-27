@@ -83,6 +83,61 @@ Result key: lane / archive. All 15 mutation runs below were caught in BOTH copie
 - Result: lane `Ran 65 tests in 75.229s` OK / archive `Ran 65 tests in 76.631s` OK.
 - Mutation: `if all(lo <= 1 <= hi for lo, hi in ods.values()):` -> `if False:`. CAUGHT both: `FAIL: test_planted_shared_cause_is_flagged_at_every_size`, `Ran 28`.
 
+## Items 11 to 19: commits after 775207f (numbers copied from `~/.agents/agent-manager/pilot-lanes/outbox/tremor-coordinator-status.md`; NOT re-run for this section, no lane/archive columns, no new mutation runs)
+Lane: tremor. Command prefix `PYTHONPATH=src:lab:tests:. python3 -B -m unittest` unless stated.
+## 11. cfc87f3 T1 Definition-Audit pairs (lab/r6_t1_audit_pairs.py)
+- Attack: a defect span that is not the minimal diff; an ambiguous edit that is not refused; sealed mode leaking the defect; zero-width span scored wrong.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t1_audit_pairs`
+- Recorded: 17 tests OK; 9 of 10 final reviewer-style mutants killed (survivor is an equivalent loop bound). df205c9 adds a trailing-edge minimal_span test (+18 with it, per the lane summary).
+- Review: Opus ACCEPT after two rounds. df205c9: Assistant Sonnet-reviewed ACCEPT.
+- Unreviewed: no Lean run; 2 defects marked likely/uncertain stay out of any scored pool; informal side is Lean docstrings until R6-O25.
+## 12. 2f1ddfd, d17c7d3, 9caaeaa T2 identity checker A/B and agreement
+- Attack: A and B disagreeing yet a label is produced; zero matrix, ones matrix, coefficient >= p, bits=1, limit-1, unreduced coefficient.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t2_identity lab.tests.test_r6_t2_identity_agreement lab.tests.test_r6_t2_identity_b`
+- Recorded: 2f1ddfd B alone 28 tests OK, 14 of 14 mutants killed; d17c7d3 68 OK, mutants A 24/26 killed (2 equivalent), agreement 5/6 (transpose equivalent); 9caaeaa 71 OK, its 3 survivors (bits=1 8 failures, limit-1 8, unreduced coefficient 4) now fail the new tests on a scratch copy, 2 equivalent mutants stay equivalent.
+- Review: 2f1ddfd Opus-reviewed by the lane's own Opus reviewer, then Assistant Opus REJECT (3 survivors); 9caaeaa Assistant ACCEPT; d17c7d3 independent Opus ACCEPT (5 minors fixed).
+- Unreviewed: the two equivalent mutants are the lane's own judgment.
+## 13. c17ba8c T3 second kill (lab/tests/test_r6_t3_lemmas.py)
+- Attack: domain missing zero or the top value.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t3_lemmas`
+- Recorded: 34 OK; the top-value domain mutant now fails the new test too.
+- Review: reviewer suggestion; commit itself has no separate review record.
+## 14. 18958e4 Stage A interval tests (lab/tests/test_r6_stage_a_interval_extra.py)
+- Attack: in_interval bound, sign and swap mutants; lower-open and upper-open.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_stage_a_interval_extra lab.tests.test_r6_stage_a`
+- Recorded: 73 OK (153 s), 9 new tests; worker reports 10 of 10 mutants killed; lane re-ran lower-open and upper-open (2 failures each).
+- Review: own-subagent work, lane-verified by running, NOT independently reviewed (submitted as an Assistant review request).
+## 15. 7584ba5 T2 task module (lab/r6_t2_tasks.py)
+- Attack: label read from kind/seed; A/B disagreement yielding a label; prompt leaking the answer; check_claim crash or partial credit on odd input; registry bypass.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t2_tasks`
+- Recorded: 38 OK; lane re-ran 3 reviewer survivors on a scratch copy (sub swap, const no mod, transposed index): all fail now.
+- Review: Sonnet-reviewed REVISE (circuit validation, 4 survivors, registry docstring), fixed by the builder.
+- Unreviewed: the fixed version was not re-reviewed in full; no Assistant ACCEPT recorded.
+## 16. 829485b ledger duplicate-open (src/murmuration/spend.py)
+- Attack: a forged `batch_open` in another ledger file; batch_report reading the merged pin; malformed ledger JSON must exit 2. Related to item 2 (e696b16).
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest tests.test_spend tests.test_ep1 tests.test_team_claude` (also `python3 -B -m pytest tests/test_spend.py -q`)
+- Recorded: commit message 275 tests, 1792 forgery scenarios with no false refusal on copies of the real ledgers; Assistant ran the full spend suite: 275 OK.
+- Review: Opus review ACCEPT (in commit); Assistant ACCEPT.
+- Unreviewed: real git-ignored `runs/spend` ledgers are absent from a clean archive.
+## 17. 4774391 G1 fixture (lab/tests/test_r6_scorecard_g1_algebraic)
+- Attack: G1 passing on an open relativization or algebrization claim; scorecard changed.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_scorecard_g1_algebraic lab.tests.test_r6_scorecard`
+- Recorded: 11 tests, 4 of 4 mutants (commit message); 55 OK with the scorecard module.
+- Review: Assistant ACCEPT.
+## 18. 7af497d T3 finite-lemma generator part 1 (lab/r6_t3_lemmas.py)
+- Attack: label taken from the paper's claim or the template instead of our exhaustive checker; loose false variants.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_t3_lemmas`
+- Recorded: 33 tests OK, 29 of 29 mutants (commit message).
+- Review: Opus review ACCEPT; Assistant ACCEPT.
+## 19. e0cc831 F1 SAT and model-count generator (lab/r6_f1_tasks)
+- Attack: an unsat answer accepted; checker not mechanical.
+- Command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest lab.tests.test_r6_f1_tasks`
+- Recorded: 24 tests OK, 38 of 40 mutants killed (commit message; the 2 survivors are not described in the status file).
+- Review: Opus review ACCEPT (unsat-answer gap fixed); Assistant ACCEPT.
+- Unreviewed: the 2 surviving mutants.
+## Note on items 11 to 19
+Sonnet-reviewed, Opus-reviewed and Assistant ACCEPT labels are as the status file records them; numbers there were not re-run here. Nothing committed or pushed.
+
 ## Summary
 10 items, 15 mutations, 15 caught in both copies, 0 survivors. Unverified in the archive: 7 tests (item 3) and 8 tests (item 6) that need the real
 `runs/spend` ledgers; they passed in the lane checkout. A mutation proves only that the named test guards that line, not every attack in the item.
