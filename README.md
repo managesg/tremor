@@ -89,6 +89,33 @@ noise of promote_repeated.
 ## Track 2 — Complex-systems research (in progress)
 See `docs/research/`. Every citation carries a verified Y/N flag; unverified items are labelled.
 
+### TREMOR progress (offline tooling, as of 2026-11-27; local commits only)
+TREMOR measures how well teams of AI agents do on tasks whose answers a program can check exactly. The
+plan is written down and frozen before any paid or GPU run. **Only milestone M1 (a small GPU
+calibration) is accepted: 1 of 10.** No agent has been run on the R5/R6 lines yet and the paid total is
+USD 0.00 (hard cap USD 10 in code).
+
+Built and tested offline (stdlib only; each module has tests and mutation checks, see
+`docs/reports/tremor/REVIEW_ITEMS_ATTACK_EVIDENCE.md` for sha, test command and counts):
+- **Money guard:** `src/murmuration/spend.py`, `ep1.py`: price-sheet pins, a hard USD 10 cap no argument can
+  raise, refusal of a batch opened in two ledger files.
+- **Gate and sealed inputs:** `lab/tremor_admission_gate.py`, `lab/tremor_sealed_inputs.py`,
+  `lab/tremor_freeze_skeleton.py`: no run unless a freeze record and an admission record agree; one use
+  per batch.
+- **R6 task families** (`lab/r6_*`): exact formula and circuit-size tables, a predicate sandbox, F1 logic
+  tasks, T1 definition-audit pairs, T2 permanent/Hamiltonian-cycle identity tasks (two independent
+  implementations must agree before a label exists), T3 finite lemmas with a reviewed `rank_f2` primitive,
+  Stage A scoring, scorecard and Holm decision.
+- **Rehearsals:** an end-to-end gate rehearsal and an end-to-end R6 pipeline rehearsal, both offline.
+- **Drafts waiting for named people** (nothing frozen or admitted): `docs/reports/tremor/` (M4 freeze
+  records, M7 spend sheet, M10 settlement reconciliation, row 167 reveal checklist).
+
+What is not done: Pilot 4 and EP-1 (key holder), any Inkling-2-Mini GPU run on the Spark (PC must place
+the shared model slot; TREMOR has not contacted it), custodian-held sealed inputs, M3, M5-M10 admissions.
+The VP != VNP paper (shared 2026-11-23) is used only as a source of finite test tasks; its proof is not
+verified by us and nothing here supports any claim about P vs NP. Plan and checklist:
+`docs/reports/TREMOR_GOAL_AND_PLAN_20261123.md`; handoff: `docs/reports/HANDOFF_TREMOR_20261126.md`.
+
 ## Safety and privacy
 No credentials, tenant data or provider calls. Do not publish transcripts; share only salted
 aggregates.
