@@ -165,3 +165,112 @@ def distinct_instances():
                         seen.add(h)
                         out.append(t)
     return out
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Part 2: (c) transversal rank additivity and (d) the square-root-of-rank triangle on Mat_mu(F_2), 2 <= mu <= 3.
+# A matrix is an int of mu*mu bits, row-major (bit mu*i+j = entry (i,j)); W + W' over F_2 is x ^ y. The ranks come
+# from ONE per-task registry function rk(x, r, c) = F_2 rank of the r x c row-major matrix x (r, c <= 2*mu), which
+# lies outside the step limit (one step per call, plan section 3). Labels still come only from check_lemma over
+# every pair (x, y) in range(2**(mu*mu))**2. Transversal = row spaces meet in 0 and column spaces meet in 0,
+# written with rk of the row stack (2mu x mu) and of the column stack (mu x 2mu): rk(stack) == rk x + rk y.
+# (d) is integer-only: sqrt(r) <= sqrt(p)+sqrt(q) and the reverse, with p, q, r = rk x, rk y, rk(x+y), is
+# (r-p-q)^2 <= 4pq. Planted false variants change one fragment (MUTATIONS_CD) and have a counterexample for mu=2,3.
+# ---------------------------------------------------------------------------------------------------------------
+MU_MIN, MU_MAX = 2, 3
+KINDS_CD = ("c", "d")
+# Every per-task registry function. The plan's `scorer_ids` must list each of them (plan section 3, registry rule).
+SCORER_IDS = ("rank_f2",)
+TAG_CD = "gen-T3cd"
+
+
+def _make_rank(mu):
+    """Pure registry function for one task; closes over the three shapes (r, c) the lemmas use, as ints only."""
+    shapes = ((mu, mu), (2 * mu, mu), (mu, 2 * mu))
+
+    def rank_f2(x, r, c):
+        if (type(x) is not int or type(r) is not int or type(c) is not int or (r, c) not in shapes
+                or not 0 <= x < 1 << (r * c)):
+            raise rp.PredicateRefused("rank_f2 argument")
+        mask = (1 << c) - 1
+        basis = []
+        for i in range(r):
+            v = (x >> (c * i)) & mask
+            for b in basis:
+                v = min(v, v ^ b)
+            if v:
+                basis.append(v)
+        return len(basis)
+    return rank_f2
+
+
+def registry_cd(mu):
+    _int(mu, "mu", MU_MIN, MU_MAX)
+    return {"rk": (3, _make_rank(mu))}
+
+
+def _parts_cd(mu):
+    m2, M = mu * mu, (1 << mu) - 1
+    rx, ry = f"rk(x, {mu}, {mu})", f"rk(y, {mu}, {mu})"
+    rs = f"rk(x | (y << {m2}), {2 * mu}, {mu})"
+    cs = (f"rk(sum((((x >> ({mu}*i)) & {M}) << ({2 * mu}*i)) | (((y >> ({mu}*i)) & {M}) << ({2 * mu}*i+{mu}))"
+          f" for i in range({mu})), {mu}, {2 * mu})")
+    return rx, ry, rs, cs
+
+
+def _sources_cd(kind, mu):
+    rx, ry, rs, cs = _parts_cd(mu)
+    if kind == "c":
+        row, col = f"{rs} == {rx} + {ry}", f"{cs} == {rx} + {ry}"
+        concl = f"rk(x ^ y, {mu}, {mu}) == {rx} + {ry}"
+        return f"not ({row} and {col}) or {concl}"
+    r = f"rk(x ^ y, {mu}, {mu})"
+    return f"({r} - {rx} - {ry}) * ({r} - {rx} - {ry}) <= 4 * {rx} * {ry}"
+
+
+def _mutations_cd(kind, mu):
+    rx, ry, rs, cs = _parts_cd(mu)
+    if kind == "c":
+        row, col = f"{rs} == {rx} + {ry}", f"{cs} == {rx} + {ry}"
+        concl = f"rk(x ^ y, {mu}, {mu}) == {rx} + {ry}"
+        return ((f"not ({row} and {col}) or ", ""), (f" and {col}", ""), (f"not ({row} and ", "not ("),
+                (concl, concl + " + 1"))
+    return (("<= 4 *", "<= 3 *"), ("<= 4 *", "< 4 *"), ("<= 4 *", "<= 2 *"),
+            (f"4 * {rx} * {ry}", f"4 * {rx} + {ry}"))
+
+
+class TaskCD(NamedTuple):
+    kind: str       # "c" or "d"
+    mu: int         # domain: every pair (x, y), x and y in range(2**(mu*mu))
+    seed: int
+    variant: str    # the generator's intent; never read by label_cd()
+    source: str
+
+
+def generate_cd(kind, mu, seed, variant):
+    if kind not in KINDS_CD:
+        raise ValueError("kind must be one of " + repr(KINDS_CD))
+    if variant not in VARIANTS:
+        raise ValueError("variant must be one of " + repr(VARIANTS))
+    _int(mu, "mu", MU_MIN, MU_MAX)
+    h = _task_seed(f"{TAG_CD}:{kind}:{mu}", seed, 0)
+    src = _sources_cd(kind, mu)
+    if variant == "planted_false":
+        ms = _mutations_cd(kind, mu)
+        old, new = ms[h % len(ms)]
+        if src.count(old) != 1:
+            raise AssertionError("mutation fragment must occur exactly once")
+        src = src.replace(old, new)
+    return TaskCD(kind, mu, seed, variant, src)
+
+
+def label_cd(task, step_limit, total_steps):
+    """Truth by exhaustive check_lemma over all pairs, with the per-task registry; variant and kind are not read."""
+    t = task
+    if not isinstance(t, TaskCD) or t.kind not in KINDS_CD or t.variant not in VARIANTS or not isinstance(t.source, str):
+        raise ValueError("bad task")
+    _int(t.mu, "mu", MU_MIN, MU_MAX)
+    p = rp.parse(t.source, registry_cd(t.mu))
+    n = 1 << (t.mu * t.mu)
+    bad = rp.check_lemma(p, ({"x": x, "y": y} for x in range(n) for y in range(n)), step_limit, total_steps)
+    return Label(True, None) if bad is None else Label(False, (bad["x"], bad["y"]))

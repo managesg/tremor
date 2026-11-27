@@ -1,4 +1,5 @@
 import time
+import types
 import unittest
 
 from lab import r6_predicates as rp
@@ -314,6 +315,360 @@ class SubclassAndDistinctTests(unittest.TestCase):
 class RuntimeTest(unittest.TestCase):
     def test_runtime_under_90s(self):
         self.assertLess(time.time() - T0, 90)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Part 2: (c) transversal rank additivity, (d) sqrt-rank triangle; per-task registry function rk = rank_f2.
+# ---------------------------------------------------------------------------------------------------------------
+def span_rank(x, r, c):
+    """Independent brute force: rank = log2 of the number of distinct XOR combinations of the r rows."""
+    rows = [(x >> (c * i)) & ((1 << c) - 1) for i in range(r)]
+    span = {0}
+    for v in rows:
+        span |= {a ^ v for a in span}
+    return len(span).bit_length() - 1
+
+
+def pure_cd(kind, x, y, mu):
+    m2, M = mu * mu, (1 << mu) - 1
+    p, q, r = span_rank(x, mu, mu), span_rank(y, mu, mu), span_rank(x ^ y, mu, mu)
+    if kind == "d":
+        return (r - p - q) ** 2 <= 4 * p * q
+    rs = span_rank(x | (y << m2), 2 * mu, mu)
+    cs = span_rank(sum(((((x >> (mu * i)) & M) << (2 * mu * i)) | (((y >> (mu * i)) & M) << (2 * mu * i + mu)))
+                       for i in range(mu)), mu, 2 * mu)
+    return not (rs == p + q and cs == p + q) or r == p + q
+
+
+def rk_of(mu):
+    return T.registry_cd(mu)["rk"][1]
+
+
+def refused(src, mu=3, env=None):
+    try:
+        rp.parse(src, T.registry_cd(mu)).run(env or {}, 5000)
+    except rp.PredicateRefused:
+        return True
+    return False
+
+
+class RankF2BruteForceTests(unittest.TestCase):
+    def test_square_every_input_mu_1_to_3_agrees_with_span_count(self):
+        for mu in (2, 3):
+            f = rk_of(mu)
+            for x in range(1 << (mu * mu)):
+                self.assertEqual(f(x, mu, mu), span_rank(x, mu, mu), (mu, x))
+
+    def test_every_allowed_shape_agrees_and_every_other_is_refused(self):
+        for mu in (2, 3):
+            f = rk_of(mu)
+            ok = {(mu, mu), (2 * mu, mu), (mu, 2 * mu)}
+            for r in range(0, 2 * mu + 2):
+                for c in range(0, 2 * mu + 2):
+                    if (r, c) not in ok:
+                        with self.assertRaises(rp.PredicateRefused, msg=(mu, r, c)):
+                            f(0, r, c)
+                        continue
+                    for x in list(range(0, 1 << (r * c), 1 if r * c <= 12 else 61)) + [(1 << (r * c)) - 1]:
+                        self.assertEqual(f(x, r, c), span_rank(x, r, c), (mu, r, c, x))
+                    with self.assertRaises(rp.PredicateRefused):
+                        f(1 << (r * c), r, c)
+
+    def test_ranks_are_ints_below_2_64_and_deterministic(self):
+        f = rk_of(3)
+        a = [f(x, 3, 3) for x in range(512)]
+        self.assertEqual(a, [f(x, 3, 3) for x in range(512)])
+        self.assertTrue(all(type(v) is int and 0 <= v <= 3 for v in a))
+        self.assertEqual(a[0], 0)
+        self.assertEqual(f(0b100010001, 3, 3), 3)
+
+
+class RegistrySandboxTests(unittest.TestCase):
+    def test_direct_calls_refuse_bad_arguments(self):
+        f = rk_of(3)
+        for bad in ((1 << 20, 3, 3), (-1, 3, 3), (True, 3, 3), (1, True, 3), (1, 0, 3), (1, 3, 0), (1, 3, 7), (1, 7, 3),
+                    (1.0, 3, 3), (1, 3.0, 3), (1, 3, 3.0), (0, 3, 0), (0, 0, 3), (1, 0, 0), (1, 2, 3), ("1", 3, 3), (None, 3, 3), (1 << 64, 3, 3), (1 << 9, 3, 3), (1 << 62, 6, 6)):
+            with self.assertRaises(rp.PredicateRefused, msg=repr(bad)):
+                f(*bad)
+        for bad_arity in ((), (1,), (1, 3), (1, 3, 3, 3)):
+            with self.assertRaises(TypeError):
+                f(*bad_arity)
+        with self.assertRaises(rp.PredicateRefused):
+            rk_of(2)(1, 5, 2)    # cap is 2*mu = 4
+
+    def test_function_exposes_nothing(self):
+        f = rk_of(3)
+        self.assertEqual(vars(f), {})
+        self.assertTrue(all(type(c.cell_contents) is tuple and all(type(v) is int for sh in c.cell_contents for v in sh)
+                            for c in f.__closure__))
+        self.assertEqual(set(T.registry_cd(3)), {"rk"})
+        self.assertEqual(T.registry_cd(3)["rk"][0], 3)
+        self.assertNotIn("task", f.__code__.co_freevars)
+        self.assertEqual(T.SCORER_IDS, ("rank_f2",))
+        self.assertEqual(f.__name__, T.SCORER_IDS[0])
+        self.assertEqual(len(T.SCORER_IDS), len(T.registry_cd(3)))
+
+    def test_escape_attempts_refused(self):
+        for src in ("rk.__class__", "rk(1, 3, 3).__class__", "rk.__closure__", "rk.__globals__", "__import__('os')",
+                    "open('f')", "eval('1')", "globals()", "vars(rk)", "getattr(rk, 'x')", "rk", "rk == rk",
+                    "rk(x=1, r=3, c=3)", "rk(*[1, 3, 3])", "[rk(i, 3, 3) for i in range(9)]",
+                    "sum(rk(i, 3, 3) for i in range(9) for j in range(2))", "sum(rk(i, 3, 3) for i in [1, 2])",
+                    "(lambda: 1)()", "rk(1, 3, 3)[0]", "rk(1, 3)", "rk(1, 3, 3, 3)", "rk()",
+                    "rk(rk, 3, 3) == 0", "rk(i, 3, 3) for i in range(2)", "rk(1, 3, 3) == 1; 1",
+                    "rk(18446744073709551616, 3, 3)", "rk(2**64, 3, 3)", "S.__class__", "rk(1, 3, 3) == 1 and __builtins__",
+                    "sum(rk(i, 3, 3) for i in range(70000)) > 0"):
+            self.assertTrue(refused(src, env={"S": 1}), src)
+
+    def test_runtime_refusals_negative_huge_out_of_range(self):
+        for src in ("rk(-1, 3, 3) == 0", "rk(1 << 64, 3, 3) == 0", "rk(1 << 63, 3, 3) == 0", "rk(512, 3, 3) == 0",
+                    "rk(1, 0, 3) == 0", "rk(1, 3, 7) == 0", "rk(1, -3, 3) == 0", "rk(1 << 40, 6, 6) == 0"):
+            self.assertTrue(refused(src), src)
+
+    def test_bool_is_coerced_by_the_sandbox_before_the_call(self):
+        # the sandbox (unchanged) turns True into 1 before calling; the function itself refuses a bool (above)
+        self.assertEqual(rp.parse("rk(True, 3, 3) == 1", T.registry_cd(3)).evaluate({}, 100), True)
+
+    def test_each_call_is_one_step_whatever_it_computes(self):
+        reg = T.registry_cd(3)
+        for x in (0, 1, 511):
+            p = rp.parse(f"rk({x}, 3, 3) == rk(0, 3, 3)", reg)
+            p.evaluate({}, 100)
+            self.assertEqual(p.last_steps, 9)    # Compare + 2 calls + 6 constants, independent of the matrix
+
+    def test_non_int_result_is_refused_by_the_sandbox(self):
+        reg = {"rk": (3, lambda x, r, c: 1.0)}
+        with self.assertRaises(rp.PredicateRefused):
+            rp.parse("rk(1, 3, 3) == 1", reg).evaluate({}, 100)
+        reg = {"rk": (3, lambda x, r, c: 1 << 64)}
+        with self.assertRaises(rp.PredicateRefused):
+            rp.parse("rk(1, 3, 3) == 1", reg).evaluate({}, 100)
+
+    def test_registry_is_per_task_and_mu_checked(self):
+        for bad in (1, 4, True, "2", None):
+            with self.assertRaises(ValueError):
+                T.registry_cd(bad)
+        self.assertIsNot(T.registry_cd(3)["rk"][1], T.registry_cd(3)["rk"][1])
+        with self.assertRaises(rp.PredicateRefused):
+            rp.parse("rk(1, 3, 3) == 1")    # not registered: not a call to a whitelisted function
+
+
+class CDLemmaTests(unittest.TestCase):
+    def test_true_lemmas_hold_and_match_independent_python_mu2(self):
+        for kind in T.KINDS_CD:
+            t = T.generate_cd(kind, 2, 0, "true")
+            self.assertEqual(T.label_cd(t, SL, TOTAL), T.Label(True, None))
+            self.assertTrue(all(pure_cd(kind, x, y, 2) for x in range(16) for y in range(16)))
+
+    def test_planted_labels_match_independent_python_mu2(self):
+        # the planted source differs from the true one, so compare predicate values pair by pair with the sandbox
+        for kind in T.KINDS_CD:
+            for seed in range(12):
+                t = T.generate_cd(kind, 2, seed, "planted_false")
+                p = rp.parse(t.source, T.registry_cd(2))
+                L = T.label_cd(t, SL, TOTAL)
+                self.assertFalse(L.holds)
+                self.assertFalse(p.evaluate({"x": L.counterexample[0], "y": L.counterexample[1]}, SL))
+
+    def test_true_lemmas_hold_mu3_exhaustively(self):
+        for kind in T.KINDS_CD:
+            self.assertEqual(T.label_cd(T.generate_cd(kind, 3, 0, "true"), SL, TOTAL), T.Label(True, None), kind)
+        for x, y in ((0, 0), (1, 8), (73, 292), (511, 511), (341, 170), (7, 56), (7, 7), (1, 2)):
+            for kind in T.KINDS_CD:
+                self.assertTrue(pure_cd(kind, x, y, 3), (kind, x, y))
+
+    def test_every_mutation_reached_and_false_for_mu_2_3(self):
+        for kind in T.KINDS_CD:
+            for mu in (2, 3):
+                srcs = {T.generate_cd(kind, mu, s, "planted_false").source for s in range(60)}
+                self.assertEqual(len(srcs), 4, (kind, mu))
+                for src in srcs:
+                    L = T.label_cd(T.TaskCD(kind, mu, 0, "planted_false", src), SL, TOTAL)
+                    self.assertFalse(L.holds, (kind, mu, src))
+
+    def test_dropping_transversal_is_false_with_a_non_transversal_witness(self):
+        t = T.generate_cd("c", 3, 0, "true")
+        src = T._sources_cd("c", 3)
+        bare = src[src.index(" or ") + 4:]
+        L = T.label_cd(t._replace(source=bare), SL, TOTAL)
+        self.assertEqual(L, T.Label(False, (1, 1)))     # x = y != 0: rank(x + y) = 0 != 2 rank(x)
+        self.assertNotEqual(span_rank(1 ^ 1, 3, 3), 2 * span_rank(1, 3, 3))
+
+    def test_label_ignores_variant_and_kind(self):
+        for kind in T.KINDS_CD:
+            for v, w in (("true", "planted_false"), ("planted_false", "true")):
+                t = T.generate_cd(kind, 2, 1, v)
+                self.assertEqual(T.label_cd(t, SL, TOTAL), T.label_cd(t._replace(variant=w), SL, TOTAL))
+        a = T.generate_cd("c", 2, 0, "true")
+        self.assertFalse(T.label_cd(a._replace(kind="d", source=T.generate_cd("c", 2, 5, "planted_false").source),
+                                    SL, TOTAL).holds)
+
+    def test_domain_covers_the_top_pair_and_zero(self):
+        for mu in (2, 3):
+            top = (1 << (mu * mu)) - 1
+            for src, want in ((f"x + y != {2 * top}", (top, top)), ("x + y != 0", (0, 0)), (f"x != {top} or y != 0", (top, 0))):
+                L = T.label_cd(T.TaskCD("c", mu, 0, "true", src), SL, TOTAL)
+                self.assertEqual(L, T.Label(False, want), src)
+
+    def test_determinism_and_refusals(self):
+        for kind in T.KINDS_CD:
+            for v in T.VARIANTS:
+                self.assertEqual(T.generate_cd(kind, 3, 4, v), T.generate_cd(kind, 3, 4, v))
+        self.assertEqual(T.label_cd(T.generate_cd("c", 2, 3, "planted_false"), SL, TOTAL),
+                         T.label_cd(T.generate_cd("c", 2, 3, "planted_false"), SL, TOTAL))
+        for args in (("a", 2, 0, "true"), ("c", 1, 0, "true"), ("c", 4, 0, "true"), ("c", True, 0, "true"),
+                     ("c", 2, True, "true"), ("c", 2, 0, "false"), ("d", 2.0, 0, "true")):
+            with self.assertRaises(ValueError, msg=repr(args)):
+                T.generate_cd(*args)
+        for bad in (None, T.generate_cd("c", 2, 0, "true")._replace(mu=4), T.generate_cd("c", 2, 0, "true")._replace(source=3)):
+            with self.assertRaises(ValueError):
+                T.label_cd(bad, SL, TOTAL)
+        with self.assertRaises(rp.PredicateRefused):
+            T.label_cd(T.generate_cd("d", 3, 0, "true"), SL, 100)     # budget refusal, not a label
+
+    def test_sources_are_integer_only_and_fit_the_limits(self):
+        for kind in T.KINDS_CD:
+            for mu in (2, 3):
+                src = T._sources_cd(kind, mu)
+                self.assertTrue(src.isascii() and len(src) <= rp.MAX_SOURCE and "/" not in src and "." not in src)
+                rp.parse(src, T.registry_cd(mu))
+
+
+# Mutants of the module itself: each is ONE textual change applied to a COPY of lab/r6_t3_lemmas.py, loaded as a
+# separate module; the battery must detect every one.
+MUTANTS = {
+    "rank_off_by_one": ("        return len(basis)\n", "        return len(basis) + 1\n"),
+    "wrong_field_add_not_xor": ("v = min(v, v ^ b)", "v = min(v, v + b)"),
+    "zero_rows_counted": ("            if v:\n", "            if True:\n"),
+    "last_row_dropped": ("for i in range(r):", "for i in range(r - 1):"),
+    "wrong_row_stride": ("(x >> (c * i)) & mask", "(x >> (r * i)) & mask"),
+    "wrong_mask": ("mask = (1 << c) - 1", "mask = (1 << r) - 1"),
+    "registry_returns_float": ("        return len(basis)\n", "        return float(len(basis))\n"),
+    "no_input_bound": (" or not 0 <= x < 1 << (r * c)", ""),
+    "shape_cap_plus_one": ("(mu, 2 * mu))", "(mu, 2 * mu), (mu, 2 * mu + 1))"),
+    "c_zero_accepted": ("shapes = ((mu, mu),", "shapes = ((mu, 0), (mu, mu),"),
+    "rank_capped_at_2": ("        return len(basis)\n", "        return min(len(basis), 2)\n"),
+    "r_type_unchecked": ("type(r) is not int or", ""),
+    "namespace_leak": ("    return rank_f2\n", "    rank_f2.ns = globals()\n    return rank_f2\n"),
+    "wrong_arity_registered": ('"rk": (3, _make_rank(mu))', '"rk": (2, _make_rank(mu))'),
+    "transversal_dropped": ('return f"not ({row} and {col}) or {concl}"', "return concl"),
+    "constant_changed_c": ('return f"not ({row} and {col}) or {concl}"', 'return f"not ({row} and {col}) or {concl} + 1"'),
+    "constant_changed_d": (') <= 4 * {rx} * {ry}"', ') <= 3 * {rx} * {ry}"'),
+    "label_taken_from_variant": ('return Label(True, None) if bad is None else Label(False, (bad["x"], bad["y"]))',
+                                 'return Label(t.variant == "true", None)'),
+    "domain_misses_last_x": ("for x in range(n) for y in range(n)", "for x in range(n - 1) for y in range(n)"),
+    "bool_accepted_by_function": ("type(x) is not int or", "type(x) not in (int, bool) or"),
+}
+
+
+def read_source():
+    with open(T.__file__, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def load_copy(old, new):
+    src = read_source()
+    assert src.count(old) == 1, old
+    mod = types.ModuleType("r6_t3_copy")
+    mod.__file__ = T.__file__
+    exec(compile(src.replace(old, new), "r6_t3_copy.py", "exec"), mod.__dict__)
+    return mod
+
+
+def battery(M):
+    """Names of the checks that fail on module M (a copy); empty for the real module."""
+    bad = []
+
+    def chk(name, fn):
+        try:
+            if not fn():
+                bad.append(name)
+        except Exception:
+            bad.append(name + "!")
+
+    def brute():
+        for mu in (2, 3):
+            f = M.registry_cd(mu)["rk"][1]
+            if any(f(x, mu, mu) != span_rank(x, mu, mu) for x in range(1 << (mu * mu))):
+                return False
+            for r, c in ((2 * mu, mu), (mu, 2 * mu)):
+                if any(f(x, r, c) != span_rank(x, r, c) for x in range(0, 1 << (r * c), 97)):
+                    return False
+        return True
+
+    def raises(f, *a):
+        try:
+            f(*a)
+        except rp.PredicateRefused:
+            return True
+        except TypeError:
+            return len(a) != 3    # wrong arity only
+        return False
+
+    def refuses():
+        f, g = M.registry_cd(3)["rk"][1], M.registry_cd(2)["rk"][1]
+        return all(raises(f, *a) for a in ((1 << 20, 3, 3), (-1, 3, 3), (True, 3, 3), (1, 0, 3), (0, 3, 0), (1, 3, 7), (1, 7, 3), (1, 3.0, 3), (1, 3))) \
+            and raises(g, 1, 5, 2)
+
+    def clean():
+        f = M.registry_cd(3)["rk"][1]
+        return (type(f(5, 3, 3)) is int and vars(f) == {} and all(type(c.cell_contents) is tuple for c in f.__closure__)
+                and M.registry_cd(3)["rk"][0] == 3)
+
+    def sandbox():
+        p = rp.parse("rk(10, 3, 3) == 2", M.registry_cd(3))
+        return p.evaluate({}, 100) is True and p.last_steps == 6
+
+    def labels():
+        for kind in M.KINDS_CD:
+            if M.label_cd(M.generate_cd(kind, 2, 0, "true"), SL, TOTAL).holds is not True:
+                return False
+            for seed in range(12):
+                t = M.generate_cd(kind, 2, seed, "planted_false")
+                L = M.label_cd(t, SL, TOTAL)
+                if L.holds or L != M.label_cd(t._replace(variant="true"), SL, TOTAL):
+                    return False
+        return True
+
+    def top():
+        L = M.label_cd(M.TaskCD("c", 2, 0, "true", "x + y != 30"), SL, TOTAL)
+        return L == M.Label(False, (15, 15))
+
+    def true3_c_spot():
+        t = M.generate_cd("c", 3, 0, "true")
+        p = rp.parse(t.source, M.registry_cd(3))
+        return all(p.evaluate({"x": x, "y": y}, SL) == pure_cd("c", x, y, 3)
+                   for x, y in ((1, 8), (1, 1), (73, 292), (511, 511), (7, 56), (7, 7), (1, 2), (0, 0)))
+
+    for name, fn in (("brute", brute), ("refuses", refuses), ("clean", clean), ("sandbox", sandbox), ("labels", labels),
+                     ("top", top), ("spot", true3_c_spot)):
+        chk(name, fn)
+    return bad
+
+
+class CopyAndMutantTests(unittest.TestCase):
+    def test_battery_passes_on_the_unmodified_copy(self):
+        src = read_source()
+        mod = types.ModuleType("r6_t3_copy")
+        exec(compile(src, "r6_t3_copy.py", "exec"), mod.__dict__)
+        self.assertEqual(battery(mod), [])
+        self.assertEqual(battery(T), [])
+
+    def test_at_least_ten_mutants_and_every_one_is_killed(self):
+        self.assertGreaterEqual(len(MUTANTS), 10)
+        survivors = []
+        for name, (old, new) in MUTANTS.items():
+            with self.subTest(mutant=name):
+                failed = battery(load_copy(old, new))
+                if not failed:
+                    survivors.append(name)
+                self.assertTrue(failed, name)
+        self.assertEqual(survivors, [])
+
+    def test_mutants_are_single_changes_that_really_differ(self):
+        src = read_source()
+        for name, (old, new) in MUTANTS.items():
+            self.assertEqual(src.count(old), 1, name)
+            self.assertNotEqual(old, new, name)
 
 
 if __name__ == "__main__":
