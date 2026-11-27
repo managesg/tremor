@@ -327,6 +327,16 @@ def p_refuse_notice_future_window(E):
     assert "has not started or has ended" in E.run(argv)[1] and not E.claim_file().exists()
 
 
+def p_refuse_notice_end_not_after_start(E):
+    for start, end in ((-1, -1), (-2, -3), (1, 0)):  # equal, and end before start, window around now or not
+        E.notice.write_text(E.notice_text(start=start, end=end))
+        argv = E.argv(live=True)
+        code, out = E.run(argv)
+        assert code == 2 and "REFUSED[pc-notice-incomplete]" in out and "end is not after the start" in out, out
+        assert "has not started or has ended" not in out
+        assert E.connects == [] and E.srv.bodies == [] and not E.claim_file().exists()
+
+
 def p_refuse_notice_pending(E):
     for v in ("pending", "TBD", "unknown", "later", "todo"):
         E.notice.write_text(E.notice_text(placement=v))
@@ -640,6 +650,7 @@ MUTANTS = [
     ("no_endpoint_check", "if not _endpoint_ok(a):", "if False:", ["refuse_endpoint", "refuse_localhost_name"]),
     ("no_notice_negation_check", "if not fields.get(k) or _NEG.search(fields[k]):", "if not fields.get(k):",
      ["refuse_notice_negated"]),
+    ("no_end_le_start_check", "if end <= start:", "if False:", ["refuse_notice_end_not_after_start"]),
     ("no_start_check", "if not start <= (now or _utc()) < end:", "if not (now or _utc()) < end:",
      ["refuse_notice_future_window", "notice_window_boundaries"]),
     ("end_inclusive", "if not start <= (now or _utc()) < end:", "if not start <= (now or _utc()) <= end:",
