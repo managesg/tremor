@@ -2,19 +2,25 @@
 
 Prepared 2026-11-26 UTC, offline. Nothing here was run with a real key. One Pilot 4 batch only: 30 episodes, 240 planned calls,
 Haiku 5.5 (`claude-haiku-5-5`), temperature 1.0, thinking disabled, no prefill, round-2 wording `array_only` (D8-b).
-Run everything from the repo root `/home/adelmar/SeaBridgeAI/murmuration`.
+Run everything from the repo root `/home/adelmar/SeaBridgeAI/murmuration`, in `bash` (the key prompt uses `read -s`).
+
+**State refreshed 2026-11-27T13:2xZ (offline, no key, no network, no paid call; paid spend for Pilot 4 and EP-1 USD 0.00; recorded total of earlier batches USD 0.0413027).** The package is now `tremor`
+(`src/tremor`; `murmuration` is a shim that aliases it), the key variable is `TREMOR_EP1_KEY` (legacy `MURMURATION_EP1_KEY` still accepted,
+`ep1.py:49-50`; if both are set and differ the run refuses, `ep1.py:771-774`), and `pilot4` exists in `spend.BATCH_SPECS` (`spend.py:69`) and
+the driver (`ep1.py:54-65`, `ep1.py:781`). Offline checks re-run today are in `PILOT4_EP1_READINESS_20261127.md`; the full run order
+(Pilot 4, then the seven checks, then EP-1) is in `EP1_RUN_PACKET.md`. The commands below are unchanged in meaning from 2026-11-26.
 
 ## 1. Preconditions (all must hold; any miss: do not start)
 
-1. **Key.** `MURMURATION_EP1_KEY` is set in this one shell session only, typed at a silent prompt (never inline before the command, so it
+1. **Key.** `TREMOR_EP1_KEY` is set in this one shell session only, typed at a silent prompt (never inline before the command, so it
    never reaches shell history or `ps`; never in a file or argument; never echoed). Each HTTP 401 from a wrong key is a transport abort and
    the third stops the batch for good, so the guard below rejects an obviously wrong key before launch:
    ```
-   read -rs MURMURATION_EP1_KEY; export MURMURATION_EP1_KEY; case "$MURMURATION_EP1_KEY" in sk-ant-?*) ;; *) echo BAD KEY; false;; esac
+   read -rs TREMOR_EP1_KEY; export TREMOR_EP1_KEY; case "$TREMOR_EP1_KEY" in sk-ant-?*) ;; *) echo BAD KEY; false;; esac
    ```
-   (`BAD KEY` and a non-zero status: stop, `unset MURMURATION_EP1_KEY`, start over.) After the run, and also after any refusal:
-   `unset MURMURATION_EP1_KEY`. The driver reads it in `ep1.cli` only.
-2. **Spend limits.** Owner USD 10 total cap (shared; `HARD_CAP_USD`, `spend.py:46`). The driver and `lab/tremor_spend_total.py` count only the ledgers in `runs/spend`; any other spend on this key or account must be added by hand before launch. Pilot 4 cap USD 0.25, 260 calls, 598,000
+   (`BAD KEY` and a non-zero status: stop, `unset TREMOR_EP1_KEY`, start over.) After the run, and also after any refusal:
+   `unset TREMOR_EP1_KEY`. The driver reads it in `ep1.cli` only.
+2. **Spend limits.** Owner USD 10 total cap (shared; `HARD_CAP_USD`, `spend.py:48`). The driver and `lab/tremor_spend_total.py` count only the ledgers in `runs/spend`; any other spend on this key or account must be added by hand before launch. Pilot 4 cap USD 0.25, 260 calls, 598,000
    tokens, one batch (`spend.py:69`). Prior recorded spend USD 0.0413027, so after a full batch the total stays near USD 0.19 at
    worst-case reservation (260 x 0.00055 = 0.143).
 2b. **Ledger folder.** `runs/spend` must hold only the real ledgers: any other regular file there (for example a backup copy such as `canary.jsonl.bak`) makes every batch refuse as ledger-corrupt until it is moved out.
@@ -23,7 +29,7 @@ Run everything from the repo root `/home/adelmar/SeaBridgeAI/murmuration`.
    passed with `--price-sheet`: the driver's default sheet (`docs/reports/price-sheet.json`, fetched 2026-11-20) is refused as
    6 days old (checked 2026-11-26: `PriceSheetRefused ... 6 days old (limit 3)`), so without the flag the command refuses. The flag is
    labelled "test hook" in `--help`; here it is the supported route because Pilot 4 opens on its own ledger lineage with the new
-   sheet (`DECISION_LOG.md`, "D8 price sheet refetched"). `--predecessor-price-sheet` is NOT used: it exists for `ep1 run` only
+   sheet (`DECISION_LOG.md`, "D8 price sheet refetched"). `--predecessor-price-sheet` is NOT used here: `pilot4 --help` lists it, but it matters only for `ep1 run`
    (the `ep1` batch pins the old sheet). Rehearsal below confirms `pilot4` opens on the copied real canary ledger with the new sheet.
 4. **Window check, immediately before launch**, with the checked window and today's real instants (start = now, end = the end of
    the planned run, not later than 2026-11-28T23:59:59Z):
@@ -31,7 +37,7 @@ Run everything from the repo root `/home/adelmar/SeaBridgeAI/murmuration`.
    PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m lab.pilot4_price_window \
      runs/d8-price-refetch.20261126T0050Z/price-sheet.json \
      --price-sheet-sha256 2edb8b5ca979694eefe720d0fb3f0bf2a33cda73966b5c26f856392342a7a0f2 \
-     --starts-at "$(date -u +%FT%TZ)" --ends-at "<run end, UTC, e.g. 2026-11-26T23:59:59Z>"
+     --starts-at "$(date -u +%FT%TZ)" --ends-at "<run end, UTC, e.g. 2026-11-28T23:59:59Z>"
    ```
    Must print `"status": "price_sheet_valid_for_window"`. The previously checked window is 2026-11-26T01:00:00Z to
    2026-11-28T23:59:59Z. The agreed window ends 2026-11-28T23:59:59Z. The sheet's age is checked only when the driver loads it at start (`spend.py` `_check_age`, `PriceSheet.load`), and the sheet is accepted through 2026-11-29 (`valid_through_utc_date`); a later start is refused. Finish inside the agreed window anyway.
@@ -47,18 +53,18 @@ Run everything from the repo root `/home/adelmar/SeaBridgeAI/murmuration`.
    `DECISION_LOG.md`. The `--i-have-owner-confirm` flag below is his confirm; do not add it on anyone else's behalf.
 8. **Lean scorer available.** The real (unstubbed) `ep1._bracket` call in section 5 ran on this host on 2026-11-26; an `INVALID` Lean
    probe would stop the batch before the first call at no cost, but run the check 6 command first as a free smoke test.
-9. **Host.** One writer, no other `ep1` process running (`pgrep -af "murmuration ep1"` shows nothing). Network is the only paid
+9. **Host.** One writer, no other `ep1` process running (`pgrep -af "tremor ep1"` shows nothing). Network is the only paid
    route used: HTTPS to `api.anthropic.com` from the client; nothing else.
 
 ## 2. The command (paid; run once)
 
 ```
 set -o pipefail
-PYTHONPATH=src python3 -m murmuration ep1 pilot4 \
+PYTHONPATH=src python3 -m tremor ep1 pilot4 \
   --out-dir runs/ep1-live/pilot4 --schedule-seed 0 --i-have-owner-confirm \
   --price-sheet runs/d8-price-refetch.20261126T0050Z/price-sheet.json 2>&1 \
   | tee runs/ep1-live/pilot4-stdout.txt
-echo "exit=$?"; unset MURMURATION_EP1_KEY
+echo "exit=$?"; unset TREMOR_EP1_KEY
 ```
 (The key is already exported from item 1 of section 1; nothing key-bearing is on this command line. `pipefail` makes the exit code the
 driver's, not `tee`'s. `runs/ep1-live/pilot4-stdout.txt` must not exist before launch.)
@@ -105,7 +111,7 @@ ledger's `charge` lines; response ids (`msg_...`) are in the episode records' tu
 Checks 1 to 5 in one command; read `criteria`, `readouts` and `order_rule`:
 ```
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m lab.pilot_clearance runs/ep1-live/pilot4 runs/spend/pilot4.jsonl --batch pilot4
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m murmuration ep1 analyse runs/ep1-live/pilot4
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m tremor ep1 analyse runs/ep1-live/pilot4
 ```
 It refuses (exit 2, "evidence unavailable or inconsistent") unless the batch is `complete`, all 30 episodes and 240 calls are present, the
 schedule is non-dry, and the ledger reconciles to the records. A refusal means the batch is not clearable: go to section 8.
@@ -125,12 +131,12 @@ every overage are printed as well; report them. Pilot 3 failed this check at 263
 **Check 6, scripted bracket** (no key, loopback fake server, about 4 seconds):
 ```
 B=$(mktemp -d) && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -W ignore -c "
-from murmuration import ep1; import json, sys
+from tremor import ep1; import json, sys
 print(json.dumps(ep1._bracket(sys.argv[1], 0, ep1.REVIEW_FILE, None), sort_keys=True))" "$B"
 
 ```
 Pass: `"floor_fails": true` and `"oracle_passes": true` with `floor_Y` `[0.25, 0.25, 0.25]` and `oracle_Y` `[1.0, 1.0, 1.0]` (floor exactly 0.25,
-oracle exactly 1.0 in each of the three arms). The same bracket runs inside `python3 -m murmuration ep1 dry-run --out-dir <dir>`
+oracle exactly 1.0 in each of the three arms). The same bracket runs inside `PYTHONPATH=src python3 -m tremor ep1 dry-run --out-dir <dir>`
 (`bracket` key, verdict GREEN), but that full dry run was not completed here (the 60-episode `ep1` stage exceeded the time box), so the direct
 call is the supported shortcut. See section 9 for the open point on `lab.ep1_bracket_receipt`.
 
@@ -217,7 +223,7 @@ pilot4.jsonl usd=0.0706710
    ep1p4pa-code-t5-s5:r1:a3 1545 300 end_turn 0.0003045 0.0706710 charged
 total_usd=0.1119737 cap_total=10.0 batch=pilot4 batch_usd=0.0706710 cap_batch=0.25 (this directory only; add any other spend by hand)
 ```
-(The 0.0413027 prior spend equals the real recorded `runs/spend` total; `python3 -m lab.tremor_spend_total runs/spend` on the real directory prints
+(The 0.0413027 prior spend equals the real recorded `runs/spend` total; `PYTHONPATH=src python3 -m lab.tremor_spend_total runs/spend` on the real directory prints
 `total_usd=0.0413027`. Its test covers a null-usage charge, an uncharged reservation and an `unbilled_unknown` reservation, and equals
 `spend.Ledger._sum`; a mutated copy that drops uncharged reservations fails it.)
 
