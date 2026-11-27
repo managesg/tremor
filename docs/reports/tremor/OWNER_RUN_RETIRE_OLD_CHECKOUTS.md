@@ -8,12 +8,12 @@ Facts come from read-only commands run 2026-11-27 (no network). Counts move: re-
 
 | Path (under ~/SeaBridgeAI) | Branch | Remote | `git status --short` | `??` | du -sh |
 |---|---|---|---|---|---|
-| `murmuration` (lab) | `master` | none | 288 lines (206 tracked changes, 82 untracked) | 82 | 25G |
+| `murmuration` (lab) | `master` | none | 84 lines (4 tracked changes, 80 untracked) | 80 | 25G |
 | `tremor` (clone) | `main` | origin https://github.com/managesg/tremor.git | 0 | 0 | 45M |
 | `tremor-relay-release-20261122` (worktree of tremor) | detached @ a99cddd | same repo | 0 | 0 | 8.7M |
 
 Refresh: `for d in murmuration tremor tremor-relay-release-20261122; do echo $d; git -C ~/SeaBridgeAI/$d rev-parse --short HEAD; git -C ~/SeaBridgeAI/$d rev-list --count HEAD; git -C ~/SeaBridgeAI/$d status --short | wc -l; done`
-(at preparation time murmuration and tremor were both at the same HEAD, 85c05a0).
+Counts re-computed 2026-11-27 at murmuration HEAD 260bbaa (547 commits); tremor clone at 85c05a0 (536 commits); worktree at a99cddd (11 commits). The murmuration lab history now contains 85c05a0 (`git merge-base --is-ancestor 85c05a0 HEAD` succeeds).
 
 - Design defect of the earlier draft: `tremor` is a clean 45M clone; `murmuration` alone holds `data/`
   (14G), `runs/` (11G), `coordinator-outbox/`, the untracked files and the modified files. Making
@@ -23,7 +23,7 @@ Refresh: `for d in murmuration tremor tremor-relay-release-20261122; do echo $d;
 - a99cddd ("docs: distinguish Pilot 3 clearance and generation limits") and 3f674dd ("test: publish
   replayable scripted relay controls") are on local branch `tremor/pilot3-clearance-copy` only;
   `git branch -r --contains a99cddd` printed nothing. They are NOT on origin.
-- murmuration has no remote (`git remote -v` printed nothing); `origin/main` does not exist there.
+- murmuration has no remote (`git remote -v` printed nothing); `origin/main` does not exist there. The public history (managesg/tremor main 062bb68) is merged into the lab history by afb6b56 (`git merge-base --is-ancestor 062bb68 HEAD` succeeds). GitHub `main` was 85c05a0 when last verified (by the owner's push, not re-checked now: no network).
 - No D: mount (`/mnt/d`, `/d` absent). Backup path is the owner's choice.
 - Whether GitHub origin still equals the last fetched tip, whether `data`/`runs` exist elsewhere, and
   which sessions are open now: UNVERIFIED.
@@ -61,6 +61,8 @@ tar -cf "$BK/murmuration.tar" -C ~/SeaBridgeAI murmuration
 ```
 Run `df -h "$BK"` first and read it. Tar duration: UNVERIFIED.
 
+**OWNER-RUN ONLY, NEVER AN AGENT (sections 5 to 8).**
+
 ## 5. Step 3: retire the small clones, then rename murmuration to tremor
 
 Order matters: the worktree is registered inside `tremor/.git`, so move it with git while `tremor` is
@@ -89,8 +91,7 @@ git branch -vv
 ```
 Check: `git status -sb` shows `master` ahead of nothing or only by commits you expect (no upstream is set;
 `master` is not `origin/main`, so compare with `git log origin/main..HEAD` and `HEAD..origin/main`). Push
-only after this check, and only by the owner under rule 7. How local `master` relates to `origin/main`
-(same history or not) is UNVERIFIED until the fetch runs.
+only after this check, and only by the owner under rule 7. Local `master` contains the public history (merge afb6b56) and later local commits; whether GitHub `main` moved since 85c05a0 is UNVERIFIED until the fetch runs.
 
 ## 7. Optional compatibility link
 
@@ -103,7 +104,7 @@ never `rm -r`; Safety rule 1 allows this only with bounded approval, so it is th
 
 ```bash
 cd ~/SeaBridgeAI
-rm murmuration 2>/dev/null     # only if the symlink was created; it is a link, not the directory
+rm murmuration     # only if the symlink was created; it is a link, not the directory
 mv tremor murmuration
 mv tremor.retired-20261127 tremor
 git -C tremor worktree move ../tremor-relay-release-20261122.retired-20261127 ../tremor-relay-release-20261122
@@ -119,4 +120,4 @@ git -C tremor worktree move ../tremor-relay-release-20261122.retired-20261127 ..
 - Orca workspace paths for the lane (point at `~/SeaBridgeAI/tremor`), lane checklist, handoffs and the
   owned-paths blocks; `lane-session-check.js tremor` and the supervisor lane config.
 - Scripts or tests with absolute paths into `murmuration/` (data and runs locations).
-- The murmuration-to-tremor package rename SUBTASK is separate and not done by this packet.
+- The murmuration-to-tremor package rename is separate: done in commit 32857d3 (src/tremor, shim src/murmuration), not by this packet.

@@ -61,7 +61,7 @@ Missing before a first P0, B0' or B1' run (FP section 2; draft:121-132):
 4. **Written notice** before and after to the PC coordinator (OmniRoute fallback hop), the Spark service owner, and direct users of :8011 (draft:127, FP:120).
 5. **Quiet window**: Spark hop out of OmniRoute routing; the owner agrees it with PC (draft:128).
 6. **Custodian (R6-O2)**: not named by the owner (ST). Needed to seal protected inputs, including the pilot pool, before P0 (D2, FP:81-91); no sealed path exists.
-7. **Code**: F1 generator, F4 checker and, per draft:132, the P0 driver were "not committed" in the draft's 2026-11-26 status; the P0 driver now exists in `lab/` (ST: 103 OK), but the F1/F4 generators and checkers are not shown as built (FP:72, `task_family_revision`). Confirm before freeze.
+7. **Code**: F1 generator, F4 checker and, per draft:132, the P0 driver were "not committed" in the draft's 2026-11-26 status; the P0 driver now exists in `lab/` (ST: 103 OK), and the F1 generator `lab/r6_f1_tasks.py` exists (tests `lab/tests/test_r6_f1_tasks.py`); an F4 checker was not found by file name (`ls lab | grep -i f4` is empty), so F4 stays UNVERIFIED (FP:72, `task_family_revision`). Confirm before freeze.
 8. `model_snapshot` gaps: no mmproj hash or inode in DL:311 (FP:71). The sha256 of the Q8 GGUF recorded in DL:311 is a local identity, not upstream verification (PL:245).
 9. B0' and B1' also wait on P0's T (PL:316), the dial (R6-O17) and the output cap and timeout (R6-O22).
 10. R5 Stage B (Qwen) additionally needs the R3-L2 launcher and a custodian (R5:103); its 14-day expiry is the author's choice.
@@ -83,4 +83,4 @@ Observed here: pid 435838, `Inkling-2-Mini-UD-Q8_K_XL.gguf`, `--ctx-size 131072 
 - [ ] Do not let anyone start P0, B0' or B1' before `check` then `admit` pass for that batch; `admit` is one-use.
 - [ ] Re-read pid, start time, exe hash and GGUF inode (read-only, as the file owner) immediately before the freeze; stop on any mismatch (draft:135).
 
-Not checked: the resident server's behaviour or health, sha256 of any file, the test suites at this HEAD, whether F1 and F4 generators are built.
+Not checked: the resident server's behaviour or health, sha256 of any file, the test suites at this HEAD, whether the F4 checker is built (F1 exists, see item 7).

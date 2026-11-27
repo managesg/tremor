@@ -145,7 +145,7 @@ echo "exit=$?"; unset TREMOR_EP1_KEY
 `16b204c2...`, which `docs/reports/price-sheet.json` hashes to; checked), and without the flag the run is refused "price sheet changed mid-batch 'ep1'
 [no predecessor price sheet given]". The code accepts the move only because the two sheets differ only in `fetched`. Run the flag in this exact form.
 Expected effects: the driver writes one `sheet_continuity` line into `runs/spend/canary.jsonl` (the file that holds `ep1`'s `batch_open`,
-`spend.py:444-447`), so `canary.jsonl` changes by one appended line; EP-1's own ledger is `runs/spend/ep1.jsonl`; outputs in `runs/ep1-live/ep1`
+`src/tremor/spend.py:444-447` only READS the continuity from that file; the line is written by `self._append(m, path)` at `src/tremor/spend.py:575-576`), so `canary.jsonl` changes by one appended line; EP-1's own ledger is `runs/spend/ep1.jsonl`; outputs in `runs/ep1-live/ep1`
 (`schedule.json`, `episodes.jsonl`, `events.jsonl`, `final.json`). Design: 3 arms x 20 held-out sets = 60 episodes = 480 calls; cap 500 calls (19 spare after the canary),
 USD 5.00, 1,250,000 tokens with the canary counted inside (canary used: 1 call, 46,609 tokens, USD 0.0046625). Output on success, refusals and stops is the
 same shape as Step B (one JSON object, exit 0, read `reason`; exit 2 for a pre-reservation refusal that writes nothing). Frozen refusal text: see Step E.

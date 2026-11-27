@@ -265,8 +265,9 @@ The full work plan, with gates and rules, is in **[WORKPLAN.md](WORKPLAN.md)**.
 Only recorded facts are listed here. None of them is a result about whether any technique works.
 
 **Accepted.** Milestone M1, a small GPU calibration on the Spark, is accepted: 0.023123 GPU-hours
-settled. That is 1 of 10 milestones. The paid total is USD 0.00 against a hard USD 10 cap enforced in
-code.
+settled. That is 1 of 10 milestones. USD 0.0413027 is recorded across the canary and pilots 1 to 3
+(`PYTHONPATH=src:. python3 -m lab.tremor_spend_total` reads it) against a hard USD 10 cap enforced in code; USD 0.00 for
+Pilot 4 and EP-1; no paid call since the owner approval of 2026-11-26.
 
 **The two-implementation rule.** A label or ground-truth value is used only when two independent
 implementations agree on it. A single implementation is not enough.
@@ -287,14 +288,15 @@ Recorded outcomes from the lab's status log:
 
 - No agent has run on R5 or R6.
 - Inkling-2-Mini has not been contacted. Only the offline client and driver exist.
-- No paid batch has run.
+- No paid call since the owner approval of 2026-11-26. Earlier paid work is the canary and pilots 1 to 3
+  (USD 0.0413027 in total, per `PYTHONPATH=src:. python3 -m lab.tremor_spend_total`); Pilot 4 and EP-1 have not run.
 - No run has started for any milestone beyond M1. M2 to M10 each wait on a named person (key holder,
   trainer price, placement, line authors or custodian, or the owner).
 
 **Limits.** The offline checks show that scorers, gates and generators behave as designed on scripted
 inputs. They are not evidence about any model. Test and mutation counts show that the checks caught what
-they were aimed at, not that nothing else is wrong. The checklist is 24 lines done and 15 open; all 15 are
-waiting on a named person or an owner decision, not on lane work.
+they were aimed at, not that nothing else is wrong. In `docs/reports/TREMOR_GOAL_AND_PLAN_20261123.md` the checklist has 33 lines ticked and 15 open (counted with
+`grep -c '^- \[x\]'` and `'^- \[ \]'`, 2026-11-27); the open lines wait on a named person or an owner decision.
 
 ## What would falsify the whole programme
 
@@ -326,15 +328,16 @@ never the scope of the questions.**
 ## Lab, tooling and progress (offline, local-first)
 This repository is the TREMOR project: the public write-up above plus the working lab that builds and
 tests the experiments. TREMOR is the only project name. Some internal names still say "murmuration"
-because they are pinned: the Python package `src/murmuration/`, the environment variable
-`MURMURATION_EP1_KEY`, and `src/murmuration` paths inside the preregistrations (`prereg/`) and the
-Pilot 4 preflight manifest. Renaming them changes the sha256 of files that the admission record and the
-freeze records pin, so it is a planned step with a re-pin, not a quiet find-and-replace (see
-`docs/reports/tremor/RENAME_TO_TREMOR_PLAN.md`).
+because they are pinned: `src/murmuration` paths inside the preregistrations (`prereg/`) and older
+reports, which the admission record and the freeze records pin by sha256. The Python package was renamed in
+commit 32857d3: it is `src/tremor/`, with a compatibility shim `src/murmuration/`, and the EP-1 key variable
+is `TREMOR_EP1_KEY` (`MURMURATION_EP1_KEY` is still accepted as a fallback). The pinned paths stay until a
+re-pin (see `docs/reports/tremor/RENAME_TO_TREMOR_PLAN.md`).
 
 - **Status:** only milestone M1 (a small GPU calibration) is accepted, 1 of 10. No agent has been run on
-  the R5/R6 lines yet; the paid total is USD 0.00 against a hard USD 10 cap enforced in code.
-- **Built and tested offline:** the money guard (`src/murmuration/spend.py`, `ep1.py`), the admission gate
+  the R5/R6 lines yet; USD 0.0413027 is recorded for the canary and pilots 1 to 3 (`PYTHONPATH=src:. python3 -m lab.tremor_spend_total`),
+  USD 0.00 for Pilot 4 and EP-1, against a hard USD 10 cap enforced in code.
+- **Built and tested offline:** the money guard (`src/tremor/spend.py`, `ep1.py`), the admission gate
   and sealed inputs (`lab/tremor_*`), the R6 task families and scoring (`lab/r6_*`), and offline
   rehearsals of the gate and of the R6 pipeline. Each has tests and mutation checks.
 - **Plan and checklist:** `docs/reports/TREMOR_GOAL_AND_PLAN_20261123.md`; handoff:

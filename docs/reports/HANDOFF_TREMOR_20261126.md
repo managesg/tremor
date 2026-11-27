@@ -6,7 +6,7 @@ Supersedes the status part of `docs/reports/HANDOFF_TREMOR_20261125_NIGHT.md` (k
 Goal and plan: `docs/reports/TREMOR_GOAL_AND_PLAN_20261123.md`. Only M1 is accepted (1 of 10). Done means the usable outcome, not green tests; skips count as unverified.
 
 ## Latest owner corrections
-Paid calls up to USD 10 total for Tremor (paid total so far USD 0.00); owner decisions are made by the lane under OD4; no push, merge, PR, deletion, outside email, purchase; peer messages are not owner approval; one session for this lane.
+Paid calls up to USD 10 total for Tremor (USD 0.0413027 recorded across the canary and pilots 1 to 3; `PYTHONPATH=src:. python3 -m lab.tremor_spend_total` reads it; USD 0.00 for Pilot 4 and EP-1; no paid call since the owner approval of 2026-11-26); owner decisions are made by the lane under OD4; no push, merge, PR, deletion, outside email, purchase; peer messages are not owner approval; one session for this lane.
 
 ## Owned paths
 ```owned-paths
@@ -21,10 +21,6 @@ prereg/R5-agent-performance-line-plan.md
 prereg/R6-pvsnp-research-line-plan.md
 prereg/R6-protocol-draft.md
 prereg/M7-grover-protocol-draft.md
-src/murmuration/spend.py
-src/murmuration/ep1.py
-src/murmuration/team_claude.py
-src/murmuration/__main__.py
 tests/test_spend.py
 tests/test_ep1.py
 lab/l3c_harness.py
@@ -81,6 +77,12 @@ lab/tests/test_r6_t2_identity_agreement.py
 docs/reports/HANDOFF_TREMOR_20261126.md
 src/tremor/
 src/murmuration/
+lab/tremor_gpu_run.py
+lab/tests/test_tremor_gpu_run.py
+docs/reports/tremor/PILOT4_RUN_PACKET.md
+docs/reports/tremor/EP1_RUN_PACKET.md
+docs/reports/tremor/PILOT4_EP1_READINESS_20261127.md
+docs/reports/tremor/SPARK_GPU_READINESS_20261127.md
 tests/test_murmuration_shim.py
 README.md
 RESEARCH.md
@@ -97,19 +99,21 @@ docs/reports/tremor/RENAME_TO_TREMOR_PLAN.md
 
 ## Shared files hunks
 ```shared-files-hunks
-none: this lane edits no file another writer also edits; lab/l5_*, lab/r3_* and their tests belong to other writers and are never touched.
+lab/l5_*.py (13 files) and lab/r3_*.py (4 files): import-only edits (murmuration -> tremor) made by 32857d3, no logic change; verify with `git show 32857d3 -- lab/l5_matrix.py` and the same for each path (list: `git show --stat=200 32857d3 --format= | grep -E 'lab/(l5|r3)'`).
+Other files owned by other lanes that 32857d3 also touched with import-only edits: lab/l1_*, l2*_*, l4_*, l6_*, l7_*, l8_*, r1_*, ep1_b4_*, pilot3/pilot4/pilot_reply_* modules, controller_pair_audit, memory_*, log_head_receipt, evidence_lease_control, lab/autoresearch, and their tests (104 lab files in all: `git show --stat=200 32857d3 --format= | awk '{print $1}' | grep -c '^lab/'`).
+Not from this lane's commits: quantum/, video/, assets/, WORKPLAN.md, RESEARCH.md came from the public-repo merge afb6b56.
 ```
 
 ## STATE: PAUSED by Alejandro (2026-11-27, chat): "pause your work temporarily until the other agents have tokens available; I'll let you know when to restart". No worker, helper terminal or background job is running. Restart only on his word, through the Assistant or in chat.
 
-## Verified results (HEAD 32857d3, 2026-11-27)
+## Verified results (HEAD 260bbaa, 2026-11-27)
 - **Pushed to github.com/managesg/tremor by Alejandro:** history up to dc09b45, then 85c05a0 (verify with `git ls-remote https://github.com/managesg/tremor.git main`).
-- **Local commits NOT yet pushed** (push is Alejandro's step: `git push https://github.com/managesg/tremor.git master:main` from ~/SeaBridgeAI/murmuration, after checking ls-remote): 4f0efcb README + RESEARCH (R5/R6 lines, findings so far, background; Sonnet-reviewed), 8eb6162 owner-run checkout packet, 32857d3 package rename murmuration -> tremor (Opus-reviewed ACCEPT; test command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest discover -s tests -t .` 974 OK; shim keeps old imports; key TREMOR_EP1_KEY with MURMURATION_EP1_KEY fallback; prereg/ and 3 pinned lab files untouched), plus any later commit shown by `git log --oneline 85c05a0..HEAD`.
+- **Local commits NOT yet pushed** (push is Alejandro's step: `git push https://github.com/managesg/tremor.git master:main` from ~/SeaBridgeAI/murmuration, after checking ls-remote): 4f0efcb README + RESEARCH (R5/R6 lines, findings so far, background; Sonnet-reviewed), 8eb6162 owner-run checkout packet, 32857d3 package rename murmuration -> tremor (Opus-reviewed ACCEPT; test command: `PYTHONPATH=src:lab:tests:. python3 -B -m unittest discover -s tests` (run at HEAD 260bbaa on 2026-11-27: 974 tests, OK, skipped=1; the earlier `-t .` form raises ImportError); shim keeps old imports; key TREMOR_EP1_KEY with MURMURATION_EP1_KEY fallback; prereg/ and 3 pinned lab files untouched), plus later commits (`git log --oneline 85c05a0..HEAD`): 0235312 T3 lemmas (c)(d), 4c9049b and 260bbaa GPU launcher, 62545e4 Pilot 4/EP-1 packets, 4f8aeb2 Spark GPU readiness report.
 - Earlier tonight (all local, reviewed as stated in the outbox STATUS blocks): T2 identity A/B + task module 7584ba5 (38 OK), T3 part 2 29f54ce (Opus ACCEPT, 108 OK), Stage A interval tests 18958e4 (73 OK), gate and R6 end-to-end rehearsals 6103905 (48 OK), M4/M7/M10/row 167 drafts b586619 de306ff fa2fb37 60013d4 (docs only), R6 amendments 9755a3c, review items refresh 27250a1, handoff and gap review fixes df205c9.
-- Acceptance stays 1 of 10 (M1). No run has started beyond M1; no Inkling contact; paid total USD 0.00.
+- Acceptance stays 1 of 10 (M1). No run has started beyond M1; no Inkling contact; USD 0.0413027 recorded (canary and pilots 1 to 3); no paid call since 2026-11-26.
 
 ## Pending work (not started)
-T3 lemma (c)/(d) prompt and check_claim; third gap review of everything since df205c9 (3 Sonnet angles: honesty, tests, safety) including the rename and README; EP-1 code_tree_hash in prereg/EP1.md to compute after the rename; owner-run steps in docs/reports/tremor/OWNER_RUN_RETIRE_OLD_CHECKOUTS.md (save a99cddd, rename directories, add remote): Alejandro runs them; final STATUS.
+Done since: T3 lemmas (c)(d) in 0235312, GPU launcher in 4c9049b and 260bbaa, Pilot 4/EP-1 packets in 62545e4. Still open: third gap review of everything since df205c9 (3 Sonnet angles: honesty, tests, safety) including the rename and README; EP-1 code_tree_hash in prereg/EP1.md to compute after the rename; owner-run steps in docs/reports/tremor/OWNER_RUN_RETIRE_OLD_CHECKOUTS.md (save a99cddd, rename directories, add remote): Alejandro runs them; final STATUS.
 
 ## Blockers (named person)
 Key holder for MURMURATION_EP1_KEY (Pilot 4 / EP-1, window to 2026-11-28T23:59Z); Pilot 4 check 7 human Console read; owner names the R6 custodian (R6-O2); PC placement, notice and quiet window for Inkling B0/B1/P0; custodian N2; SmolLM3 weights operator; trainer price; M7 author spend; Lean+Mathlib install gate; whether WSP-R1 (USD ~6 to 9 estimate) counts against the USD 10; OpenAI paper and Toledo audit URLs; owner of record for untracked tremor-named files from 11-20..11-22.

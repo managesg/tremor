@@ -49,8 +49,7 @@ the driver (`ep1.py:54-65`, `ep1.py:781`). Offline checks re-run today are in `P
    PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -W ignore -m unittest tests.test_spend tests.test_backend_claude tests.test_ep1 \
      lab.tests.test_pilot4_preflight_manifest lab.tests.test_pilot4_price_window lab.tests.test_pilot4_rehearsal
    ```
-7. **Owner release.** Alejandro's named release for paid execution (the overnight hold is lifted for this batch) is recorded in
-   `DECISION_LOG.md`. The `--i-have-owner-confirm` flag below is his confirm; do not add it on anyone else's behalf.
+7. **Owner release.** **OPEN: the owner confirms at run time.** What the files say: his words "Paid calls for up to $10 for Tremor" (about 22:30Z, 2026-11-25; USD 10 total across M2, M7 and D8) are in `ADMISSION_RECORD_20261125.md:3`; `ep-approvals.md` addendum 10 (2026-11-21) authorizes one Pilot 4 after the gates pass but its overnight directive excludes paid calls in that window; `OWNER_DECISION_M2_M7_D8_Pilot4_EP1.md:20,144` still lists the named release of the overnight hold as needed. `DECISION_LOG.md` holds no record of a lifted hold (grep found none). Alejandro's two confirm flags cover it. The `--i-have-owner-confirm` flag below is his confirm; do not add it on anyone else's behalf.
 8. **Lean scorer available.** The real (unstubbed) `ep1._bracket` call in section 5 ran on this host on 2026-11-26; an `INVALID` Lean
    probe would stop the batch before the first call at no cost, but run the check 6 command first as a free smoke test.
 9. **Host.** One writer, no other `ep1` process running (`pgrep -af "tremor ep1"` shows nothing). Network is the only paid
