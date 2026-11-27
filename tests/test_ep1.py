@@ -1577,5 +1577,112 @@ class OrderGateTests(unittest.TestCase):
         self.assertIsNone(ep1.order_gate(sched, recs)["picked"])
 
 
+class StopRuleEdgeTests(Base):
+    """Each stop rule at exactly its limit (no stop) and one past it (stop)."""
+
+    def run_(self, n_sets=20):
+        return ep1._Run("ep1", mock.Mock(), mock.Mock(), 0, self.d, True, n_sets, None)
+
+    def rec(self, s, cond, malformed, ended="complete"):
+        return {"set": s, "cond": cond, "malformed": malformed, "ended": ended}
+
+    def stop(self, run):
+        try:
+            run._malformed()
+        except ep1._StopBatch as e:
+            return str(e)
+        return None
+
+    def test_first_block_malformed_limit(self):
+        run = self.run_()
+        first = run.plan[0]
+        limit = len(first["order"]) * ep1.CALLS_PER_EPISODE // 4
+        for n, want in ((limit, None), (limit + 1, "malformed_first_block")):
+            run.recs = [self.rec(first["set"], c, n if i == 0 else 0) for i, c in enumerate(first["order"])]
+            self.assertEqual(self.stop(run), want, n)
+
+    def test_overall_malformed_limit(self):
+        run = self.run_()
+        limit = len(run.cells) * ep1.CALLS_PER_EPISODE // 10
+        sets = [b["set"] for b in run.plan[1:4]]  # not the first block; at most limit/3 per condition, under the 15% rule
+        conds = run.plan[1]["order"]
+        for total, want in ((limit, None), (limit + 1, "malformed_overall")):
+            run.recs = [self.rec(s, c, 0) for s in sets for c in conds]
+            for k in range(total):
+                run.recs[k % len(run.recs)]["malformed"] += 1
+            self.assertEqual(self.stop(run), want, total)
+
+    def test_per_condition_malformed_limit(self):
+        run = self.run_()
+        per = len(run.plan) * ep1.CALLS_PER_EPISODE
+        limit = per * 15 // 100
+        self.assertEqual(limit, 24)  # 15% of 160; 16% would allow 25
+        cond = run.plan[1]["order"][0]
+        for n, want in ((limit, None), (limit + 1, f"malformed_{cond}")):
+            run.recs = [self.rec(run.plan[1]["set"], cond, n)]
+            self.assertEqual(self.stop(run), want, n)
+
+    def test_cap_exactly_met_is_room_one_short_is_not(self):
+        run = self.run_(1)
+        w = 0.5
+        run.ledger = mock.Mock(worst_case=lambda *a: w)
+        cpe = ep1.CALLS_PER_EPISODE
+        need = {"calls": cpe, "tokens": cpe * (ep1.tc.CAPS["input_tokens"] + ep1.tc.CAPS["output_tokens"]), "usd": cpe * w}
+        for k in need:
+            with self.subTest(k):
+                for delta, want in ((0, None), (-1e-6 if k == "usd" else -1, f"cap_{k}")):
+                    rem = dict(need, **{k: need[k] + delta})
+                    with mock.patch.object(ep1.spend, "batch_report", lambda *a: {"remaining": rem}):
+                        try:
+                            run._room()
+                            got = None
+                        except ep1._StopBatch as e:
+                            got = str(e)
+                    self.assertEqual(got, want, (k, delta))
+
+    def test_rerun_room_exact_boundary(self):
+        run = self.run_(1)
+        idx = len(run.cells) - 2  # exactly one pending cell after this one
+        blk, cond = run.cells[idx]
+        cpe = ep1.CALLS_PER_EPISODE
+        out = os.path.join(self.d, "o")
+        os.makedirs(out)
+        run.epath = os.path.join(out, "episodes.jsonl")
+        run.recs = []
+        for rem, want in ((2 * cpe, "ok"), (2 * cpe - 1, "no_rerun_calls_left")):
+            run.recs = []
+            calls = []
+
+            def episode(*a, **k):
+                calls.append(1)
+                return {"ended": "infrastructure_abort" if len(calls) == 1 else "complete", "episode_id": f"e{len(calls)}",
+                        "log": [], "turns": [], "valid": True, "void": None}
+            after = iter(["abort", "ok"])
+            with mock.patch.object(ep1.tc, "run_episode_model", episode), \
+                    mock.patch.object(ep1, "_cost", lambda *a: {}), \
+                    mock.patch.object(ep1, "_score_gate", lambda *a: {"alloc": {"valid": True}}), \
+                    mock.patch.object(ep1, "_scorer_void", lambda *a: None), \
+                    mock.patch.object(run, "_room", lambda: None), \
+                    mock.patch.object(run, "_after", lambda rec: next(after)), \
+                    mock.patch.object(ep1.spend, "batch_report", lambda *a: {"remaining": {"calls": rem}}):
+                try:
+                    run._cell(blk, cond, idx)
+                    got = "ok"
+                except ep1._StopBatch as e:
+                    got = str(e)
+            self.assertEqual(got, want, rem)
+            self.assertEqual(len(calls), 2 if want == "ok" else 1)
+
+    def test_order_gate_room_endpoints_are_inclusive(self):
+        lo, hi = ep1.Y_NONE_ROOM
+        for y, want in ((lo, True), (hi, True), (lo - 0.01, False), (hi + 0.01, False)):
+            sched = {"plan": [{"set": 0, "task_order": "shared"}, {"set": 1, "task_order": "per_agent"}]}
+            recs = [{"set": s, "cond": c, "Y": y if c == "none" else 0.0, "ended": "complete", "scores": {"duplicates": 2}}
+                    for s in (0, 1) for c in ("none", "code")]
+            g = ep1.order_gate(sched, recs)
+            for o in ("shared", "per_agent"):
+                self.assertEqual(g["orders"][o]["a_room"], want, (y, o))
+
+
 if __name__ == "__main__":
     unittest.main()

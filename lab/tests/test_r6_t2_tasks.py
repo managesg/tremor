@@ -315,6 +315,26 @@ class PromptFormula(unittest.TestCase):
             for target, tmpl in (("perm", self.PERM), ("hc", self.HC)):
                 self.assertIn("\n" + tmpl.format(m=m), T.render_prompt(hand(c, m=m, target=target)), (m, target))
 
+class RangeAndBoundsEdge(unittest.TestCase):
+    def test_eval_target_stays_in_0_p_for_every_target(self):
+        for m, p, target in itertools.product(T.M_VALUES, T.P_VALUES, T.TARGETS):
+            f = T.registry(hand((("mul", X(1, 1), X(2, 2)),), m=m, p=p, target=target))["eval_target"]
+            pts = [tuple([v] * (m * m)) for v in range(p)]
+            if m == 2:
+                pts = list(itertools.product(range(p), repeat=4))  # every point
+            for pt in pts:
+                self.assertTrue(0 <= f(pt) < p, (m, p, target, pt))
+        # the all-ones point sums to m! (perm) or (m-1)! (hc): at least p for p=2, m>=2, so the reduction matters
+        f = T.registry(hand(PERM2, m=2, p=2))["eval_target"]
+        self.assertEqual(f((1, 1, 1, 1)), 0)
+
+    def test_seed_bounds_are_inclusive_and_exact(self):
+        for seed in (2**63 - 1, -2**63, 0):
+            self.assertEqual(T.generate(2, 2, T.KINDS[0], seed).seed, seed)
+        for seed in (2**63, -2**63 - 1):
+            with self.assertRaises(T.T2TaskError, msg=seed):
+                T.generate(2, 2, T.KINDS[0], seed)
+
 
 if __name__ == "__main__":
     unittest.main()

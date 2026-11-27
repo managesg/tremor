@@ -545,6 +545,26 @@ def p_out_outside_root(E):
     assert not (E.tmp / "x").exists()
 
 
+def p_out_symlinked_parent_outside_root(E):
+    elsewhere = E.tmp / "elsewhere-link"
+    elsewhere.mkdir()
+    os.symlink(elsewhere, E.outroot / "lnk")
+    E.refused("out-outside-root", E.argv(**{"--out": str(E.outroot / "lnk" / "x")}))
+    assert list(elsewhere.iterdir()) == []
+
+
+def p_refuse_notice_non_utc_offset(E):
+    n = datetime.now(timezone.utc).replace(microsecond=0)
+    tz = timezone(timedelta(hours=2))
+    w = f"{(n - timedelta(hours=1)).astimezone(tz).isoformat()}/{(n + timedelta(hours=2)).astimezone(tz).isoformat()}"
+    assert "+02:00" in w
+    assert E.M._notice_problem(f"placement: Spark\nquiet_window: {w}\n") != ""
+    E.notice.write_text(f"placement: Spark GPU\nquiet_window: {w}\n")
+    out = E.refused("pc-notice-incomplete", E.argv(live=True))
+    assert "UTC ISO" in out, out
+    assert not E.claim_file().exists()
+
+
 def p_granted_run(E):
     argv = E.argv(live=True, **{"--b0-calls": "28", "--load-seconds": "0"})
     code, out = E.run(argv, block=False)
@@ -711,6 +731,10 @@ MUTANTS = [
     ("out_root_unchecked", "if os.path.commonpath([root, parent]) != root:", "if False:", ["out_outside_root"]),
     ("allow_list_ignored", "return ip.is_loopback or (ip, port) in _allow_set(a.allow_endpoint)",
      "return ip.is_loopback", ["allow_listed_remote"]),
+    ("instant_accepts_offset", "t.tzinfo is None or t.utcoffset().total_seconds() != 0", "t.tzinfo is None",
+     ["refuse_notice_non_utc_offset"]),
+    ("out_parent_not_resolved", "parent = os.path.realpath(os.path.dirname(out))", "parent = os.path.dirname(out)",
+     ["out_symlinked_parent_outside_root"]),
     ("dry_claims", "        rec.write(\"04-run\", {}, \"not-run\", \"dry-run: nothing sent\")",
      "        gate.admit(a.freeze, a.admission, _utc(), a.repo_root, **_caps(a))\n"
      "        rec.write(\"04-run\", {}, \"not-run\", \"dry-run: nothing sent\")", ["dry_no_claim_no_write_outside_out"]),
