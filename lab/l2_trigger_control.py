@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab import l2_adoption_control as adoption
-from murmuration.board import Board
+from tremor.board import Board
 
 WORKERS = ("a", "b")
 CONDITIONS = {

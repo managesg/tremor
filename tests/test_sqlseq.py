@@ -6,7 +6,7 @@ import unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration.trapbench import sqlseq  # noqa: E402
+from tremor.trapbench import sqlseq  # noqa: E402
 
 
 def run(agent, family="shop", seed=1):

@@ -4,7 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import night as N
+from tremor import night as N
 
 
 def store(k=40, bad=10):

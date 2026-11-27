@@ -8,7 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import cell  # noqa: E402
+from tremor import cell  # noqa: E402
 
 POL = {"allow": ["read"], "deny": [], "max_tokens": 1000, "max_seconds": 10}
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
@@ -127,7 +127,7 @@ class ConcurrencyTests(unittest.TestCase):
     def test_four_processes_appending_keep_one_valid_chain(self):
         """kills: append_log without the cell lock (read-prev-then-append forks the chain)."""
         with tempfile.TemporaryDirectory() as d:
-            res = procs("from murmuration import cell\n"
+            res = procs("from tremor import cell\n"
                         "for j in range(200): cell.append_log(sys.argv[1], {'w': sys.argv[2], 'j': j})\n", 4, d)
             self.assertEqual([r[2] for r in res], [0] * 4, [r[1][-300:] for r in res])
             self.assertEqual(cell.log_count(d), 800)

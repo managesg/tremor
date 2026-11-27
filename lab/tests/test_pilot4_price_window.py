@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from lab import pilot4_price_window as window
-from murmuration import spend
+from tremor import spend
 
 
 RETAINED_PRICE_SHEET = Path(__file__).resolve().parents[2] / "docs" / "reports" / "price-sheet.json"

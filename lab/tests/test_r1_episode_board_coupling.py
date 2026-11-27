@@ -4,8 +4,8 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from lab.r1_episode_board_coupling import run
-from murmuration.board import read_log
-from murmuration.trapbench import alloc
+from tremor.board import read_log
+from tremor.trapbench import alloc
 
 
 class R1BoardCouplingTests(unittest.TestCase):

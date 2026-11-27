@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from murmuration.board import Board, read_log
-from murmuration.readouts import first_generation_offspring
+from tremor.board import Board, read_log
+from tremor.readouts import first_generation_offspring
 
 
 def measure(path):

@@ -6,7 +6,7 @@ import unittest
 
 from lab import controller_pair_audit as audit
 from lab.tests import test_controller_selection as fixtures
-from murmuration.trapbench import alloc
+from tremor.trapbench import alloc
 
 
 class ControllerPairAuditTests(unittest.TestCase):

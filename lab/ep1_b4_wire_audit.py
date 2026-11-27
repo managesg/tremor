@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from unittest.mock import patch
 
 from lab import ep1_b4_full_reservation as fixture
-from murmuration import backend_claude, ep1
+from tremor import backend_claude, ep1
 
 CASE_NAMES = ("full-schedule", "no-room-for-rerun")
 ARTIFACTS = ("wire.json", "price-sheet.json", "ledger/canary.jsonl", "ledger/ep1.jsonl", "ep1/schedule.json",

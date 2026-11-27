@@ -1,7 +1,7 @@
 import unittest
 
 from lab.pilot_reply_diagnostics import describe
-from murmuration.team_claude import parse
+from tremor.team_claude import parse
 
 
 PASS = '[{"type":"pass"}]'

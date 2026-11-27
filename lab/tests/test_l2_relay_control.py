@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab import l2_adoption_control as adoption, l2_relay_control as relay
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 class RelayControlTests(unittest.TestCase):

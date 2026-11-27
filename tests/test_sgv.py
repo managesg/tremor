@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from murmuration import sgv
+from tremor import sgv
 
 ITEMS = {"A": 4, "B": 4, "C": 4, "D": 4}
 

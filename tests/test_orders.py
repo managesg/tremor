@@ -5,8 +5,8 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration.board import Board  # noqa: E402
-from murmuration.orders import compute  # noqa: E402
+from tremor.board import Board  # noqa: E402
+from tremor.orders import compute  # noqa: E402
 
 
 def ev(type_, agent, data, rnd=0):
@@ -64,7 +64,7 @@ class OrdersTest(unittest.TestCase):
             compute("/nonexistent/murmuration-board.jsonl")
         with tempfile.TemporaryDirectory() as d:
             p = pathlib.Path(d) / "board.jsonl"
-            from murmuration.board import Board
+            from tremor.board import Board
             Board(str(p), seed=0)
             self.assertIn("convergence_time", compute(p))
 
@@ -93,7 +93,7 @@ class OrdersTest(unittest.TestCase):
         b.release(w, "X", task_type="t")
         o = compute(path)
         self.assertEqual(o["claim_collision_rate"]["value"], 0.5)  # 1 colliding item / 2 claims
-        self.assertEqual(compute(path), compute(list(__import__("murmuration.board", fromlist=["x"]).read_log(path))))
+        self.assertEqual(compute(path), compute(list(__import__("tremor.board", fromlist=["x"]).read_log(path))))
 
     def test_alignment_readoffs(self):
         work = lambda a, i, ok: ev("work", a, {"item": i, "passed": ok})

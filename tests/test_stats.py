@@ -6,7 +6,7 @@ from decimal import Decimal, localcontext
 from fractions import Fraction
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import stats  # noqa: E402
+from tremor import stats  # noqa: E402
 
 
 def mean(rs):
@@ -169,7 +169,7 @@ class T(unittest.TestCase):
         self.assertAlmostEqual(stats.incoherence([1, -1, 1, -1]), 1.0)
 
     def test_prereg(self):
-        from murmuration.manifest import tree_hash
+        from tremor.manifest import tree_hash
         with tempfile.TemporaryDirectory() as d:
             open(os.path.join(d, "a.py"), "w").write("x=1")
             h = tree_hash([d])

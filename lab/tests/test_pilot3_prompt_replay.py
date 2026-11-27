@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lab import pilot3_prompt_replay as replay
-from murmuration import team_claude
+from tremor import team_claude
 
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -9,8 +9,8 @@ from tempfile import TemporaryDirectory
 from lab import l5_grader_custody as custody, l5_sibling_norm_control as fixture
 from lab.r3_cpu_guard_replay import _sha, _write
 from lab.r3_l2_relay_replay import _pinned
-from murmuration import board, cell, enforce, router, team
-from murmuration.trapbench import alloc
+from tremor import board, cell, enforce, router, team
+from tremor.trapbench import alloc
 
 FILES = {"plan_sha256": "plan.json", "board_sha256": "board.jsonl", "dispatch_sha256": "dispatch.jsonl"}
 

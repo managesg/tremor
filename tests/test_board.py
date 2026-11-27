@@ -5,7 +5,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration.board import Board, read_log  # noqa: E402
+from tremor.board import Board, read_log  # noqa: E402
 
 
 class BoardTest(unittest.TestCase):

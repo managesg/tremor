@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab.evidence_lease_control import IDLE_ROUNDS, MIN_SOURCES, SCOPE, eligible_support
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 FIXED_USES = 2
 BOX_ROUNDS = 2

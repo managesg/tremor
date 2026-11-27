@@ -7,7 +7,7 @@ import unittest
 from lab import l2_host_response, r3_l2_relay_generation as generation
 from lab import r3_l2_relay_partial as partial
 from lab.spark_decision import Generation
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 class AbruptStop(BaseException):

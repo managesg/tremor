@@ -10,7 +10,7 @@ import json
 import os
 import sys
 
-from murmuration import spend
+from tremor import spend
 
 
 def read(path):

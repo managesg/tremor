@@ -10,12 +10,12 @@ from fractions import Fraction as F
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import board as boardmod  # noqa: E402
-from murmuration import enforce  # noqa: E402
-from murmuration import practice as practicemod  # noqa: E402
-from murmuration import team  # noqa: E402
-from murmuration.adopters import ScriptedAdopter  # noqa: E402
-from murmuration.trapbench import alloc, hold  # noqa: E402
+from tremor import board as boardmod  # noqa: E402
+from tremor import enforce  # noqa: E402
+from tremor import practice as practicemod  # noqa: E402
+from tremor import team  # noqa: E402
+from tremor.adopters import ScriptedAdopter  # noqa: E402
+from tremor.trapbench import alloc, hold  # noqa: E402
 
 AGENTS = ["a0", "a1", "a2", "a3"]
 PAIRS = list(itertools.combinations(range(4), 2))

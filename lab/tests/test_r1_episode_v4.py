@@ -10,9 +10,9 @@ from lab import r1_contention_schedule as sched
 from lab import r1_episode_v3 as v3
 from lab import r1_episode_v4 as episode
 from lab import r1_read_schedule as reads
-from murmuration import team
-from murmuration.board import read_log
-from murmuration.trapbench import alloc
+from tremor import team
+from tremor.board import read_log
+from tremor.trapbench import alloc
 
 WORKERS = ["a0", "a1", "a2", "a3"]
 

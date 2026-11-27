@@ -4,9 +4,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab import l5_taskset
-from murmuration import cell, router, team
-from murmuration.board import Board, read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor import cell, router, team
+from tremor.board import Board, read_log
+from tremor.trapbench import alloc, alloc2
 
 SEED = 86
 SHARED_OWNER = "a2"

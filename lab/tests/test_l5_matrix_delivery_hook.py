@@ -6,8 +6,8 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from lab import l5_matrix
-from murmuration.board import read_log
-from murmuration.team import view_of
+from tremor.board import read_log
+from tremor.team import view_of
 
 
 class L5MatrixDeliveryHookTests(unittest.TestCase):

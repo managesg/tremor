@@ -11,8 +11,8 @@ from tempfile import TemporaryDirectory
 from lab import l5_grader_custody as custody, l5_matrix, l5_matrix_audit, l5_taskset
 from lab.r3_cpu_guard_replay import _sha, _write
 from lab.r3_l2_relay_replay import _artifact_bytes, _pinned
-from murmuration import board, cell, enforce, router, team
-from murmuration.trapbench import alloc, alloc2
+from tremor import board, cell, enforce, router, team
+from tremor.trapbench import alloc, alloc2
 
 TAPE = "work-dispatch.jsonl"
 

@@ -15,7 +15,7 @@ import math
 import os
 import random
 
-from murmuration import practice, seal  # noqa: E402  (path set by the package __init__)
+from tremor import practice, seal  # noqa: E402  (path set by the package __init__)
 
 MAX_CARD = practice.MAX_CARD
 

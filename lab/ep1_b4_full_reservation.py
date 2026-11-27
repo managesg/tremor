@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lab.ep1_b4_probe import run_case
-from murmuration import ep1, team_claude as tc
+from tremor import ep1, team_claude as tc
 
 INPUT_BYTES = 2_000
 OUTPUT_TOKENS = 300

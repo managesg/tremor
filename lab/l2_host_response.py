@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 
 from lab import l2_generation_audit, r3_l2_host_verify
-from murmuration.board import read_log
+from tremor.board import read_log
 
 USAGE = ("input_tokens", "output_tokens", "generation_ns", "reached_output_limit")
 

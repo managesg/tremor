@@ -9,8 +9,8 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from murmuration import formal_alloc as fa  # noqa: E402
-from murmuration.trapbench import alloc2  # noqa: E402  (alloc.py is imported in test_vs_alloc: it is under concurrent edit)
+from tremor import formal_alloc as fa  # noqa: E402
+from tremor.trapbench import alloc2  # noqa: E402  (alloc.py is imported in test_vs_alloc: it is under concurrent edit)
 
 HAVE_LEAN = (fa.LEAN_BIN / "lean").exists() and (fa.LEAN_BIN / "lake").exists()
 NEED_LEAN = unittest.skipUnless(HAVE_LEAN, f"Lean 4.35.0 toolchain absent at {fa.LEAN_BIN}")
@@ -226,7 +226,7 @@ class KnownAnswers(unittest.TestCase):
                 self.assertEqual((s["distinct_passing"], s["done_releases"], s["extra_work_events"]), (1, 0, 0))
 
     def test_board_release_is_malformed_in_all_three(self):  # the report's minimal log
-        from murmuration.trapbench import alloc
+        from tremor.trapbench import alloc
         log = [{"type": "release", "agent": None, "data": {"item": "t9", "done": True}, "rejected": False}]
         ts = {"n_agents": 4, "tasks": [{"id": "t0", "expect": 30}]}
         self.assertEqual((lean(log, ts)["valid"], alloc.score(log, ts)["valid"], alloc2.score(log, ts)["valid"]),
@@ -371,7 +371,7 @@ class Differential(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        from murmuration.trapbench import alloc
+        from tremor.trapbench import alloc
         cls.alloc = alloc
         rnd = random.Random(SEED)
         cls.cases = [rand_case(rnd) for _ in range(N)]

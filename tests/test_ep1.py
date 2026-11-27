@@ -18,10 +18,10 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import fakeclaude  # noqa: E402
-from murmuration import __main__ as cli  # noqa: E402
-from murmuration import analysis, ep1, formal_alloc, manifest, router, spend, team_claude  # noqa: E402
-from murmuration import backend_claude as bc  # noqa: E402
-from murmuration.trapbench import alloc, alloc2  # noqa: E402
+from tremor import __main__ as cli  # noqa: E402
+from tremor import analysis, ep1, formal_alloc, manifest, router, spend, team_claude  # noqa: E402
+from tremor import backend_claude as bc  # noqa: E402
+from tremor.trapbench import alloc, alloc2  # noqa: E402
 
 M = ep1.MODEL
 KEY = "sk-ant-FAKEKEY-do-not-leak-0123456789"
@@ -192,7 +192,7 @@ class LedgerExclusionTests(Base):
         script = """
 import sys
 from pathlib import Path
-from murmuration import ep1, spend
+from tremor import ep1, spend
 
 directory, review, out = map(Path, sys.argv[1:])
 sheet = spend.PriceSheet.load(str(directory.parent / 'ps.json'))
@@ -252,7 +252,7 @@ import os
 import signal
 import sys
 from pathlib import Path
-from murmuration import ep1, spend
+from tremor import ep1, spend
 
 directory = Path(sys.argv[1])
 sheet = spend.PriceSheet.load(str(directory.parent / 'ps.json'))
@@ -740,7 +740,7 @@ class CliTests(Base):
     def run_cli(self, argv, env=None):
         buf = io.StringIO()
         with mock.patch.dict(os.environ, env or {}, clear=False), contextlib.redirect_stdout(buf):
-            os.environ.pop(ep1.KEY_ENV, None) if env is None else None
+            [os.environ.pop(k, None) for k in (ep1.KEY_ENV, ep1.LEGACY_KEY_ENV)] if env is None else None
             rc = cli.main(argv)
         return rc, buf.getvalue()
 
@@ -758,6 +758,33 @@ class CliTests(Base):
         self.assertFalse(os.path.exists(spend.PILOT_LEDGER_DIR))  # nothing created before the gates passed
         rc, text = self.run_cli(["ep1", "run", "--out-dir", out, "--i-have-owner-confirm"], {ep1.KEY_ENV: ""})
         self.assertEqual(rc, 2)
+
+    def _key_gate(self, env):
+        """Confirm flag plus --ledger-dir without --base-url: refused after the key check passes, before any run or write."""
+        argv = ["ep1", "run", "--out-dir", os.path.join(self.d, "kout"), "--i-have-owner-confirm", "--ledger-dir", self.d]
+        return self.run_cli(argv, env)
+
+    def test_key_env_names_tremor_first_and_murmuration_as_fallback(self):
+        self.assertEqual((ep1.KEY_ENV, ep1.LEGACY_KEY_ENV), ("TREMOR_EP1_KEY", "MURMURATION_EP1_KEY"))
+        rc, text = self._key_gate({})  # neither set
+        self.assertEqual(rc, 2)
+        self.assertIn("set TREMOR_EP1_KEY", text)
+        for env in ({"TREMOR_EP1_KEY": KEY}, {"MURMURATION_EP1_KEY": KEY}, {"TREMOR_EP1_KEY": KEY, "MURMURATION_EP1_KEY": KEY}):
+            rc, text = self._key_gate(env)  # the key is accepted: the next gate answers
+            self.assertEqual(rc, 2)
+            self.assertIn("needs --base-url", text)
+            self.assertNotIn(KEY, text)
+        rc, text = self._key_gate({"TREMOR_EP1_KEY": "", "MURMURATION_EP1_KEY": KEY})  # empty counts as unset
+        self.assertIn("needs --base-url", text)
+
+    def test_both_key_names_set_and_different_is_refused_by_name(self):
+        other = KEY + "-other"
+        rc, text = self._key_gate({"TREMOR_EP1_KEY": KEY, "MURMURATION_EP1_KEY": other})
+        self.assertEqual(rc, 2)
+        self.assertIn("both set and differ", text)
+        self.assertIn("MURMURATION_EP1_KEY", text)
+        self.assertNotIn(KEY, text)
+        self.assertNotIn(other, text)
 
     def _freeze_fixture(self):
         root = Path(self.d) / "checkout"
@@ -1151,7 +1178,7 @@ class DryRunBracketTests(Base):
 class NoPrivateLedgerTests(unittest.TestCase):
     def test_ep1_never_touches_a_private_ledger_member(self):
         import ast
-        tree = ast.parse(open(os.path.join(ep1.ROOT, "src", "murmuration", "ep1.py"), encoding="utf-8").read())
+        tree = ast.parse(open(os.path.join(ep1.ROOT, "src", "tremor", "ep1.py"), encoding="utf-8").read())
         bad = []
         for n in ast.walk(tree):
             if isinstance(n, ast.Attribute) and n.attr.startswith("_") and not n.attr.startswith("__"):

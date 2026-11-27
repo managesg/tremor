@@ -7,9 +7,9 @@ import json
 from pathlib import Path
 
 from lab import l5_taskset, r3_schedule
-from murmuration import cell, practice, router, team
-from murmuration.board import Board, read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor import cell, practice, router, team
+from tremor.board import Board, read_log
+from tremor.trapbench import alloc, alloc2
 
 CARRIERS = ("context", "memory", "environment", "code", "neutral")
 GUIDE = "claim before work"

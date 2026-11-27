@@ -5,7 +5,7 @@ from collections import Counter
 from dataclasses import dataclass
 from fractions import Fraction
 
-from murmuration.readouts import pairwise_miss
+from tremor.readouts import pairwise_miss
 
 TARGET_FPR = Fraction(1, 20)
 VIEWS = ("text", "activation", "combined")

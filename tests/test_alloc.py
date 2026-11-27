@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration.trapbench import alloc  # noqa: E402
+from tremor.trapbench import alloc  # noqa: E402
 
 
 def w(agent, task, answer, name=None, **kw):

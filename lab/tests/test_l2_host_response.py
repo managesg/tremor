@@ -6,7 +6,7 @@ import unittest
 
 from lab import l2_generation_audit, l2_host_response, r3_l2_generation, r3_schedule
 from lab.spark_decision import Generation
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 class L2HostResponseTests(unittest.TestCase):

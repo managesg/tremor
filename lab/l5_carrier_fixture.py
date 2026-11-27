@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from murmuration.board import Board, read_log
-from murmuration.enforce import check
-from murmuration.trapbench import alloc, alloc2
+from tremor.board import Board, read_log
+from tremor.enforce import check
+from tremor.trapbench import alloc, alloc2
 
 CARRIERS = ("neutral", "memory", "environment")
 WORKERS = ("a1", "a2")

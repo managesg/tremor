@@ -15,8 +15,8 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import perturb as P  # noqa: E402
-from murmuration.trapbench import traps  # noqa: E402
+from tremor import perturb as P  # noqa: E402
+from tremor.trapbench import traps  # noqa: E402
 
 
 def _canary(p):

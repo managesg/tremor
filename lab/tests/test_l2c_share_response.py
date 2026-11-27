@@ -7,7 +7,7 @@ import unittest
 from lab import l2c_share_response as response
 from lab.l2c_share_audit import audit
 from lab.l4_measured_compression import pin
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 class L2CShareResponseTests(unittest.TestCase):

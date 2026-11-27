@@ -6,9 +6,9 @@ import hashlib
 import json
 from pathlib import Path
 
-from murmuration import cell, team
-from murmuration.board import read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor import cell, team
+from tremor.board import read_log
+from tremor.trapbench import alloc, alloc2
 
 
 def _require(condition, detail):

@@ -8,7 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import board as boardmod, cell, router  # noqa: E402
+from tremor import board as boardmod, cell, router  # noqa: E402
 
 POL = {"allow": ["read"], "deny": ["write"], "max_tokens": 1000, "max_seconds": 10}
 EXTRACT = {"id": "t1", "class": "extract", "payload": {"text": "b a b c"}, "expect": ["a", "b", "c"], "cell": "s"}
@@ -200,7 +200,7 @@ class RouterTests(unittest.TestCase):
         double success). 2 processes, same task, same cell, 10 trials."""
         src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
         code = (f"import os, sys, time, json; sys.path.insert(0, {src!r})\n"
-                "from murmuration import router\n"
+                "from tremor import router\n"
                 "while not os.path.exists(sys.argv[2]): time.sleep(0.0005)\n"
                 "try:\n    router.run_task(json.loads(sys.argv[3]), sys.argv[1]); print('ok')\n"
                 "except ValueError as e:\n    print('refused', e)\n")

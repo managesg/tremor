@@ -8,7 +8,7 @@ import unittest
 from lab import controller_cluster_audit as audit
 from lab import controller_holdout as holdout
 from lab.tests import test_controller_pair_audit as pair_fixtures
-from murmuration.trapbench import alloc
+from tremor.trapbench import alloc
 
 
 class ControllerClusterAuditTests(unittest.TestCase):

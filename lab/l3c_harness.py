@@ -1,5 +1,5 @@
 """Offline L3-C harness: best-of-N selection against a monitor ensemble (prereg/R2-L3-C-protocol.md,
-section 6 steps 1-5 and open item L3-O8). Standard library plus murmuration.monsel only (null draws follow nulls.correlated_monitors' model).
+section 6 steps 1-5 and open item L3-O8). Standard library plus tremor.monsel only (null draws follow nulls.correlated_monitors' model).
 
 No parameter the proposal leaves open (n, number of views, k, operating point) has a default here.
 The operating point (L3-O9) is not modelled: miss bits are already thresholded 0/1 inputs.
@@ -11,7 +11,7 @@ import hashlib
 import math
 import random
 
-from murmuration import monsel
+from tremor import monsel
 
 
 def _bits(row):

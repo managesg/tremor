@@ -5,9 +5,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab.l5_carrier_fixture import GUIDE, SEED, WORKERS
-from murmuration import cell, practice, router, team
-from murmuration.board import Board, read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor import cell, practice, router, team
+from tremor.board import Board, read_log
+from tremor.trapbench import alloc, alloc2
 
 AGENTS = ["a0", "a1", "a2", "a3"]
 BASE_PROMPT = "Find a distinct passing result for your assigned arithmetic task."

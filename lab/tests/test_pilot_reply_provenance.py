@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from lab import pilot_reply_provenance
-from murmuration import ep1
+from tremor import ep1
 
 
 class PilotReplyProvenanceTests(unittest.TestCase):

@@ -9,7 +9,7 @@ from pathlib import Path
 from lab import l2_generation_audit, r3_l2_generation, r3_schedule
 from lab.l2_reference_custody import verify_reference
 from lab.spark_decision import Generation
-from murmuration.manifest import config_hash
+from tremor.manifest import config_hash
 
 
 def _unique(pairs):

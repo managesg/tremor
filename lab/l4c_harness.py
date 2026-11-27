@@ -1,6 +1,6 @@
 """Offline L4-C harness: night loop around vreplay, the seven arms of protocol section 3, a token meter,
 false share and cost per pass (prereg/R2-L4-C-protocol.md sections 3, 6, 12, 16, decisions D1-D6; open
-item L4-O9). Standard library plus murmuration (vreplay, readouts) and the scripted scorer only.
+item L4-O9). Standard library plus tremor (vreplay, readouts) and the scripted scorer only.
 
 No parameter the protocol leaves OPEN has a default: daily error rate, nights per chain, store size,
 cap, tolerance, tokenizer, rendering policy, search attempts and the per-check and per-reading charges are
@@ -56,7 +56,7 @@ import hashlib
 import math
 import random
 
-from murmuration import readouts, vreplay
+from tremor import readouts, vreplay
 
 from lab.l4c_scripted_scoring import score
 

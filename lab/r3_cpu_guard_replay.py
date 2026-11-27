@@ -12,7 +12,7 @@ import sys
 import time
 
 from lab import l2_generation_audit, r3_l2_batch, spark_calibration_guard as guard
-from murmuration.board import read_log
+from tremor.board import read_log
 
 SCENARIOS = ("completed", "memory_floor", "wall_limit")
 

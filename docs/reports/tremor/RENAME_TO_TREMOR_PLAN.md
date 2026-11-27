@@ -6,6 +6,18 @@ the working name "murmuration"; 258 tracked files mention it (614 mentions, `git
 ## Done (docs only)
 - Root `README.md` is the TREMOR README; the old lab README is `docs/LAB_README.md`, titled "TREMOR lab".
 - The root README says TREMOR is the only project name and lists what still carries the old name.
+- Package renamed (local, not committed): `src/murmuration/` is now `src/tremor/`, and every import, `-m` call and
+  `src/murmuration` path in tracked `.py` files under `src/`, `lab/` and `tests/` uses `tremor`. A shim package
+  `src/murmuration/` (`__init__.py`, `__main__.py`) makes `murmuration.<submodule>` the same module object as
+  `tremor.<submodule>` and keeps `python -m murmuration` working (`tests/test_murmuration_shim.py`).
+- Key variable: `ep1.KEY_ENV` is now `TREMOR_EP1_KEY`; `MURMURATION_EP1_KEY` (`ep1.LEGACY_KEY_ENV`) is the fallback.
+  Same rules (read in `cli` only, never printed). Both set and different: refused by name, values not printed.
+  Both set and equal, or empty, behave as one key / unset.
+- Citations of `src/murmuration/<file>:<line>` in older docs and in `prereg/*.md` now mean `src/tremor/<file>:<line>`
+  (line numbers moved only in `ep1.py` after the key change). `prereg/*.md` and doc citations were not edited, so their sha256 pins stay valid.
+- Pins checked: no pin in `pilot4_preflight_manifest`, `tremor_freeze_skeleton`, `tremor_admission_gate`,
+  `pilot_clearance` or `spend` names a renamed file. EP-1 `code_tree_hash` in `prereg/EP1.md` is still blank (not frozen);
+  it hashes `src/`, `practices/` and `tests/`, so compute it after this rename.
 
 ## Still carrying the old name, and why it is not a find-and-replace
 1. `src/murmuration/` (Python package) and every `from murmuration` import in `lab/` and `tests/`.

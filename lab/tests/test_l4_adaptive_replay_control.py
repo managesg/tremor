@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from murmuration import night
+from tremor import night
 
 from lab.l4_adaptive_replay_control import replay_day
 from lab.l4_adaptive_replay_policy import FIXTURE_CLOCK, FIXTURE_PINS, compare, decide, fixture, window_pin

@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab import memory_transmission
-from murmuration.board import Board
+from tremor.board import Board
 
 
 class MemoryTransmissionTests(unittest.TestCase):

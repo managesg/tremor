@@ -11,8 +11,8 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import adopters, enforce, router, rung0, stats, team  # noqa: E402
-from murmuration import board as boardmod  # noqa: E402
+from tremor import adopters, enforce, router, rung0, stats, team  # noqa: E402
+from tremor import board as boardmod  # noqa: E402
 
 
 def mutated(mod, *edits):

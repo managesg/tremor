@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from murmuration.trapbench import alloc2  # noqa: E402
+from tremor.trapbench import alloc2  # noqa: E402
 
 TS = {"n_agents": 4, "tasks": [{"id": f"t{i}", "expect": 10 + i} for i in range(6)]}
 
@@ -205,7 +205,7 @@ class Gate(unittest.TestCase):
 class Differential(unittest.TestCase):
     def test_against_primary_2000_logs(self):
         try:
-            from murmuration.trapbench import alloc
+            from tremor.trapbench import alloc
         except ImportError as e:
             self.skipTest(str(e))
         rng, bad = random.Random(20261120), []

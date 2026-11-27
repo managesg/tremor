@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic_ns
 
-from murmuration.manifest import config_hash
+from tremor.manifest import config_hash
 from lab import l2_adoption_control, l5_carrier_fixture, r3_schedule
 
 

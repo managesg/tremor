@@ -1,6 +1,6 @@
 """Offline R5 harness, Phase 0 / Stage A (prereg/R5-agent-performance-line-plan.md sections 2 to 4).
 
-Pure standard library plus murmuration (readouts, stats) and lab.l3c_harness.task_seed. No model call, no
+Pure standard library plus tremor (readouts, stats) and lab.l3c_harness.task_seed. No model call, no
 network. No parameter the plan leaves open (sizes, K, alpha, level, B, perms, edge, seeds, tags) has a default:
 a missing one raises TypeError; a bool, NaN, infinite, negative or out-of-range one raises ValueError.
 Numbers the plan states are constants: MIN_RERUNS = 10 (P:286-288), FAMILY = H1, H3, H5 (section 2).
@@ -67,7 +67,7 @@ import math
 import random
 from fractions import Fraction
 
-from murmuration import readouts, stats
+from tremor import readouts, stats
 
 from lab.l3c_harness import task_seed
 

@@ -8,7 +8,7 @@ import unittest
 from lab import controller_cluster_audit as audit
 from lab import controller_holdout as holdout
 from lab.tests import test_controller_cluster_audit as clustered
-from murmuration.trapbench import alloc
+from tremor.trapbench import alloc
 
 
 class ControllerWeightedBoundsTests(unittest.TestCase):

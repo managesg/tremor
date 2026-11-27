@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 from lab import r1_contention_schedule as sched
 from lab import r1_episode_v2, r1_episode_v3 as episode
-from murmuration.board import read_log
-from murmuration.trapbench import alloc
+from tremor.board import read_log
+from tremor.trapbench import alloc
 
 
 def table(rows):

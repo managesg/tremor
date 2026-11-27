@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 
 from lab import adapter_lineage as files
-from murmuration import ep1
-from murmuration.trapbench import alloc, alloc2
+from tremor import ep1
+from tremor.trapbench import alloc, alloc2
 
 ARTIFACTS = ("schedule.json", "episodes.jsonl", "final.json")
 FAKE_STAMP = "FAKE: loopback fake server; not evidence about any model"

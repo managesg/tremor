@@ -11,7 +11,7 @@ import time
 from lab import l5_matrix, l5_matrix_delivery_audit as audit
 from lab import l5_shard_cpu_replay as isolation, spark_calibration_guard as guard
 from lab.r3_cpu_guard_replay import _require, _write
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 def _delivery_session(matrix, frame):

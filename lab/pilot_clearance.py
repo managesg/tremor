@@ -5,8 +5,8 @@ import json
 import math
 from pathlib import Path
 
-from murmuration import ep1
-from murmuration.trapbench import alloc
+from tremor import ep1
+from tremor.trapbench import alloc
 
 CORE = ("none", "play", "code")
 ORDERS = ("shared", "per_agent")

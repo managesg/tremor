@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import manifest, stats  # noqa: E402
+from tremor import manifest, stats  # noqa: E402
 
 
 class T(unittest.TestCase):

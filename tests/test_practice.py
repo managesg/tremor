@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import practice  # noqa: E402
+from tremor import practice  # noqa: E402
 
 IDS = "ABCDEFGHLS"
 

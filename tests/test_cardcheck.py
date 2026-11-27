@@ -7,7 +7,7 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
-from murmuration import cardcheck  # noqa: E402
+from tremor import cardcheck  # noqa: E402
 
 
 def read(*p):
@@ -62,7 +62,7 @@ class CardCheck(unittest.TestCase):
             self.assertTrue(cardcheck.check_card("---\n" + t, kind="pilot")["hits"], t)
 
     def test_vocabulary_drift(self):
-        src = read("src", "murmuration", "trapbench", "alloc.py")
+        src = read("src", "tremor", "trapbench", "alloc.py")
         tree = ast.parse(src)
         skip = {id(tree.body[0].value)}  # module docstring
         for n in ast.walk(tree):

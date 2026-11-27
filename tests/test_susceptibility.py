@@ -1,8 +1,8 @@
 """WORKPLAN-RESIDENCY-V3 row 159: the nine susceptibility readouts in one module, ports equal to lab originals."""
 import unittest
 
-from murmuration import readouts as R
-from murmuration import susceptibility as S
+from tremor import readouts as R
+from tremor import susceptibility as S
 from lab import r1_kish_spread as lab_kish
 from lab import r1_response_fluctuation as lab_fluct
 

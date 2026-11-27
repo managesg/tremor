@@ -10,8 +10,8 @@ import statistics as st
 import unittest
 from fractions import Fraction
 
-from murmuration import nulls, team
-from murmuration.adopters import ScriptedAdopter
+from tremor import nulls, team
+from tremor.adopters import ScriptedAdopter
 from lab import r5_perf_harness as h
 from lab.l3c_harness import task_seed
 

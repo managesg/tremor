@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from murmuration import night
+from tremor import night
 
 from lab import l2_relay_control, l4b_recovery_observation, memory_replay
 from lab.l4_adaptive_replay_control import replay_day

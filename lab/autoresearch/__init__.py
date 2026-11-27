@@ -1,4 +1,4 @@
-"""Autoresearch scaffold (nothing paid runs). Imports src/murmuration read-only."""
+"""Autoresearch scaffold (nothing paid runs). Imports src/tremor read-only."""
 import os
 import sys
 

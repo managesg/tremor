@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from lab import tremor_spend_total as t
-from murmuration import spend
+from tremor import spend
 
 
 def line(**kw):

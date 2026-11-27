@@ -5,9 +5,9 @@ import json
 from pathlib import Path
 
 from lab.r1_episode_v2 import CLAIM_TTL, ERROR_ROUND, MEASURED_ROUNDS, _score, _write
-from murmuration import cell, router, team
-from murmuration.board import Board, read_log
-from murmuration.trapbench import alloc
+from tremor import cell, router, team
+from tremor.board import Board, read_log
+from tremor.trapbench import alloc
 
 
 def _act(handle, action, *, contender=False):

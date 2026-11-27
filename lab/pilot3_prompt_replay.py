@@ -7,8 +7,8 @@ from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
-from murmuration import backend_claude, ep1, team_claude
-from murmuration.trapbench import alloc
+from tremor import backend_claude, ep1, team_claude
+from tremor.trapbench import alloc
 
 EPISODES_SHA256 = "04401ed5cf7d07e82e65bfa95d792234ac201cb591b12419434bbff6c2e4e0f6"
 LEDGER_SHA256 = "142b7fef649bb0fe187ebf7fc5cb21e13a7bf4be17756cd9927c1eceae6117e1"

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import fakeclaude  # noqa: E402
-from murmuration import backend_claude as bc, spend  # noqa: E402
+from tremor import backend_claude as bc, spend  # noqa: E402
 
 M = "claude-sonnet-5-5"
 KEY = "sk-ant-FAKEKEY-do-not-leak-0123456789"

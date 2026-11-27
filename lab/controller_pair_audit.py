@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from lab import controller_selection as selection
-from murmuration.trapbench import alloc, alloc2
+from tremor.trapbench import alloc, alloc2
 
 ARMS = ("combined", "plain")
 USAGE = tuple(field for field in selection.BUDGET if not field.startswith("per_call_"))

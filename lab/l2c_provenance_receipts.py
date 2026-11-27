@@ -1,6 +1,6 @@
 """Independently reconcile scripted quarantine receipts with Board events."""
 
-from murmuration.board import read_log
+from tremor.board import read_log
 
 from lab.l4_measured_compression import pin
 

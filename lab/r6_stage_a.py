@@ -36,8 +36,8 @@ import math
 import random
 from functools import lru_cache
 
-from murmuration import team
-from murmuration.adopters import ScriptedAdopter
+from tremor import team
+from tremor.adopters import ScriptedAdopter
 
 from lab import r5_perf_harness as h
 from lab import r6_predicates as pr

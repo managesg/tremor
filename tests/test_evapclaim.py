@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration import evapclaim as E
+from tremor import evapclaim as E
 
 
 class EvaporatingClaims(unittest.TestCase):

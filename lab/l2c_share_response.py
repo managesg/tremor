@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from murmuration.board import Board
+from tremor.board import Board
 
 from lab.l2c_ranked_dispatch import evaluate_arm, fixture
 from lab.l2c_share_audit import ORDERINGS, audit

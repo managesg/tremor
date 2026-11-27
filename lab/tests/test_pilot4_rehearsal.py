@@ -19,9 +19,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT / "tests")]
 import fakeclaude  # noqa: E402
 from lab import pilot_clearance, tremor_spend_total  # noqa: E402
-from murmuration import __main__ as cli  # noqa: E402
-from murmuration import ep1, formal_alloc, spend  # noqa: E402
-from murmuration.trapbench import alloc, alloc2  # noqa: E402
+from tremor import __main__ as cli  # noqa: E402
+from tremor import ep1, formal_alloc, spend  # noqa: E402
+from tremor.trapbench import alloc, alloc2  # noqa: E402
 
 DUMMY_KEY = "sk-ant-DUMMY-loopback-rehearsal-0000"  # never a real key
 _RUNS_SHEET = ROOT / "runs" / "d8-price-refetch.20261126T0050Z" / "price-sheet.json"  # git-ignored

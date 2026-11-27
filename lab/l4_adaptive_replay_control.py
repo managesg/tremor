@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from murmuration import night
+from tremor import night
 
 
 def replay_day(store, *, day, source_prefix, strength, seed=0, rewrite=None):

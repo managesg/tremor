@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copyfile
 from tempfile import TemporaryDirectory
 
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 from lab.l2c_provenance_policy import decide
 from lab.l2c_provenance_receipts import audit

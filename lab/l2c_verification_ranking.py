@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 from lab.l2_relay_control import FALSE_STATEMENT
 from lab.l2c_board_features import features, rank_arms

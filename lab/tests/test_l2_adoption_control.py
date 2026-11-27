@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab import l2_adoption_control as control
-from murmuration.board import Board
+from tremor.board import Board
 
 
 class AdoptionControlTests(unittest.TestCase):

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import re
 
-from murmuration import spend
+from tremor import spend
 
 
 def _utc_instant(value, endpoint):

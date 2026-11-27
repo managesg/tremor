@@ -6,7 +6,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import hazard, ledger  # noqa: E402
+from tremor import hazard, ledger  # noqa: E402
 
 D = ledger.DAY
 

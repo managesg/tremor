@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lab import r1_public_arithmetic_mutants as corpus
-from murmuration.trapbench import alloc, alloc2
+from tremor.trapbench import alloc, alloc2
 
 
 SOURCE_SHA256 = {

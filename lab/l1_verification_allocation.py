@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 
-from murmuration.readouts import overdispersion
+from tremor.readouts import overdispersion
 
 MODES = ("overdispersion", "uniform", "disagreement", "majority_retry")
 ADDITIONAL_CHECK_MODES = ("random", "length", "team_size", "pilot_predictor", "proportional")

@@ -3,7 +3,7 @@ import time
 import unittest
 from fractions import Fraction as F
 
-from murmuration import nulls as N
+from tremor import nulls as N
 
 
 class L1ScriptedAdopters(unittest.TestCase):

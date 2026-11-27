@@ -3,7 +3,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import analysis as an
+from tremor import analysis as an
 
 
 def rec(arm, ts, y, i=0, **kw):

@@ -8,7 +8,7 @@ import re
 
 from lab import l2_relay_control as relay, l2_trigger_control
 from lab.r3_l2_generation import _check_usage, _unique_object
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 
 SCHEDULE = (

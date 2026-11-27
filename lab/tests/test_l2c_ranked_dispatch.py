@@ -7,7 +7,7 @@ import unittest
 from lab import l2c_provenance_control, l2c_ranked_dispatch as ranked
 from lab.l2c_screening_ledger import verify as verify_ledger
 from lab.l4_measured_compression import pin
-from murmuration.board import Board
+from tremor.board import Board
 
 
 class L2CRankedDispatchTests(unittest.TestCase):

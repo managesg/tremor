@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from lab.l5_matrix import CARRIERS, run
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 class L5MatrixTests(unittest.TestCase):

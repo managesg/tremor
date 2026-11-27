@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration import monsel as M
+from tremor import monsel as M
 
 # Four calibration failure episodes; 1 = the view missed it.
 MISSES = {

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import fakeclaude  # noqa: E402
-from murmuration import runner, spend  # noqa: E402
+from tremor import runner, spend  # noqa: E402
 
 
 class RunnerTests(unittest.TestCase):

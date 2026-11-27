@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration.trapbench import traps  # noqa: E402
+from tremor.trapbench import traps  # noqa: E402
 
 
 def read_tree(root):

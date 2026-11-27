@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from lab import pilot_clearance
-from murmuration import ep1
+from tremor import ep1
 
 
 ROOT = Path(__file__).resolve().parents[2]

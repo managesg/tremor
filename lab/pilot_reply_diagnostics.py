@@ -4,7 +4,7 @@ import json
 import sys
 
 from lab.pilot_clearance import CORE, OUTPUT_CEILING
-from murmuration import ep1
+from tremor import ep1
 
 CONDITIONS = CORE + tuple(ep1.PILOT_CARDS)
 

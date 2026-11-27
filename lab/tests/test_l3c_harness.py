@@ -5,7 +5,7 @@ import sys
 import random
 import unittest
 
-from murmuration import monsel
+from tremor import monsel
 from lab import l3c_harness as h
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -225,7 +225,7 @@ class Harness(unittest.TestCase):
     def test_null_draw_matches_correlated_monitors(self):
         # the draw model is nulls.correlated_monitors': P(all miss) = c + (1 - c) p^m
         from fractions import Fraction
-        from murmuration import nulls
+        from tremor import nulls
         want = float(nulls.correlated_monitors(3, Fraction(2, 5), Fraction(1, 4))["all_miss"])
         seen = []
         orig = h.compare_arms

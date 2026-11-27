@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration import vreplay as V
+from tremor import vreplay as V
 
 
 class VerifiedReplay(unittest.TestCase):

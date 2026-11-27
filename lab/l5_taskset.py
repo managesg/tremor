@@ -1,6 +1,6 @@
 """Generate four- and eight-worker development allocations for L5."""
 
-from murmuration.trapbench import alloc
+from tremor.trapbench import alloc
 
 
 def generate(seed, team_size, *, split="train"):

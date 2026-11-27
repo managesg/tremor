@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration import quarantine as Q
+from tremor import quarantine as Q
 
 # Provenance: a is a root; b and c derive from a; d derives from b. e is unrelated.
 NOTES = [

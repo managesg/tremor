@@ -4,7 +4,7 @@ import unittest
 
 from lab import controller_holdout as holdout
 from lab.tests import test_controller_selection as fixtures
-from murmuration.trapbench import alloc
+from tremor.trapbench import alloc
 
 
 class ControllerHoldoutTests(unittest.TestCase):

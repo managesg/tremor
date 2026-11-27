@@ -4,8 +4,8 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import consolidate as C  # noqa: E402
-from murmuration.trapbench import poison  # noqa: E402
+from tremor import consolidate as C  # noqa: E402
+from tremor.trapbench import poison  # noqa: E402
 
 TR = [{"task": "t1", "text": "alpha line one\nalpha line two\n" * 20},
       {"task": "t2", "text": "beta other one\nbeta other two\n" * 20},

@@ -6,8 +6,8 @@ import unittest
 from unittest.mock import patch
 
 from lab import r1_episode_v2 as episode
-from murmuration.board import read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor.board import read_log
+from tremor.trapbench import alloc, alloc2
 
 
 class R1EpisodeV2Tests(unittest.TestCase):

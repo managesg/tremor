@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 from lab.r3_l2_generation import validate_identity
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 def render_scripted_prompt(worker, instruction, source, observed, *, verification=None):

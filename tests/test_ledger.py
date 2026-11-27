@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import ledger, synth  # noqa: E402
+from tremor import ledger, synth  # noqa: E402
 
 D = ledger.DAY
 
@@ -129,9 +129,9 @@ class CliTests(unittest.TestCase):
         env = dict(os.environ, PYTHONPATH=os.path.join(os.path.dirname(__file__), "..", "src"))
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "s.jsonl")
-            open(p, "w").write(subprocess.run([sys.executable, "-m", "murmuration", "synth"], env=env,
+            open(p, "w").write(subprocess.run([sys.executable, "-m", "tremor", "synth"], env=env,
                                               capture_output=True, text=True, check=True).stdout)
-            out = subprocess.run([sys.executable, "-m", "murmuration", "report", p, "--deny", "Bash:rm", "--unsafe-raw-keys"],
+            out = subprocess.run([sys.executable, "-m", "tremor", "report", p, "--deny", "Bash:rm", "--unsafe-raw-keys"],
                                  env=env, capture_output=True, text=True, check=True).stdout
         rep = json.loads(out)
         names = [x["policy"] for x in rep["policies"]]

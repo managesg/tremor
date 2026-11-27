@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from lab import pilot3_prompt_replay as replay
-from murmuration import ep1, spend, team_claude
+from tremor import ep1, spend, team_claude
 
 
 ROOT = Path(__file__).resolve().parents[1]

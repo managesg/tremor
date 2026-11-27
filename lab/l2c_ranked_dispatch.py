@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copyfileobj
 from tempfile import TemporaryDirectory
 
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 from lab.l2c_detached_scoring import validate_selection
 from lab.l2c_provenance_control import score

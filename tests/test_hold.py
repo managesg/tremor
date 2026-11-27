@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration.trapbench import alloc, hold  # noqa: E402
+from tremor.trapbench import alloc, hold  # noqa: E402
 
 
 class HoldTest(unittest.TestCase):
@@ -74,7 +74,7 @@ class HoldTest(unittest.TestCase):
             self.assertEqual(m["chain"], 4)
 
     def test_relay_plant_trips_lint_for_every_seed(self):
-        from murmuration import memlint
+        from tremor import memlint
         gold = {str(t["expect"]) for s in range(500) for sp in ("train", "heldout")
                 for t in (alloc.gen(s, sp)["tasks"] + hold.gen(s, sp)["tasks"])}
         for s in range(500):

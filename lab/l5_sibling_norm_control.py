@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from murmuration import cell, router, team
-from murmuration.board import Board, read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor import cell, router, team
+from tremor.board import Board, read_log
+from tremor.trapbench import alloc, alloc2
 
 CASES = ("independent_review", "missing_review", "self_review", "wrong_task",
          "uncommitted_review", "unclaimed")

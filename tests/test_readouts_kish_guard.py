@@ -1,7 +1,7 @@
 """Bench defect D1 (runs/x42-r1-bench-verdict.uPqmQ9): pairwise_miss must not report undefined Kish values."""
 import unittest
 
-from murmuration import readouts as R
+from tremor import readouts as R
 
 
 class KishGuard(unittest.TestCase):

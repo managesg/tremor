@@ -14,7 +14,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import cell, router  # noqa: E402
+from tremor import cell, router  # noqa: E402
 
 POL = {"allow": ["read"], "deny": [], "max_tokens": 1000, "max_seconds": 10}
 SPEC = {"id": "t1", "class": "extract", "payload": {"text": "b a"}, "cell": "w"}

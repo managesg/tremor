@@ -24,13 +24,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
 import fakeclaude  # noqa: E402
-from murmuration import backend_claude as bc  # noqa: E402
-from murmuration import board as boardmod, cell, consolidate, memlint, orders, perturb, router, spend  # noqa: E402
-from murmuration import practice as practicemod  # noqa: E402
-from murmuration.trapbench import alloc, poison  # noqa: E402
+from tremor import backend_claude as bc  # noqa: E402
+from tremor import board as boardmod, cell, consolidate, memlint, orders, perturb, router, spend  # noqa: E402
+from tremor import practice as practicemod  # noqa: E402
+from tremor.trapbench import alloc, poison  # noqa: E402
 
 try:  # being edited by another builder: a failed import skips the model-loop canaries, it does not break the file
-    from murmuration import team_claude as tc
+    from tremor import team_claude as tc
     TC_ERR = None
 except Exception as e:  # noqa: BLE001
     tc, TC_ERR = None, f"{type(e).__name__}: {e}"

@@ -10,7 +10,7 @@ import unittest
 import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import backend_claude, manifest, router  # noqa: E402
+from tremor import backend_claude, manifest, router  # noqa: E402
 
 SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 FILES = sorted(glob.glob(os.path.join(SRC, "**", "*.py"), recursive=True))
@@ -78,7 +78,7 @@ class EgressScan(unittest.TestCase):
 
 class DestinationPinned(unittest.TestCase):
     def test_backend_reads_no_environment(self):
-        tree = _parse(os.path.join(SRC, "murmuration", "backend_claude.py"))
+        tree = _parse(os.path.join(SRC, "tremor", "backend_claude.py"))
         for n in ast.walk(tree):
             if isinstance(n, ast.Attribute):
                 self.assertNotIn(n.attr, ("environ", "getenv", "environb"))

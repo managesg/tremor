@@ -6,7 +6,7 @@ import re
 import subprocess
 
 from lab import l7_parallel_selection as selection, topology
-from murmuration.coupling import coupling
+from tremor.coupling import coupling
 
 ROSTER = ("a", "b", "c", "d", "e", "f")
 CALIBRATION_PAIRS = {("a", "b"): 5, ("c", "d"): 4, ("e", "f"): 3, ("b", "c"): 1}

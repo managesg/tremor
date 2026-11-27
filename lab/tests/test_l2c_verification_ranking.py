@@ -8,7 +8,7 @@ from lab import l2c_verification_ranking as ranking
 from lab.l2_relay_control import FALSE_STATEMENT
 from lab.l2c_detached_scoring import ARM_NAMES, score
 from lab.l4_measured_compression import pin
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 
 class L2CVerificationRankingTests(unittest.TestCase):

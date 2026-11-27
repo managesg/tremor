@@ -8,7 +8,7 @@ from lab import l2_relay_control as relay
 from lab import r3_l2_relay_generation as generation
 from lab import r3_l2_relay_replay as replay
 from lab.spark_decision import Generation
-from murmuration.board import GENESIS, _digest, read_log
+from tremor.board import GENESIS, _digest, read_log
 
 
 class R3RelayReplayTests(unittest.TestCase):

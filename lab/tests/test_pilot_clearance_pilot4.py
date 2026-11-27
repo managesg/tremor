@@ -5,7 +5,7 @@ from pathlib import Path
 
 import test_ep1
 from lab import pilot_clearance
-from murmuration import ep1
+from tremor import ep1
 
 
 class Pilot4ClearanceTest(test_ep1.Base):

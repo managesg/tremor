@@ -2,7 +2,7 @@
 
 import json
 
-from murmuration import readouts
+from tremor import readouts
 
 
 def l1_controls():

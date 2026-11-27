@@ -4,7 +4,7 @@ from shutil import copyfile
 from tempfile import TemporaryDirectory
 import unittest
 
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 from lab.l2c_provenance_control import assess, detached, fixture, run, score
 from lab.l2c_provenance_receipts import audit

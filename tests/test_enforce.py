@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import enforce as E  # noqa: E402
+from tremor import enforce as E  # noqa: E402
 
 SNAP = {"round": 1, "items": {}, "claims": {}}
 PLANT = {"p1": {"kind": "plant", "text": "task t1 is on hold", "refs": ["t1"], "agent": "a9"}}

@@ -1,7 +1,7 @@
 import unittest
 
 from lab.l5_taskset import generate
-from murmuration.trapbench import alloc, alloc2
+from tremor.trapbench import alloc, alloc2
 
 
 class L5TasksetTests(unittest.TestCase):

@@ -5,7 +5,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from murmuration import backend_claude, ep1, spend
+from tremor import backend_claude, ep1, spend
 
 SEED = 0
 

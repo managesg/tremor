@@ -5,8 +5,8 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from lab import ep1_bracket_receipt as receipt
-from murmuration import ep1
-from murmuration.trapbench import alloc, alloc2
+from tremor import ep1
+from tremor.trapbench import alloc, alloc2
 
 
 class FakeBracketReceiptTests(unittest.TestCase):

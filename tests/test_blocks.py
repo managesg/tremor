@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration import blocks as B
+from tremor import blocks as B
 
 
 class BlockAndSummarise(unittest.TestCase):

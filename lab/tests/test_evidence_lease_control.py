@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from lab.evidence_lease_control import SCOPE, compare, eligible_support
-from murmuration.board import Board
+from tremor.board import Board
 
 
 class EvidenceLeaseTests(unittest.TestCase):

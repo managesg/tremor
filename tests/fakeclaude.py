@@ -55,7 +55,7 @@ def dry_run(task, arm, seed, ledger, price_sheet, responder=None, **kw):
     import os
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-    from murmuration import runner
+    from tremor import runner
     srv, url, seen = start(responder or (lambda *a: ok("claude-sonnet-5-5")))
     try:
         rec = runner.run(task, arm, seed, "claude", allow_backend=True, spend_ledger=ledger, price_sheet=price_sheet,

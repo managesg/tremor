@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from lab import ep1_b4_full_reservation as reservation
 from lab.ep1_b4_probe import run_case, run_fake
-from murmuration import ep1, spend, team_claude
+from tremor import ep1, spend, team_claude
 
 
 def _require(condition, detail):

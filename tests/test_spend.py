@@ -9,7 +9,7 @@ from unittest import mock
 from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import spend  # noqa: E402
+from tremor import spend  # noqa: E402
 
 M = "claude-sonnet-5-5"
 P = {"input": 2, "output": 10, "cache_read": 0.1, "cache_write_5m": 2.5, "cache_write_1h": 4}

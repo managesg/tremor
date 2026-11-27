@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration.lease import EvidenceLease
+from tremor.lease import EvidenceLease
 
 
 def pooled_rate(scope_counts, pooled_counts):

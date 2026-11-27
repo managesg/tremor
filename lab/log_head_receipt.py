@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from murmuration import board, cell
+from tremor import board, cell
 
 
 def snapshot(kind, log_id, path):

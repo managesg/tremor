@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import coupling  # noqa: E402
+from tremor import coupling  # noqa: E402
 
 
 def git(d, *a):

@@ -5,7 +5,7 @@ import unittest
 
 from lab import l2_relay_control as relay, r3_l2_relay_generation as generation
 from lab.spark_decision import Generation
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 def reply(payload, at_limit=False):

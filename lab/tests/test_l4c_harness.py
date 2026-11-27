@@ -7,7 +7,7 @@ import unittest
 from fractions import Fraction
 from unittest import mock
 
-from murmuration import vreplay
+from tremor import vreplay
 from lab import l4c_harness as h
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

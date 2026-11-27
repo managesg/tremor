@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from lab import l2_adoption_control, r3_l2_generation, r3_l2_host_verify
 from lab.tests import test_r3_l2_archive as fixture
-from murmuration.board import Board
+from tremor.board import Board
 
 
 class HostVerifyTests(unittest.TestCase):

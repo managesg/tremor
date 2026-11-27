@@ -16,11 +16,11 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import fakeclaude  # noqa: E402
-from murmuration import backend_claude as bc  # noqa: E402
-from murmuration import board as boardmod  # noqa: E402
-from murmuration import practice as practicemod  # noqa: E402
-from murmuration import router, spend, team, team_claude as tc  # noqa: E402
-from murmuration.trapbench import alloc  # noqa: E402
+from tremor import backend_claude as bc  # noqa: E402
+from tremor import board as boardmod  # noqa: E402
+from tremor import practice as practicemod  # noqa: E402
+from tremor import router, spend, team, team_claude as tc  # noqa: E402
+from tremor.trapbench import alloc  # noqa: E402
 
 M = "claude-haiku-5-5"
 P = {"input": 1, "output": 5, "cache_read": 0.1, "cache_write_5m": 1.25, "cache_write_1h": 2}

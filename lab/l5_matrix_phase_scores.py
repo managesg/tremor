@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 from lab import l5_matrix_audit, l5_matrix_partial
-from murmuration.board import read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor.board import read_log
+from tremor.trapbench import alloc, alloc2
 
 
 def _score(actions, taskset):

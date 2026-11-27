@@ -4,7 +4,7 @@ from tempfile import mkdtemp
 import unittest
 
 from lab.log_head_receipt import snapshot, verify
-from murmuration import board, cell
+from tremor import board, cell
 
 
 class ReceiptTests(unittest.TestCase):

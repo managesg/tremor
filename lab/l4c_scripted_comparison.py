@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 import json
 
-from murmuration import night
+from tremor import night
 
 from lab.l4_adaptive_replay_control import replay_day
 from lab.l4c_scripted_ledger import audit

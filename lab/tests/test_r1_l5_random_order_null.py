@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from lab import r1_l5_random_order_null as fixture
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 
 class R1L5RandomOrderNullTests(unittest.TestCase):

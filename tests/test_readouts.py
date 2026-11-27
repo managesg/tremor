@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from murmuration import readouts as R
+from tremor import readouts as R
 
 
 class Readouts(unittest.TestCase):

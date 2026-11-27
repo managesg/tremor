@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from functools import partial
 
-from murmuration.board import Board, read_log
+from tremor.board import Board, read_log
 
 from lab.l2c_provenance_receipts import audit
 from lab.l4_measured_compression import pin

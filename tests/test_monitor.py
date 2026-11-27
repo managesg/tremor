@@ -4,7 +4,7 @@ import time
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from murmuration import monitor as m  # noqa: E402
+from tremor import monitor as m  # noqa: E402
 
 BAD = [{"tool": "Bash", "input": "rm -rf /data"}]
 OK = [{"tool": "Read", "input": "notes.txt"}]

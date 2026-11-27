@@ -5,9 +5,9 @@ import json
 from pathlib import Path
 
 from lab import l5_sibling_norm_control as fixture
-from murmuration import team
-from murmuration.board import read_log
-from murmuration.trapbench import alloc, alloc2
+from tremor import team
+from tremor.board import read_log
+from tremor.trapbench import alloc, alloc2
 
 
 def digest(value):

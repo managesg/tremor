@@ -30,7 +30,7 @@ from pathlib import Path
 
 from lab import r1_contention_schedule as contention_schedule
 from lab import r1_episode_v3
-from murmuration.board import read_log
+from tremor.board import read_log
 
 
 def _load(path):

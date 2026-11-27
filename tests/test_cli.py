@@ -13,7 +13,7 @@ SUBS = ["report", "synth", "sweep", "allowlist", "hazard", "tokens", "memlint", 
 
 def cli(*args, stdin=None):
     env = dict(os.environ, PYTHONPATH=os.path.join(ROOT, "src"))
-    return subprocess.run([sys.executable, "-W", "ignore", "-m", "murmuration", *args],
+    return subprocess.run([sys.executable, "-W", "ignore", "-m", "tremor", *args],
                           capture_output=True, text=True, env=env, input=stdin, cwd=ROOT)
 
 
@@ -71,7 +71,7 @@ class CliTests(unittest.TestCase):
             sha = subprocess.run(["git", "-C", d, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
             rec = json.loads(cli("manifest", "--root", d, "--tree", os.path.join(d, "src"), os.path.join(d, "src")).stdout)
             self.assertEqual(rec["git_sha"], sha)
-            from murmuration import manifest
+            from tremor import manifest
             self.assertEqual(rec["tree_hash"], manifest.tree_hash([os.path.join(d, "src")], d))
             # a symlink under the tree is refused with a clear error, not hashed around
             os.symlink(os.path.join(d, "src", "a.py"), os.path.join(d, "src", "l.py"))

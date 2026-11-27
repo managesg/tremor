@@ -1,6 +1,6 @@
 import unittest
 
-from murmuration.readouts import reproduction_number
+from tremor.readouts import reproduction_number
 
 
 class ReproductionRootTests(unittest.TestCase):
