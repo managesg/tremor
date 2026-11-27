@@ -135,3 +135,60 @@ reference checks the result. This tests whether the coordination findings travel
 arithmetic task family. The release design pairs the independently implemented simulator with
 public circuit definitions and closed-form checks. The completed evidence is simulator agreement
 on idealized circuits.
+
+## Research background for the R5 and R6 lines
+
+R5 (agent performance) and R6 (a P vs NP research line and a scored task suite) are plans, not results.
+R6 claims no proof of P = NP or P != NP. Nothing in R5 or R6 depends on any item below; if an item is
+wrong or retracted, no R6 step changes. Plans: [R5](prereg/R5-agent-performance-line-plan.md) and
+[R6](prereg/R6-pvsnp-research-line-plan.md).
+
+**Verified flag.** Y means we read the primary source and checked the statement as cited. N means we
+did not. These entries were written offline. We have not checked any citation below against its
+source, so every flag is N. The VP != VNP paper was retrieved and read in part; its flag says so.
+
+### Established background: three barriers
+
+These are standard results in complexity theory. They are why a proposed proof of P != NP is checked
+against each one before it is taken seriously.
+
+| Barrier | Reference | Verified |
+|---|---|---|
+| Relativization: proof techniques that hold relative to every oracle cannot settle P vs NP | Baker, Gill and Solovay (1975) | N |
+| Natural proofs: a broad class of circuit-lower-bound arguments cannot work if strong pseudorandom generators exist | Razborov and Rudich (1997) | N |
+| Algebrization: techniques that survive algebraic extensions of oracles cannot settle P vs NP | Aaronson and Wigderson (2008) | N |
+
+### Claims in the owner's briefing, not verified by us
+
+The owner's briefing describes the 2025 to 2026 items below. We have not retrieved or checked them.
+They are listed so readers can see what the R6 plan was written against.
+
+| Item as described in the briefing | Verified |
+|---|---|
+| A 2025 square-root-scale space simulation for time-bounded Turing machines (Ryan Williams) | N |
+| October 2026 claims, Lean-checked according to the briefing, against the Exponential Time Hypothesis (ETH), using counting algorithms for 3-SAT | N |
+| A November 2026 report that NL = UL (William Hoza) | N |
+| Late-November 2026 claims on VP != VNP (see the next subsection) | N |
+
+### The VP != VNP paper
+
+**Status: primary source retrieved, proof not verified by us.** We hold the paper's text (author line
+"Claude, Anthropic") and read parts of it. We have not checked its proof or its Lean repository, and we
+have not seen any independent review of it. This is not a statement that the proof is right or wrong.
+
+The paper's own caveats, as we read them:
+
+- It says it does not settle P vs NP, and that its superpolynomial bound does not apply to Boolean
+  circuits.
+- It concerns algebraic circuits and the classes VP and VNP, not the Boolean classes P and NP.
+- It says it has not analysed relativization or algebrization.
+- It says no human mathematician has checked the proofs, and that four of its printed proofs are not
+  complete on paper.
+
+R6 uses the paper only as a source of finite statements to build test tasks. Truth for those tasks
+comes from our own exhaustive checker, so no result about the tasks is evidence about the paper.
+Review notes: `docs/reports/tremor/VPVNP_CLAIM_REVIEW_20261126.md`.
+
+| Reference | Verified |
+|---|---|
+| The VP != VNP paper (PDF sha256 prefix `882f5eef`, repository `anthropics/formal-math`, commit `11b6c7e`) | N (read in part, proof not verified by us) |

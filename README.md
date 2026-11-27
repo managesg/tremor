@@ -172,6 +172,41 @@ Every prediction has three outcomes: supported, killed or inconclusive. A result
 significant is inconclusive, never killed.
 </details>
 
+## Two further research lines: R5 and R6
+
+Besides the eight lines above, the lab has two planned lines. Both are plans: they are not frozen, and
+no agent has been run on either.
+
+**R5, agent performance testing.** Lines 1 to 8 test allocation rules against baselines. R5 asks two
+other questions: can a team's task performance be forecast out of sample, and is what a team reports
+about itself accurate? Its primary test (H2) fits a simple common-cause model on small teams (2 and 4
+agents) and checks how well it forecasts the distribution of the number of agents that pass at 8
+agents. The secondary tests ask whether team confidence outruns team accuracy and whether best-of-N
+selection buys fewer than N independent draws. The planned local model is **Inkling-2-Mini**, run on the
+Spark GPU. TREMOR has not contacted it; only an offline client and driver exist. Plan:
+[`prereg/R5-agent-performance-line-plan.md`](prereg/R5-agent-performance-line-plan.md).
+
+**R6, a P vs NP multi-lens research line.** R6 does not claim a proof of P = NP or P != NP and gives no
+probability of resolving the question. It has two parts:
+
+- *A research framework.* Six lenses (circuits and algorithms-to-lower-bounds, algebraic complexity,
+  meta-complexity, proof complexity, fine-grained complexity, descriptive complexity), a check of each
+  candidate argument against the three known barriers (relativization, natural proofs, algebrization),
+  and a JSON scorecard. Two lenses are chosen for work here: circuits as the lower-bound route and
+  meta-complexity as an instrument. Both use one object, a truth table with its exact minimum circuit
+  size, so every finite claim can be checked exhaustively.
+- *A scored task suite for agents.* Tasks with mechanical ground truth, decided by a program and never by
+  a judge model: SAT and model counting, circuit size, circuit-size decision, small resolution
+  refutations, lemma checking, and definition audit. Tables of exact formula and circuit sizes for small
+  functions, computed by our own exact solver, provide the ground truth. Two scored arms sit on top: a
+  **Red Team** arm (does a "refute this" role reduce false lemmas that are still accepted, against an
+  ordinary solver role at the same calls and tokens?) and a **Definition Audit** arm (can an agent tell
+  a faithful formal statement from a defective one, and locate the defect?).
+
+Claims from R6 are about how agents do on these tasks, never about P vs NP. Plan:
+[`prereg/R6-pvsnp-research-line-plan.md`](prereg/R6-pvsnp-research-line-plan.md). Background and
+references: [RESEARCH.md](RESEARCH.md#research-background-for-the-r5-and-r6-lines).
+
 ## The shared instrument
 
 <p align="center"><img src="assets/tremor-hero.svg" alt="Concept map: a team around a shared board inside ripple rings; a wrong note stopped by quarantine; three monitors with overlapping views; overnight replay from daily notes to long-term memory through a verifier" width="100%"></p>
@@ -225,6 +260,42 @@ the coordination and team-size research lines.
 
 The full work plan, with gates and rules, is in **[WORKPLAN.md](WORKPLAN.md)**.
 
+## Findings so far
+
+Only recorded facts are listed here. None of them is a result about whether any technique works.
+
+**Accepted.** Milestone M1, a small GPU calibration on the Spark, is accepted: 0.023123 GPU-hours
+settled. That is 1 of 10 milestones. The paid total is USD 0.00 against a hard USD 10 cap enforced in
+code.
+
+**The two-implementation rule.** A label or ground-truth value is used only when two independent
+implementations agree on it. A single implementation is not enough.
+
+**What review found.** Every code change is checked by a fresh reviewer, and reviewers also attack the
+tests with mutation checks (deliberately broken copies of the code that the tests must catch).
+Recorded outcomes from the lab's status log:
+
+- One gap review of the new work: 4 wording and stale-document findings fixed, 1 low-severity surviving
+  mutant then killed, 1 equivalent mutant accepted, and 22 of 24 new mutants killed.
+- The sandbox extension was first returned for revision (survivors in a rank cap and a lower
+  bound, and in `scorer_ids`), fixed, and accepted on the second review.
+- The R6 task-family code (T2) was returned for revision. Three real mutant survivors (bits=1, limit-1,
+  an unreduced coefficient) are now all killed on a scratch copy; two further mutants are equivalent. The
+  fixed version was not re-reviewed in full.
+
+**Not run.**
+
+- No agent has run on R5 or R6.
+- Inkling-2-Mini has not been contacted. Only the offline client and driver exist.
+- No paid batch has run.
+- No run has started for any milestone beyond M1. M2 to M10 each wait on a named person (key holder,
+  trainer price, placement, line authors or custodian, or the owner).
+
+**Limits.** The offline checks show that scorers, gates and generators behave as designed on scripted
+inputs. They are not evidence about any model. Test and mutation counts show that the checks caught what
+they were aimed at, not that nothing else is wrong. The checklist is 24 lines done and 15 open; all 15 are
+waiting on a named person or an owner decision, not on lane work.
+
 ## What would falsify the whole programme
 
 1. **No repeatable response:** a statistic measured on one set of seeds does not predict itself on another.
@@ -270,7 +341,7 @@ freeze records pin, so it is a planned step with a re-pin, not a quiet find-and-
   `docs/reports/HANDOFF_TREMOR_20261126.md`; review evidence:
   `docs/reports/tremor/REVIEW_ITEMS_ATTACK_EVIDENCE.md`.
 - **Not done:** Pilot 4 and EP-1 (waiting on a key holder), any Inkling-2-Mini GPU run on the Spark,
-  custodian-held sealed inputs, and the M3 and M5-M10 admissions.
+  custodian-held sealed inputs, and any run for M2 to M10.
 - **Two `quantum` packages:** the public simulator is `quantum/` at the root (run its tests with `PYTHONPATH=. python3 -m unittest tests.test_gatesim`); the lab has its own `lab/quantum/`. With `lab` on the Python path, as the lab test commands do, `lab/quantum` shadows the root package, so run the two sets of tests separately.
 - **Original lab README** (permission replay ledger, safety and privacy notes): `docs/LAB_README.md`.
 - The VP != VNP paper shared on 2026-11-23 is used only as a source of finite test tasks. Its proof is not
